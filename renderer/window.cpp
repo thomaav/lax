@@ -17,6 +17,9 @@ void defaultKeyCallback(GLFWwindow *window, int key, int scancode, int action, i
 
 }
 
+namespace Renderer
+{
+
 glfwWindow::glfwWindow(u32 width, u32 height)
 	: width(width)
 	, height(height)
@@ -51,4 +54,6 @@ bool glfwWindow::step()
 	}
 
 	return true;
+}
+
 }

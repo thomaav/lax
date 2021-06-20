@@ -5,6 +5,9 @@
 
 #include "type.h"
 
+namespace Renderer
+{
+
 class glfwWindow
 {
 public:
@@ -23,3 +26,5 @@ private:
 
 	GLFWwindow *window{nullptr};
 };
+
+}

@@ -1,5 +1,8 @@
 #pragma once
 
+namespace Vulkan
+{
+
 class Device
 {
 public:
@@ -12,3 +15,5 @@ public:
 private:
 	;
 };
+
+}
