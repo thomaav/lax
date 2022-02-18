@@ -1,19 +1,24 @@
-#include <iostream>
+#include <stdio.h>
 
 /* (TODO, thoave01): Don't expose Vulkan backend directly. */
-#include "context.h"
-#include "window.h"
+#include <renderer/vulkan/context.h>
+#include <renderer/window.h>
 
 int main(int argc, char *argv[])
 {
-	Renderer::glfwWindow window{800, 600};
+	(void)argc;
+	(void)argv;
+
+	Renderer::glfwWindow window{ 800, 600 };
 	window.init();
 
 	Vulkan::Context ctx{};
-	ctx.init();
+	ctx.build();
 
-	while (window.step())
-	{
-		;
-	}
+	printf("context initialized successfully\n");
+
+	// while (window.step())
+	// {
+	// 	;
+	// }
 }

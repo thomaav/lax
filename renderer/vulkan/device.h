@@ -13,7 +13,6 @@ public:
 	Device operator=(const Device &) = delete;
 
 private:
-	;
 };
 
 }

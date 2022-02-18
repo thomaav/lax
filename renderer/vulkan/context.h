@@ -15,7 +15,7 @@ public:
 	Context operator=(const Context &) = delete;
 
 	/* (TODO, thoave01): Error handling. */
-	void init();
+	void build();
 
 private:
 	VkInstance instance;

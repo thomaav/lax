@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
 
-project(rendering)
-
 # C++ version.
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 # Dump compile-commands.json.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
+# Create the project.
+project(rendering)
 
 # Set up directories.
 set(CMAKE_BINARY_DIR ./bin)
@@ -14,16 +16,16 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_DIR ./lib)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 
-# Include paths for renderer and backends.
-include_directories(renderer)
-include_directories(renderer/vulkan)
-
 # Build rendering libraries.
 file(GLOB RENDERER_SOURCES "${PROJECT_SOURCE_DIR}/renderer/*.cpp")
 add_library(renderer STATIC ${RENDERER_SOURCES})
 
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
+
+# Include paths for renderer and backends.
+target_include_directories(renderer PUBLIC ${CMAKE_SOURCE_DIR})
+target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
 
 # Include applications.
 include_directories(basic)

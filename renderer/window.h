@@ -3,7 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "type.h"
+#include <utils/type.h>
 
 namespace Renderer
 {
@@ -21,10 +21,10 @@ public:
 	bool step();
 
 private:
-	u32 width{0};
-	u32 height{0};
+	u32 width{ 0 };
+	u32 height{ 0 };
 
-	GLFWwindow *window{nullptr};
+	GLFWwindow *window{ nullptr };
 };
 
 }

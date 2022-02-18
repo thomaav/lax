@@ -1,9 +1,10 @@
-#include <vector>
 #include <iostream>
+#include <vector>
 
-#include "context.h"
-#include "type.h"
-#include "util.h"
+#include <renderer/vulkan/context.h>
+#include <renderer/vulkan/util.h>
+#include <utils/type.h>
+#include <utils/util.h>
 
 namespace Vulkan
 {
@@ -14,11 +15,7 @@ Context::Context()
 
 Context::~Context()
 {
-}
-
-void Context::init()
-{
-	initInstance();
+	vkDestroyInstance(instance, nullptr);
 }
 
 void Context::initInstance()
@@ -36,7 +33,7 @@ void Context::initInstance()
 	instanceCreateInfo.pApplicationInfo = &appInfo;
 
 	/* (TODO, thoave01): Proper handling of surface extensions. */
-	std::vector<const char*> instanceExtensions{};
+	std::vector<const char *> instanceExtensions{};
 	instanceExtensions.push_back("VK_KHR_surface");
 	instanceExtensions.push_back("VK_KHR_xcb_surface");
 
@@ -48,6 +45,11 @@ void Context::initInstance()
 	instanceCreateInfo.ppEnabledLayerNames = nullptr;
 
 	VULKAN_ASSERT_SUCCESS(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
+}
+
+void Context::build()
+{
+	initInstance();
 }
 
 }
