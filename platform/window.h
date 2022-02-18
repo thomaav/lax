@@ -5,20 +5,20 @@
 
 #include <utils/type.h>
 
-namespace Renderer
-{
-
 class glfwWindow
 {
 public:
-	glfwWindow(u32 width, u32 height);
+	glfwWindow();
 	~glfwWindow();
 
 	glfwWindow(const glfwWindow &) = delete;
 	glfwWindow operator=(const glfwWindow &) = delete;
 
-	void init();
+	void init(u32 width, u32 height);
+
 	bool step();
+
+	VkResult createVulkanSurface(VkInstance instance, VkSurfaceKHR *surface);
 
 private:
 	u32 width{ 0 };
@@ -26,5 +26,3 @@ private:
 
 	GLFWwindow *window{ nullptr };
 };
-
-}

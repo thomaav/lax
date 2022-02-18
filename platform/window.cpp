@@ -1,4 +1,6 @@
-#include <renderer/window.h>
+#include <cassert>
+
+#include <platform/window.h>
 #include <utils/util.h>
 
 namespace
@@ -21,12 +23,7 @@ void defaultKeyCallback(GLFWwindow *window, int key, int scancode, int action, i
 
 }
 
-namespace Renderer
-{
-
-glfwWindow::glfwWindow(u32 width, u32 height)
-    : width(width)
-    , height(height)
+glfwWindow::glfwWindow()
 {
 }
 
@@ -36,8 +33,11 @@ glfwWindow::~glfwWindow()
 	glfwTerminate();
 }
 
-void glfwWindow::init()
+void glfwWindow::init(u32 width, u32 height)
 {
+	this->width = width;
+	this->height = height;
+
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -60,4 +60,8 @@ bool glfwWindow::step()
 	return true;
 }
 
+VkResult glfwWindow::createVulkanSurface(VkInstance instance, VkSurfaceKHR *surface)
+{
+	assert(surface != nullptr);
+	return glfwCreateWindowSurface(instance, window, nullptr, surface);
 }

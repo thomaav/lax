@@ -16,16 +16,20 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_DIR ./lib)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 
-# Build rendering libraries.
-file(GLOB RENDERER_SOURCES "${PROJECT_SOURCE_DIR}/renderer/*.cpp")
-add_library(renderer STATIC ${RENDERER_SOURCES})
+# Build libraries.
+# file(GLOB RENDERER_SOURCES "${PROJECT_SOURCE_DIR}/renderer/*.cpp")
+# add_library(renderer STATIC ${RENDERER_SOURCES})
 
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
 
+file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
+add_library(platform STATIC ${PLATFORM_SOURCES})
+
 # Include paths for renderer and backends.
-target_include_directories(renderer PUBLIC ${CMAKE_SOURCE_DIR})
+# target_include_directories(renderer PUBLIC ${CMAKE_SOURCE_DIR})
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
+target_include_directories(platform PUBLIC ${CMAKE_SOURCE_DIR})
 
 # Include applications.
 include_directories(basic)
@@ -34,8 +38,9 @@ include_directories(basic)
 add_executable(basic ${PROJECT_SOURCE_DIR}/basic/main.cpp)
 
 # Add library dependencies to applications.
-target_link_libraries(basic renderer)
+# target_link_libraries(basic renderer)
 target_link_libraries(basic vulkan_backend)
+target_link_libraries(basic platform)
 
 # Add external dependencies to applications.
 find_package(glfw3 3.3 REQUIRED FATAL_ERROR)
