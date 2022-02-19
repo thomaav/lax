@@ -48,3 +48,10 @@ target_link_libraries(basic glfw)
 
 find_package(Vulkan REQUIRED FATAL_ERROR)
 target_link_libraries(basic vulkan)
+
+# Add shaders to applications.
+add_custom_target(copy_shaders
+  COMMAND ${CMAKE_COMMAND} -E
+  copy_directory ${CMAKE_SOURCE_DIR}/basic/shaders ${CMAKE_CURRENT_BINARY_DIR}/bin/shaders
+)
+add_dependencies(basic copy_shaders)
