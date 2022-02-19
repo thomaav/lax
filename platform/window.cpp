@@ -21,7 +21,7 @@ void defaultKeyCallback(GLFWwindow *window, int key, int scancode, int action, i
 	}
 }
 
-}
+} /* namespace */
 
 glfwWindow::glfwWindow()
 {
@@ -60,8 +60,12 @@ bool glfwWindow::step()
 	return true;
 }
 
-VkResult glfwWindow::createVulkanSurface(VkInstance instance, VkSurfaceKHR *surface)
+VkResult glfwWindow::createVulkanSurface(VkInstance instance, VkSurfaceKHR &surface)
 {
-	assert(surface != nullptr);
-	return glfwCreateWindowSurface(instance, window, nullptr, surface);
+	return glfwCreateWindowSurface(instance, window, nullptr, &surface);
+}
+
+void glfwWindow::getFramebufferSize(int &width, int &height)
+{
+	glfwGetFramebufferSize(window, &width, &height);
 }

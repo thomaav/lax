@@ -18,7 +18,9 @@ public:
 
 	bool step();
 
-	VkResult createVulkanSurface(VkInstance instance, VkSurfaceKHR *surface);
+	VkResult createVulkanSurface(VkInstance instance, VkSurfaceKHR &surface);
+
+	void getFramebufferSize(int &width, int &height);
 
 private:
 	u32 width{ 0 };
