@@ -187,6 +187,18 @@ void Context::build()
 			renderPassInfo.subpassCount = 1;
 			renderPassInfo.pSubpasses = &subpass;
 
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = 0;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+			renderPassInfo.dependencyCount = 1;
+			renderPassInfo.pDependencies = &dependency;
+
 			vkCreateRenderPass(device.logical.handle, &renderPassInfo, nullptr, &renderPass);
 		}
 
@@ -218,6 +230,145 @@ void Context::build()
 		VkPipeline graphicsPipeline{};
 		vkCreateGraphicsPipelines(device.logical.handle, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
 
+		/* Create framebuffer(s). */
+		std::vector<VkFramebuffer> swapchainFramebuffers(wsi.swapchain.images.size());
+		{
+			for (size_t i = 0; i < wsi.swapchain.images.size(); i++)
+			{
+				VkImageView attachments[] = { wsi.swapchain.imageViews[i] };
+
+				VkFramebufferCreateInfo framebufferInfo{};
+				framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				framebufferInfo.renderPass = renderPass;
+				framebufferInfo.attachmentCount = 1;
+				framebufferInfo.pAttachments = attachments;
+				framebufferInfo.width = wsi.swapchain.extent.width;
+				framebufferInfo.height = wsi.swapchain.extent.height;
+				framebufferInfo.layers = 1;
+
+				VULKAN_ASSERT_SUCCESS(
+				    vkCreateFramebuffer(device.logical.handle, &framebufferInfo, nullptr, &swapchainFramebuffers[i]));
+			}
+		}
+
+		/* Create command pool. */
+		VkCommandPool commandPool{};
+		{
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.queueFamilyIndex = *device.physical.queueFamily.all;
+			poolInfo.flags = 0;
+
+			VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.logical.handle, &poolInfo, nullptr, &commandPool));
+		}
+
+		/* Create command buffer(s). */
+		std::vector<VkCommandBuffer> commandBuffers(wsi.swapchain.images.size());
+		{
+			VkCommandBufferAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocInfo.commandPool = commandPool;
+			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocInfo.commandBufferCount = static_cast<u32>(commandBuffers.size());
+
+			VULKAN_ASSERT_SUCCESS(vkAllocateCommandBuffers(device.logical.handle, &allocInfo, commandBuffers.data()));
+		}
+
+		/* Record command buffer(s). */
+		for (size_t i = 0; i < commandBuffers.size(); i++)
+		{
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = 0;
+			beginInfo.pInheritanceInfo = nullptr;
+
+			VULKAN_ASSERT_SUCCESS(vkBeginCommandBuffer(commandBuffers[i], &beginInfo));
+			{
+				VkRenderPassBeginInfo renderPassInfo{};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				renderPassInfo.renderPass = renderPass;
+				renderPassInfo.framebuffer = swapchainFramebuffers[i];
+
+				renderPassInfo.renderArea.offset = { 0, 0 };
+				renderPassInfo.renderArea.extent = wsi.swapchain.extent;
+
+				VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+				renderPassInfo.clearValueCount = 1;
+				renderPassInfo.pClearValues = &clearColor;
+
+				vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				{
+					vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+					vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+				}
+				vkCmdEndRenderPass(commandBuffers[i]);
+			}
+			VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(commandBuffers[i]));
+		}
+
+		/* Draw some stuff. */
+		VkSemaphore imageAvailableSemaphore{};
+		VkSemaphore renderFinishedSemaphore{};
+		{
+			VkSemaphoreCreateInfo semaphoreInfo{};
+			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+			VULKAN_ASSERT_SUCCESS(
+			    vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &imageAvailableSemaphore));
+			VULKAN_ASSERT_SUCCESS(
+			    vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &renderFinishedSemaphore));
+
+			while (wsi.window.handle.step())
+			{
+				uint32_t imageIndex{};
+				vkAcquireNextImageKHR(device.logical.handle, wsi.swapchain.handle, UINT64_MAX, imageAvailableSemaphore,
+				                      VK_NULL_HANDLE, &imageIndex);
+
+				VkSubmitInfo submitInfo{};
+				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+				VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+				VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+				submitInfo.waitSemaphoreCount = 1;
+				submitInfo.pWaitSemaphores = waitSemaphores;
+				submitInfo.pWaitDstStageMask = waitStages;
+
+				submitInfo.commandBufferCount = 1;
+				submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+
+				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+				submitInfo.signalSemaphoreCount = 1;
+				submitInfo.pSignalSemaphores = signalSemaphores;
+
+				VULKAN_ASSERT_SUCCESS(vkQueueSubmit(queue.handle, 1, &submitInfo, VK_NULL_HANDLE));
+
+				VkPresentInfoKHR presentInfo{};
+				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+				presentInfo.waitSemaphoreCount = 1;
+				presentInfo.pWaitSemaphores = signalSemaphores;
+
+				VkSwapchainKHR swapchains[] = { wsi.swapchain.handle };
+				presentInfo.swapchainCount = 1;
+				presentInfo.pSwapchains = swapchains;
+				presentInfo.pImageIndices = &imageIndex;
+				presentInfo.pResults = nullptr;
+				vkQueuePresentKHR(queue.handle, &presentInfo);
+
+				vkQueueWaitIdle(queue.handle);
+			}
+		}
+
+		vkDeviceWaitIdle(device.logical.handle);
+
+		for (auto &framebuffer : swapchainFramebuffers)
+		{
+			vkDestroyFramebuffer(device.logical.handle, framebuffer, nullptr);
+		}
+
+		vkDestroySemaphore(device.logical.handle, imageAvailableSemaphore, nullptr);
+		vkDestroySemaphore(device.logical.handle, renderFinishedSemaphore, nullptr);
+		vkDestroyCommandPool(device.logical.handle, commandPool, nullptr);
 		vkDestroyPipeline(device.logical.handle, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device.logical.handle, pipelineLayout, nullptr);
 		vkDestroyRenderPass(device.logical.handle, renderPass, nullptr);
