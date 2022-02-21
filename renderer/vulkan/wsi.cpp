@@ -148,30 +148,19 @@ void WSI::buildSwapchain(Device &device)
 		                        swapchain.images.data());
 
 		/* Initalize image views. */
-		swapchain.imageViews.resize(swapchain.images.size());
-
 		for (size_t i = 0; i < swapchain.images.size(); i++)
 		{
-			VkImageViewCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = swapchain.images[i];
+			/* (TODO, thoave01): Fix this. */
+			std::unique_ptr<Image> image = std::make_unique<Image>();
+			image->handle = swapchain.images[i];
+			image->format = swapchain.format;
+			image->width = swapchain.extent.width;
+			image->height = swapchain.extent.height;
+			swapchain.vulkanImages.emplace_back(std::move(image));
 
-			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = swapchain.format;
-
-			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			createInfo.subresourceRange.baseMipLevel = 0;
-			createInfo.subresourceRange.levelCount = 1;
-			createInfo.subresourceRange.baseArrayLayer = 0;
-			createInfo.subresourceRange.layerCount = 1;
-
-			VULKAN_ASSERT_SUCCESS(
-			    vkCreateImageView(swapchain.device->logical.handle, &createInfo, nullptr, &swapchain.imageViews[i]));
+			std::unique_ptr<ImageView> imageView = std::make_unique<ImageView>(*swapchain.vulkanImages[i]);
+			imageView->build(*swapchain.device);
+			swapchain.imageViews.emplace_back(std::move(imageView));
 		}
 	}
 }
@@ -180,7 +169,7 @@ void WSI::destroySwapchain()
 {
 	for (auto &imageView : swapchain.imageViews)
 	{
-		vkDestroyImageView(swapchain.device->logical.handle, imageView, nullptr);
+		imageView->destroy();
 	}
 
 	vkDestroySwapchainKHR(swapchain.device->logical.handle, swapchain.handle, nullptr);

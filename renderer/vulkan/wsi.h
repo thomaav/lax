@@ -1,9 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <vulkan/vulkan.h>
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/image.h>
 #include <renderer/vulkan/instance.h>
 
 namespace Vulkan
@@ -38,9 +40,14 @@ public:
 
 		VkExtent2D extent{};
 
+		/* (TODO, thoave01): Initializing this stuff as Vulkan::Image properly. */
+		/* (TODO, thoave01): Requires some fixing of the swapchain in the WSI. */
+		/* (TODO, thoave01): Maybe make the swapchain class at the same time. */
 		std::vector<VkImage> images{};
 
-		std::vector<VkImageView> imageViews{};
+		std::vector<std::unique_ptr<Image>> vulkanImages{};
+
+		std::vector<std::unique_ptr<ImageView>> imageViews{};
 	} swapchain{};
 
 	/* (TODO, thoave01): Should WSI be aware of GLFW? Whatever. */

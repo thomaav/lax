@@ -235,7 +235,7 @@ void Context::build()
 		{
 			for (size_t i = 0; i < wsi.swapchain.images.size(); i++)
 			{
-				VkImageView attachments[] = { wsi.swapchain.imageViews[i] };
+				VkImageView attachments[] = { wsi.swapchain.imageViews[i]->handle };
 
 				VkFramebufferCreateInfo framebufferInfo{};
 				framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
