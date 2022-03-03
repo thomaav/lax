@@ -20,6 +20,8 @@ public:
 
 	void build(Device &device);
 
+	void wait();
+
 private:
 };
 

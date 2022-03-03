@@ -48,6 +48,8 @@ public:
 
 	void destroy();
 
+	void wait();
+
 private:
 	std::vector<const char *> extensions{};
 

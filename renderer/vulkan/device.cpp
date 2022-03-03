@@ -90,6 +90,11 @@ void Device::destroy()
 	vkDestroyDevice(logical.handle, nullptr);
 }
 
+void Device::wait()
+{
+	vkDeviceWaitIdle(logical.handle);
+}
+
 void Device::findPhysicalDevice(Instance &instance, VkSurfaceKHR surface)
 {
 	u32 physicalDeviceCount = 0;

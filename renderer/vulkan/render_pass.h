@@ -14,7 +14,7 @@ class Framebuffer
 {
 public:
 	Framebuffer() = default;
-	~Framebuffer();
+	~Framebuffer() = default;
 
 	Framebuffer(const Framebuffer &) = delete;
 	Framebuffer operator=(const Framebuffer &) = delete;
@@ -38,10 +38,12 @@ class RenderPass
 {
 public:
 	RenderPass() = default;
-	~RenderPass();
+	~RenderPass() = default;
 
 	RenderPass(const RenderPass &) = delete;
 	RenderPass operator=(const RenderPass &) = delete;
+
+	void build();
 
 private:
 };

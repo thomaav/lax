@@ -11,15 +11,12 @@ class Semaphore
 {
 public:
 	Semaphore() = default;
-	~Semaphore() = default;
+	~Semaphore();
 
 	Semaphore(const Semaphore &) = delete;
 	Semaphore operator=(const Semaphore &) = delete;
 
 	void build(Device &device);
-
-	/* (TODO, thoave01): Make everything into destructors checking VK_NULL_HANDLE. */
-	void destroy();
 
 	VkSemaphore handle{};
 

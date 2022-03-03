@@ -4,6 +4,14 @@
 namespace Vulkan
 {
 
+CommandPool::~CommandPool()
+{
+	if (handle != VK_NULL_HANDLE)
+	{
+		vkDestroyCommandPool(device, handle, nullptr);
+	}
+}
+
 void CommandPool::build(Device &device)
 {
 	VkCommandPoolCreateInfo poolInfo{};
@@ -14,11 +22,6 @@ void CommandPool::build(Device &device)
 	VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.logical.handle, &poolInfo, nullptr, &handle));
 
 	this->device = device.logical.handle;
-}
-
-void CommandPool::destroy()
-{
-	vkDestroyCommandPool(device, handle, nullptr);
 }
 
 } /* namespace Vulkan */

@@ -4,6 +4,14 @@
 namespace Vulkan
 {
 
+Semaphore::~Semaphore()
+{
+	if (handle != VK_NULL_HANDLE)
+	{
+		vkDestroySemaphore(device, handle, nullptr);
+	}
+}
+
 void Semaphore::build(Device &device)
 {
 	VkSemaphoreCreateInfo semaphoreInfo{};
@@ -12,11 +20,6 @@ void Semaphore::build(Device &device)
 	VULKAN_ASSERT_SUCCESS(vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &handle));
 
 	this->device = device.logical.handle;
-}
-
-void Semaphore::destroy()
-{
-	vkDestroySemaphore(device, handle, nullptr);
 }
 
 } /* namespace Vulkan */

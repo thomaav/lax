@@ -335,20 +335,17 @@ void Context::build()
 				presentInfo.pResults = nullptr;
 				vkQueuePresentKHR(queue.handle, &presentInfo);
 
-				vkQueueWaitIdle(queue.handle);
+				queue.wait();
 			}
 		}
 
-		vkDeviceWaitIdle(device.logical.handle);
+		device.wait();
 
 		for (auto &framebuffer : swapchainFramebuffers)
 		{
 			vkDestroyFramebuffer(device.logical.handle, framebuffer, nullptr);
 		}
 
-		imageAvailableSemaphore.destroy();
-		renderFinishedSemaphore.destroy();
-		commandPool.destroy();
 		vkDestroyPipeline(device.logical.handle, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device.logical.handle, pipelineLayout, nullptr);
 		vkDestroyRenderPass(device.logical.handle, renderPass, nullptr);

@@ -9,4 +9,9 @@ void Queue::build(Device &device)
 	vkGetDeviceQueue(device.logical.handle, *device.physical.queueFamily.all, 0, &handle);
 }
 
+void Queue::wait()
+{
+	vkQueueWaitIdle(handle);
+}
+
 } /* namespace Vulkan */

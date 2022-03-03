@@ -3,4 +3,8 @@
 namespace Vulkan
 {
 
+void RenderPass::build()
+{
+}
+
 } /* namespace Vulkan */

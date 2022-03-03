@@ -11,14 +11,12 @@ class CommandPool
 {
 public:
 	CommandPool() = default;
-	~CommandPool() = default;
+	~CommandPool();
 
 	CommandPool(const CommandPool &) = delete;
 	CommandPool operator=(const CommandPool &) = delete;
 
 	void build(Device &device);
-
-	void destroy();
 
 	VkCommandPool handle{};
 
