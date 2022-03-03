@@ -4,6 +4,8 @@
 #include <string_view>
 
 #include <platform/window.h>
+#include <renderer/vulkan/command_buffer.h>
+#include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/context.h>
 #include <renderer/vulkan/shader.h>
 #include <renderer/vulkan/util.h>
@@ -251,38 +253,20 @@ void Context::build()
 			}
 		}
 
-		/* Create command pool. */
-		VkCommandPool commandPool{};
-		{
-			VkCommandPoolCreateInfo poolInfo{};
-			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			poolInfo.queueFamilyIndex = *device.physical.queueFamily.all;
-			poolInfo.flags = 0;
-
-			VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.logical.handle, &poolInfo, nullptr, &commandPool));
-		}
+		CommandPool commandPool{};
+		commandPool.build(device);
 
 		/* Create command buffer(s). */
-		std::vector<VkCommandBuffer> commandBuffers(wsi.swapchain.images.size());
+		std::vector<CommandBuffer> commandBuffers(wsi.swapchain.images.size());
+		for (auto &commandBuffer : commandBuffers)
 		{
-			VkCommandBufferAllocateInfo allocInfo{};
-			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			allocInfo.commandPool = commandPool;
-			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			allocInfo.commandBufferCount = static_cast<u32>(commandBuffers.size());
-
-			VULKAN_ASSERT_SUCCESS(vkAllocateCommandBuffers(device.logical.handle, &allocInfo, commandBuffers.data()));
+			commandBuffer.build(device, commandPool);
 		}
 
 		/* Record command buffer(s). */
 		for (size_t i = 0; i < commandBuffers.size(); i++)
 		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = 0;
-			beginInfo.pInheritanceInfo = nullptr;
-
-			VULKAN_ASSERT_SUCCESS(vkBeginCommandBuffer(commandBuffers[i], &beginInfo));
+			commandBuffers[i].begin();
 			{
 				VkRenderPassBeginInfo renderPassInfo{};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -296,14 +280,14 @@ void Context::build()
 				renderPassInfo.clearValueCount = 1;
 				renderPassInfo.pClearValues = &clearColor;
 
-				vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRenderPass(commandBuffers[i].handle, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 				{
-					vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-					vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+					vkCmdBindPipeline(commandBuffers[i].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+					vkCmdDraw(commandBuffers[i].handle, 3, 1, 0, 0);
 				}
-				vkCmdEndRenderPass(commandBuffers[i]);
+				vkCmdEndRenderPass(commandBuffers[i].handle);
 			}
-			VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(commandBuffers[i]));
+			commandBuffers[i].end();
 		}
 
 		/* Draw some stuff. */
@@ -334,7 +318,7 @@ void Context::build()
 				submitInfo.pWaitDstStageMask = waitStages;
 
 				submitInfo.commandBufferCount = 1;
-				submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+				submitInfo.pCommandBuffers = &commandBuffers[imageIndex].handle;
 
 				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
 				submitInfo.signalSemaphoreCount = 1;
@@ -368,7 +352,7 @@ void Context::build()
 
 		vkDestroySemaphore(device.logical.handle, imageAvailableSemaphore, nullptr);
 		vkDestroySemaphore(device.logical.handle, renderFinishedSemaphore, nullptr);
-		vkDestroyCommandPool(device.logical.handle, commandPool, nullptr);
+		commandPool.destroy();
 		vkDestroyPipeline(device.logical.handle, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device.logical.handle, pipelineLayout, nullptr);
 		vkDestroyRenderPass(device.logical.handle, renderPass, nullptr);
