@@ -7,6 +7,7 @@
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/context.h>
+#include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/shader.h>
 #include <renderer/vulkan/util.h>
 #include <utils/type.h>
@@ -291,27 +292,22 @@ void Context::build()
 		}
 
 		/* Draw some stuff. */
-		VkSemaphore imageAvailableSemaphore{};
-		VkSemaphore renderFinishedSemaphore{};
+		Semaphore imageAvailableSemaphore{};
+		Semaphore renderFinishedSemaphore{};
 		{
-			VkSemaphoreCreateInfo semaphoreInfo{};
-			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-			VULKAN_ASSERT_SUCCESS(
-			    vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &imageAvailableSemaphore));
-			VULKAN_ASSERT_SUCCESS(
-			    vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &renderFinishedSemaphore));
+			imageAvailableSemaphore.build(device);
+			renderFinishedSemaphore.build(device);
 
 			while (wsi.window.handle.step())
 			{
 				uint32_t imageIndex{};
-				vkAcquireNextImageKHR(device.logical.handle, wsi.swapchain.handle, UINT64_MAX, imageAvailableSemaphore,
-				                      VK_NULL_HANDLE, &imageIndex);
+				vkAcquireNextImageKHR(device.logical.handle, wsi.swapchain.handle, UINT64_MAX,
+				                      imageAvailableSemaphore.handle, VK_NULL_HANDLE, &imageIndex);
 
 				VkSubmitInfo submitInfo{};
 				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-				VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+				VkSemaphore waitSemaphores[] = { imageAvailableSemaphore.handle };
 				VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 				submitInfo.waitSemaphoreCount = 1;
 				submitInfo.pWaitSemaphores = waitSemaphores;
@@ -320,7 +316,7 @@ void Context::build()
 				submitInfo.commandBufferCount = 1;
 				submitInfo.pCommandBuffers = &commandBuffers[imageIndex].handle;
 
-				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore.handle };
 				submitInfo.signalSemaphoreCount = 1;
 				submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -350,8 +346,8 @@ void Context::build()
 			vkDestroyFramebuffer(device.logical.handle, framebuffer, nullptr);
 		}
 
-		vkDestroySemaphore(device.logical.handle, imageAvailableSemaphore, nullptr);
-		vkDestroySemaphore(device.logical.handle, renderFinishedSemaphore, nullptr);
+		imageAvailableSemaphore.destroy();
+		renderFinishedSemaphore.destroy();
 		commandPool.destroy();
 		vkDestroyPipeline(device.logical.handle, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device.logical.handle, pipelineLayout, nullptr);
