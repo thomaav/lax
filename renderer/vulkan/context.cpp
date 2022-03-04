@@ -140,27 +140,12 @@ void Context::build()
 				vkAcquireNextImageKHR(device.logical.handle, wsi.swapchain.handle, UINT64_MAX,
 				                      imageAvailableSemaphore.handle, VK_NULL_HANDLE, &imageIndex);
 
-				VkSubmitInfo submitInfo{};
-				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-				VkSemaphore waitSemaphores[] = { imageAvailableSemaphore.handle };
-				VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-				submitInfo.waitSemaphoreCount = 1;
-				submitInfo.pWaitSemaphores = waitSemaphores;
-				submitInfo.pWaitDstStageMask = waitStages;
-
-				submitInfo.commandBufferCount = 1;
-				submitInfo.pCommandBuffers = &commandBuffers[imageIndex].handle;
-
-				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore.handle };
-				submitInfo.signalSemaphoreCount = 1;
-				submitInfo.pSignalSemaphores = signalSemaphores;
-
-				VULKAN_ASSERT_SUCCESS(vkQueueSubmit(queue.handle, 1, &submitInfo, VK_NULL_HANDLE));
+				queue.submit(commandBuffers[imageIndex], imageAvailableSemaphore, renderFinishedSemaphore);
 
 				VkPresentInfoKHR presentInfo{};
 				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
+				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore.handle };
 				presentInfo.waitSemaphoreCount = 1;
 				presentInfo.pWaitSemaphores = signalSemaphores;
 
@@ -171,6 +156,7 @@ void Context::build()
 				presentInfo.pResults = nullptr;
 				vkQueuePresentKHR(queue.handle, &presentInfo);
 
+				/* (TODO, thoave01): Fix this. */
 				queue.wait();
 			}
 		}

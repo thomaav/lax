@@ -2,7 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/semaphore.h>
 
 namespace Vulkan
 {
@@ -19,6 +21,8 @@ public:
 	VkQueue handle{};
 
 	void build(Device &device);
+
+	void submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore);
 
 	void wait();
 
