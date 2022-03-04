@@ -7,6 +7,7 @@
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/context.h>
+#include <renderer/vulkan/render_pass.h>
 #include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/shader.h>
 #include <renderer/vulkan/util.h>
@@ -162,48 +163,8 @@ void Context::build()
 		}
 
 		/* Create renderpass. */
-		VkRenderPass renderPass;
-		{
-			VkAttachmentDescription colorAttachment{};
-			colorAttachment.format = wsi.swapchain.format;
-			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			VkAttachmentReference colorAttachmentRef{};
-			colorAttachmentRef.attachment = 0;
-			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = 1;
-			subpass.pColorAttachments = &colorAttachmentRef;
-
-			VkRenderPassCreateInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			renderPassInfo.attachmentCount = 1;
-			renderPassInfo.pAttachments = &colorAttachment;
-			renderPassInfo.subpassCount = 1;
-			renderPassInfo.pSubpasses = &subpass;
-
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = 0;
-
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = 0;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-			renderPassInfo.dependencyCount = 1;
-			renderPassInfo.pDependencies = &dependency;
-
-			vkCreateRenderPass(device.logical.handle, &renderPassInfo, nullptr, &renderPass);
-		}
+		RenderPass renderPass{};
+		renderPass.build(device, wsi.swapchain.format);
 
 		VkPipelineShaderStageCreateInfo stages[2] = { fragmentShader.getPipelineShaderStageCreateInfo(),
 			                                          vertexShader.getPipelineShaderStageCreateInfo() };
@@ -224,7 +185,7 @@ void Context::build()
 
 		pipelineInfo.layout = pipelineLayout;
 
-		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.renderPass = renderPass.handle;
 		pipelineInfo.subpass = 0;
 
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -234,24 +195,11 @@ void Context::build()
 		vkCreateGraphicsPipelines(device.logical.handle, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
 
 		/* Create framebuffer(s). */
-		std::vector<VkFramebuffer> swapchainFramebuffers(wsi.swapchain.images.size());
+		std::vector<Framebuffer> swapchainFramebuffers(wsi.swapchain.images.size());
+		for (u32 i = 0; i < wsi.swapchain.images.size(); i++)
 		{
-			for (size_t i = 0; i < wsi.swapchain.images.size(); i++)
-			{
-				VkImageView attachments[] = { wsi.swapchain.imageViews[i]->handle };
-
-				VkFramebufferCreateInfo framebufferInfo{};
-				framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-				framebufferInfo.renderPass = renderPass;
-				framebufferInfo.attachmentCount = 1;
-				framebufferInfo.pAttachments = attachments;
-				framebufferInfo.width = wsi.swapchain.extent.width;
-				framebufferInfo.height = wsi.swapchain.extent.height;
-				framebufferInfo.layers = 1;
-
-				VULKAN_ASSERT_SUCCESS(
-				    vkCreateFramebuffer(device.logical.handle, &framebufferInfo, nullptr, &swapchainFramebuffers[i]));
-			}
+			swapchainFramebuffers[i].addColorAttachment(*wsi.swapchain.imageViews[i]);
+			swapchainFramebuffers[i].build(device, renderPass);
 		}
 
 		CommandPool commandPool{};
@@ -271,8 +219,8 @@ void Context::build()
 			{
 				VkRenderPassBeginInfo renderPassInfo{};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				renderPassInfo.renderPass = renderPass;
-				renderPassInfo.framebuffer = swapchainFramebuffers[i];
+				renderPassInfo.renderPass = renderPass.handle;
+				renderPassInfo.framebuffer = swapchainFramebuffers[i].handle;
 
 				renderPassInfo.renderArea.offset = { 0, 0 };
 				renderPassInfo.renderArea.extent = wsi.swapchain.extent;
@@ -341,14 +289,8 @@ void Context::build()
 
 		device.wait();
 
-		for (auto &framebuffer : swapchainFramebuffers)
-		{
-			vkDestroyFramebuffer(device.logical.handle, framebuffer, nullptr);
-		}
-
 		vkDestroyPipeline(device.logical.handle, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device.logical.handle, pipelineLayout, nullptr);
-		vkDestroyRenderPass(device.logical.handle, renderPass, nullptr);
 	}
 
 	fragmentShader.destroy();
