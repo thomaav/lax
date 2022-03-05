@@ -32,6 +32,23 @@ void Queue::submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semap
 	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(handle, 1, &submitInfo, VK_NULL_HANDLE));
 }
 
+void Queue::present(Semaphore &waitSemaphore, WSI &wsi, u32 imageIndex)
+{
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	VkSemaphore waitSemaphores[] = { waitSemaphore.handle };
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = waitSemaphores;
+
+	VkSwapchainKHR swapchains[] = { wsi.swapchain.handle };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapchains;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = nullptr;
+	vkQueuePresentKHR(handle, &presentInfo);
+}
+
 void Queue::wait()
 {
 	vkQueueWaitIdle(handle);

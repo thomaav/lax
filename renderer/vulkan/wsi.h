@@ -7,6 +7,7 @@
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/image.h>
 #include <renderer/vulkan/instance.h>
+#include <renderer/vulkan/semaphore.h>
 
 namespace Vulkan
 {
@@ -67,6 +68,8 @@ public:
 	void buildSwapchain(Device &device);
 
 	void destroySwapchain();
+
+	void acquireImage(Semaphore &semaphore, u32 *imageIndex);
 
 private:
 };

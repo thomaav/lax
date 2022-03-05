@@ -5,6 +5,7 @@
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/semaphore.h>
+#include <renderer/vulkan/wsi.h>
 
 namespace Vulkan
 {
@@ -23,6 +24,8 @@ public:
 	void build(Device &device);
 
 	void submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore);
+
+	void present(Semaphore &signalSemaphore, WSI &wsi, u32 imageIndex);
 
 	void wait();
 

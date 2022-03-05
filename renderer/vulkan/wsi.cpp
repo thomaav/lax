@@ -175,4 +175,10 @@ void WSI::destroySwapchain()
 	vkDestroySwapchainKHR(swapchain.device->logical.handle, swapchain.handle, nullptr);
 }
 
+void WSI::acquireImage(Semaphore &signalSemaphore, u32 *imageIndex)
+{
+	VULKAN_ASSERT_SUCCESS(vkAcquireNextImageKHR(swapchain.device->logical.handle, swapchain.handle, UINT64_MAX,
+	                                            signalSemaphore.handle, VK_NULL_HANDLE, imageIndex));
+}
+
 } /* namespace Vulkan */

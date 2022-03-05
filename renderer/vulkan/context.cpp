@@ -137,26 +137,9 @@ void Context::build()
 			while (wsi.window.handle.step())
 			{
 				uint32_t imageIndex{};
-				vkAcquireNextImageKHR(device.logical.handle, wsi.swapchain.handle, UINT64_MAX,
-				                      imageAvailableSemaphore.handle, VK_NULL_HANDLE, &imageIndex);
-
+				wsi.acquireImage(imageAvailableSemaphore, &imageIndex);
 				queue.submit(commandBuffers[imageIndex], imageAvailableSemaphore, renderFinishedSemaphore);
-
-				VkPresentInfoKHR presentInfo{};
-				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-				VkSemaphore signalSemaphores[] = { renderFinishedSemaphore.handle };
-				presentInfo.waitSemaphoreCount = 1;
-				presentInfo.pWaitSemaphores = signalSemaphores;
-
-				VkSwapchainKHR swapchains[] = { wsi.swapchain.handle };
-				presentInfo.swapchainCount = 1;
-				presentInfo.pSwapchains = swapchains;
-				presentInfo.pImageIndices = &imageIndex;
-				presentInfo.pResults = nullptr;
-				vkQueuePresentKHR(queue.handle, &presentInfo);
-
-				/* (TODO, thoave01): Fix this. */
+				queue.present(renderFinishedSemaphore, wsi, imageIndex);
 				queue.wait();
 			}
 		}
