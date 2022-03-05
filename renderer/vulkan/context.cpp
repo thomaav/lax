@@ -7,6 +7,7 @@
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/context.h>
+#include <renderer/vulkan/fence.h>
 #include <renderer/vulkan/pipeline.h>
 #include <renderer/vulkan/render_pass.h>
 #include <renderer/vulkan/semaphore.h>
@@ -100,7 +101,6 @@ void Context::build()
 			commandBuffer.build(device, commandPool);
 		}
 
-		/* Record command buffer(s). */
 		for (size_t i = 0; i < commandBuffers.size(); i++)
 		{
 			commandBuffers[i].begin();
@@ -127,21 +127,39 @@ void Context::build()
 			commandBuffers[i].end();
 		}
 
-		/* Draw some stuff. */
-		Semaphore imageAvailableSemaphore{};
-		Semaphore renderFinishedSemaphore{};
-		{
-			imageAvailableSemaphore.build(device);
-			renderFinishedSemaphore.build(device);
+		constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
-			while (wsi.window.handle.step())
+		std::vector<Semaphore> imageAvailableSemaphores(MAX_FRAMES_IN_FLIGHT);
+		std::vector<Semaphore> renderFinishedSemaphores(MAX_FRAMES_IN_FLIGHT);
+		std::vector<Fence> frameFences(MAX_FRAMES_IN_FLIGHT);
+		std::vector<Fence *> imageFences(wsi.swapchain.images.size(), nullptr);
+		for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+		{
+			imageAvailableSemaphores[i].build(device);
+			renderFinishedSemaphores[i].build(device);
+			frameFences[i].build(device);
+		}
+
+		u32 frame = 0u;
+		while (wsi.window.handle.step())
+		{
+			frameFences[frame].wait();
+
+			uint32_t imageIndex{};
+			wsi.acquireImage(imageAvailableSemaphores[frame], &imageIndex);
+
+			if (imageFences[imageIndex] != nullptr)
 			{
-				uint32_t imageIndex{};
-				wsi.acquireImage(imageAvailableSemaphore, &imageIndex);
-				queue.submit(commandBuffers[imageIndex], imageAvailableSemaphore, renderFinishedSemaphore);
-				queue.present(renderFinishedSemaphore, wsi, imageIndex);
-				queue.wait();
+				imageFences[imageIndex]->wait();
 			}
+			imageFences[imageIndex] = &frameFences[frame];
+
+			frameFences[frame].reset();
+			queue.submit(commandBuffers[imageIndex], imageAvailableSemaphores[frame], renderFinishedSemaphores[frame],
+			             frameFences[frame]);
+			queue.present(renderFinishedSemaphores[frame], wsi, imageIndex);
+
+			frame = (frame + 1) % MAX_FRAMES_IN_FLIGHT;
 		}
 
 		device.wait();

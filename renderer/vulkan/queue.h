@@ -4,6 +4,7 @@
 
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/fence.h>
 #include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/wsi.h>
 
@@ -23,7 +24,7 @@ public:
 
 	void build(Device &device);
 
-	void submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore);
+	void submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore, Fence &fence);
 
 	void present(Semaphore &signalSemaphore, WSI &wsi, u32 imageIndex);
 

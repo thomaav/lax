@@ -11,7 +11,7 @@ void Queue::build(Device &device)
 }
 
 /* (TODO, thoave01): Multiple command buffers. */
-void Queue::submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore)
+void Queue::submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore, Fence &fence)
 {
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -29,7 +29,7 @@ void Queue::submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semap
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(handle, 1, &submitInfo, VK_NULL_HANDLE));
+	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(handle, 1, &submitInfo, fence.handle));
 }
 
 void Queue::present(Semaphore &waitSemaphore, WSI &wsi, u32 imageIndex)
