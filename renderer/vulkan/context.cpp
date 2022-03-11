@@ -16,6 +16,9 @@
 #include <utils/type.h>
 #include <utils/util.h>
 
+/* (TODO, thoave01): Remove later. */
+#include <glm/glm.hpp>
+
 namespace Vulkan
 {
 
@@ -46,6 +49,12 @@ void Context::addDeviceExtension(const char *extension)
 	device.addExtension(extension);
 }
 
+struct Vertex
+{
+	glm::vec2 pos;
+	glm::vec3 color;
+};
+
 /* (TODO, thoave01): Blabla platform window can be templated. Fuck it use glfwWindow. */
 void Context::build()
 {
@@ -66,6 +75,10 @@ void Context::build()
 		queue.build(device);
 	}
 
+	const std::vector<Vertex> vertices = { { { 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
+		                                   { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } },
+		                                   { { -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } } };
+
 	Shader vertexShader{};
 	vertexShader.build(device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
 
@@ -81,8 +94,14 @@ void Context::build()
 		renderPass.build(device, wsi.swapchain.format);
 
 		Pipeline pipeline{};
-		pipeline.addShader(vertexShader);
-		pipeline.addShader(fragmentShader);
+		{
+			pipeline.addShader(vertexShader);
+			pipeline.addShader(fragmentShader);
+
+			pipeline.addVertexBinding(0, sizeof(Vertex));
+			pipeline.addVertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
+			pipeline.addVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, color));
+		}
 		pipeline.build(device, pipelineLayout, renderPass, wsi.swapchain.extent);
 
 		std::vector<Framebuffer> swapchainFramebuffers(wsi.swapchain.images.size());

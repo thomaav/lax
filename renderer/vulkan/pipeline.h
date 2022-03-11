@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -40,10 +41,18 @@ public:
 
 	void addShader(Shader &shader);
 
+	void addVertexBinding(u32 binding, size_t stride);
+
+	void addVertexAttribute(u32 binding, u32 location, VkFormat format, u32 offset);
+
 	void build(Device &device, PipelineLayout &pipelineLayout, RenderPass &renderPass, VkExtent2D extent);
 
 private:
 	std::vector<VkPipelineShaderStageCreateInfo> stages{};
+
+	std::vector<VkVertexInputBindingDescription> vertexBindings{};
+
+	std::vector<VkVertexInputAttributeDescription> vertexAttributes{};
 
 	VkDevice device{};
 };

@@ -41,14 +41,37 @@ void Pipeline::addShader(Shader &shader)
 	stages.push_back(shader.getPipelineShaderStageCreateInfo());
 }
 
+// (TODO, thoave01): Validation layer validates this automatically. Should be possible to set up automatically from
+// SPIR-V input, right?
+void Pipeline::addVertexBinding(u32 binding, size_t stride)
+{
+	VkVertexInputBindingDescription bindingDescription{};
+	bindingDescription.binding = binding;
+	bindingDescription.stride = stride;
+	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	vertexBindings.push_back(bindingDescription);
+}
+
+void Pipeline::addVertexAttribute(u32 binding, u32 location, VkFormat format, u32 offset)
+{
+	VkVertexInputAttributeDescription attributeDescription{};
+	attributeDescription.binding = binding;
+	attributeDescription.location = location;
+	attributeDescription.format = format;
+	attributeDescription.offset = offset;
+
+	vertexAttributes.push_back(attributeDescription);
+}
+
 void Pipeline::build(Device &device, PipelineLayout &pipelineLayout, RenderPass &renderPass, VkExtent2D extent)
 {
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = vertexBindings.size();
+	vertexInputInfo.pVertexBindingDescriptions = vertexBindings.data();
+	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributes.size();
+	vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
