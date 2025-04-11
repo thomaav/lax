@@ -8,29 +8,26 @@
 #include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/wsi.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Queue
+class queue
 {
 public:
-	Queue() = default;
-	~Queue() = default;
+	queue() = default;
+	~queue() = default;
 
-	Queue(const Queue &) = delete;
-	Queue operator=(const Queue &) = delete;
+	queue(const queue &) = delete;
+	queue operator=(const queue &) = delete;
 
-	VkQueue handle{};
-
-	void build(Device &device);
-
-	void submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore, Fence &fence);
-
-	void present(Semaphore &signalSemaphore, WSI &wsi, u32 imageIndex);
-
+	void build(device &device);
+	void submit(command_buffer &command_buffer, semaphore &wait_semaphore, semaphore &signal_semaphore, fence &fence);
+	void present(semaphore &signal_semaphore, wsi &wsi, u32 image_index);
 	void wait();
+
+	VkQueue m_handle = {};
 
 private:
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

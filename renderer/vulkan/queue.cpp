@@ -1,57 +1,55 @@
 #include <renderer/vulkan/queue.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-void Queue::build(Device &device)
+void queue::build(device &device)
 {
-	/* (TODO, thoave01): Split presentation and graphics queue? Etc. */
-	vkGetDeviceQueue(device.logical.handle, *device.physical.queueFamily.all, 0, &handle);
+	vkGetDeviceQueue(device.m_logical.m_handle, *device.m_physical.m_queue_family.m_all, 0, &m_handle);
 }
 
-/* (TODO, thoave01): Multiple command buffers. */
-void Queue::submit(CommandBuffer &commandBuffer, Semaphore &waitSemaphore, Semaphore &signalSemaphore, Fence &fence)
+void queue::submit(command_buffer &command_buffer, semaphore &wait_semaphore, semaphore &signal_semaphore, fence &fence)
 {
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { waitSemaphore.handle };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
+	VkSemaphore wait_semaphores[] = { wait_semaphore.m_handle };
+	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = wait_semaphores;
+	submit_info.pWaitDstStageMask = wait_stages;
 
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer.handle;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer.m_handle;
 
-	VkSemaphore signalSemaphores[] = { signalSemaphore.handle };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	VkSemaphore signal_semaphores[] = { signal_semaphore.m_handle };
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = signal_semaphores;
 
-	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(handle, 1, &submitInfo, fence.handle));
+	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(m_handle, 1, &submit_info, fence.m_handle));
 }
 
-void Queue::present(Semaphore &waitSemaphore, WSI &wsi, u32 imageIndex)
+void queue::present(semaphore &wait_semaphore, wsi &wsi, u32 image_index)
 {
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	VkPresentInfoKHR present_info = {};
+	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-	VkSemaphore waitSemaphores[] = { waitSemaphore.handle };
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = waitSemaphores;
+	VkSemaphore wait_semaphores[] = { wait_semaphore.m_handle };
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = wait_semaphores;
 
-	VkSwapchainKHR swapchains[] = { wsi.swapchain.handle };
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapchains;
-	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = nullptr;
-	vkQueuePresentKHR(handle, &presentInfo);
+	VkSwapchainKHR swapchains[] = { wsi.m_swapchain.m_handle };
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = swapchains;
+	present_info.pImageIndices = &image_index;
+	present_info.pResults = nullptr;
+	vkQueuePresentKHR(m_handle, &present_info);
 }
 
-void Queue::wait()
+void queue::wait()
 {
-	vkQueueWaitIdle(handle);
+	vkQueueWaitIdle(m_handle);
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

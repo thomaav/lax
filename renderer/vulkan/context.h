@@ -10,35 +10,27 @@
 #include <renderer/vulkan/wsi.h>
 #include <utils/type.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Context
+class context
 {
 public:
-	Context() = default;
-	~Context();
+	context() = default;
+	~context();
 
-	Context(const Context &) = delete;
-	Context operator=(const Context &) = delete;
+	context(const context &) = delete;
+	context operator=(const context &) = delete;
 
-	void addInstanceExtension(const char *extension);
-
-	void addInstanceLayer(const char *layer);
-
-	void addDeviceExtension(const char *extension);
-
-	/* (TODO, thoave01): Error handling? */
+	void add_instance_extension(const char *extension);
+	void add_device_extension(const char *extension);
 	void build();
 
 private:
-	Instance instance{};
-
-	Device device{};
-
-	WSI wsi{};
-
-	Queue queue{};
+	instance m_instance = {};
+	device m_device = {};
+	wsi m_wsi = {};
+	queue m_queue = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

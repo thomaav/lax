@@ -3,36 +3,28 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Instance
+class instance
 {
 public:
-	Instance() = default;
-	~Instance() = default;
+	instance() = default;
+	~instance() = default;
 
-	Instance(const Instance &) = delete;
-	Instance operator=(const Instance &) = delete;
+	instance(const instance &) = delete;
+	instance operator=(const instance &) = delete;
 
-	VkInstance handle{};
-
-	void addExtension(const char *extension);
-
-	void addLayer(const char *layer);
-
+	void add_extension(const char *extension);
 	void build();
-
 	void destroy();
 
+	VkInstance m_handle = {};
+
 private:
-	std::vector<const char *> extensions{};
+	void check_extensions_available();
 
-	std::vector<const char *> layers{};
-
-	void checkExtensionsAvailable();
-
-	void checkLayersAvailable();
+	std::vector<const char *> m_extensions = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

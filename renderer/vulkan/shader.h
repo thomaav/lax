@@ -4,31 +4,27 @@
 
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Shader
+class shader
 {
 public:
-	Shader() = default;
-	~Shader() = default;
+	shader() = default;
+	~shader() = default;
 
-	Shader(const Shader &) = delete;
-	Shader operator=(const Shader &) = delete;
+	shader(const shader &) = delete;
+	shader operator=(const shader &) = delete;
 
-	VkShaderModule module{};
-
-	VkDevice device{};
-
-	VkShaderStageFlagBits stage{};
-
-	void build(Device &device, VkShaderStageFlagBits stage, const char *filename);
-
+	void build(vulkan::device &device, VkShaderStageFlagBits stage, const char *filename);
 	void destroy();
+	VkPipelineShaderStageCreateInfo get_pipeline_shader_stage_create_info();
 
-	VkPipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo();
+	VkShaderModule m_module = {};
+	VkDevice m_device_handle = {};
+	VkShaderStageFlagBits m_stage = {};
 
 private:
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

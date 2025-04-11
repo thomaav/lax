@@ -1,97 +1,68 @@
 #include <algorithm>
+#include <string_view>
 
 #include <renderer/vulkan/instance.h>
 #include <renderer/vulkan/util.h>
 #include <utils/type.h>
 #include <utils/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-void Instance::addExtension(const char *extension)
+void instance::add_extension(const char *extension)
 {
-	extensions.push_back(extension);
+	m_extensions.push_back(extension);
 }
 
-void Instance::addLayer(const char *layer)
+void instance::check_extensions_available()
 {
-	layers.push_back(layer);
-}
+	u32 instance_extension_count = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &instance_extension_count, nullptr);
 
-void Instance::checkExtensionsAvailable()
-{
-	u32 instanceExtensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+	std::vector<VkExtensionProperties> available_instance_extensions(instance_extension_count);
+	vkEnumerateInstanceExtensionProperties(nullptr, &instance_extension_count, available_instance_extensions.data());
 
-	std::vector<VkExtensionProperties> availableInstanceExtensions(instanceExtensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, availableInstanceExtensions.data());
-
-	for (auto &extension : extensions)
+	for (auto &extension : m_extensions)
 	{
-		auto v = std::find_if(availableInstanceExtensions.begin(), availableInstanceExtensions.end(),
-		                      [&extension](const auto &availableExtension) {
-			                      return std::string_view{ extension } ==
-			                             std::string_view{ availableExtension.extensionName };
-		                      });
+		auto v = std::find_if(
+		    available_instance_extensions.begin(), available_instance_extensions.end(),
+		    [&extension](const auto &available_extension)
+		    { return std::string_view{ extension } == std::string_view{ available_extension.extensionName }; });
 
-		if (v == availableInstanceExtensions.end())
+		if (v == available_instance_extensions.end())
 		{
 			terminate("Extension %s not found", extension);
 		}
 	}
 }
 
-void Instance::checkLayersAvailable()
+void instance::build()
 {
-	u32 instanceLayerCount = 0;
-	vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+	VkApplicationInfo app_info = {};
+	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	app_info.pApplicationName = nullptr;
+	app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.pEngineName = nullptr;
+	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+	app_info.apiVersion = VK_API_VERSION_1_0;
 
-	std::vector<VkLayerProperties> availableInstanceLayers(instanceLayerCount);
-	vkEnumerateInstanceLayerProperties(&instanceLayerCount, availableInstanceLayers.data());
+	VkInstanceCreateInfo instance_info = {};
+	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instance_info.pApplicationInfo = &app_info;
 
-	for (auto &layer : layers)
-	{
-		auto v =
-		    std::find_if(availableInstanceLayers.begin(), availableInstanceLayers.end(),
-		                 [&layer](const auto &availableInstanceLayer) {
-			                 return std::string_view{ layer } == std::string_view{ availableInstanceLayer.layerName };
-		                 });
+	check_extensions_available();
+	instance_info.enabledExtensionCount = m_extensions.size();
+	instance_info.ppEnabledExtensionNames = m_extensions.data();
 
-		if (v == availableInstanceLayers.end())
-		{
-			terminate("Layer %s not found", layer);
-		}
-	}
+	instance_info.enabledLayerCount = 0;
+	instance_info.ppEnabledLayerNames = nullptr;
+
+	VULKAN_ASSERT_SUCCESS(vkCreateInstance(&instance_info, nullptr, &m_handle));
 }
 
-void Instance::build()
+void instance::destroy()
 {
-	VkApplicationInfo appInfo{};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = nullptr;
-	appInfo.applicationVersion = VK_NULL_HANDLE;
-	appInfo.pEngineName = nullptr;
-	appInfo.engineVersion = VK_NULL_HANDLE;
-	appInfo.apiVersion = VK_API_VERSION_1_0;
-
-	VkInstanceCreateInfo instanceCreateInfo{};
-	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pApplicationInfo = &appInfo;
-
-	checkExtensionsAvailable();
-	instanceCreateInfo.enabledExtensionCount = extensions.size();
-	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-
-	checkLayersAvailable();
-	instanceCreateInfo.enabledLayerCount = layers.size();
-	instanceCreateInfo.ppEnabledLayerNames = layers.data();
-
-	VULKAN_ASSERT_SUCCESS(vkCreateInstance(&instanceCreateInfo, nullptr, &handle));
+	vkDestroyInstance(m_handle, nullptr);
 }
 
-void Instance::destroy()
-{
-	vkDestroyInstance(handle, nullptr);
-}
-
-} /* namespace Vulkan */
+} /* namespace vulkan */

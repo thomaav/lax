@@ -5,30 +5,27 @@
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class CommandBuffer
+class command_buffer
 {
 public:
-	CommandBuffer() = default;
-	~CommandBuffer() = default;
+	command_buffer() = default;
+	~command_buffer() = default;
 
-	CommandBuffer(const CommandBuffer &) = delete;
-	CommandBuffer operator=(const CommandBuffer &) = delete;
+	command_buffer(const command_buffer &) = delete;
+	command_buffer operator=(const command_buffer &) = delete;
 
-	void build(Device &device, CommandPool &commandPool);
-
+	void build(device &device, command_pool &command_pool);
 	void begin();
-
 	void end();
 
-	VkCommandBuffer handle{};
+	VkCommandBuffer m_handle = {};
 
 private:
-	VkDevice device{};
-
-	VkCommandPool commandPool{};
+	VkDevice m_device_handle = {};
+	VkCommandPool m_command_pool_handle = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

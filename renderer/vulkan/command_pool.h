@@ -4,24 +4,24 @@
 
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class CommandPool
+class command_pool
 {
 public:
-	CommandPool() = default;
-	~CommandPool();
+	command_pool() = default;
+	~command_pool();
 
-	CommandPool(const CommandPool &) = delete;
-	CommandPool operator=(const CommandPool &) = delete;
+	command_pool(const command_pool &) = delete;
+	command_pool operator=(const command_pool &) = delete;
 
-	void build(Device &device);
+	void build(device &device);
 
-	VkCommandPool handle{};
+	VkCommandPool m_handle = {};
 
 private:
-	VkDevice device{};
+	VkDevice m_device_handle = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

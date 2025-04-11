@@ -1,84 +1,81 @@
 #include <renderer/vulkan/pipeline.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-PipelineLayout::~PipelineLayout()
+pipeline_layout::~pipeline_layout()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroyPipelineLayout(device, handle, nullptr);
+		vkDestroyPipelineLayout(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void PipelineLayout::build(Device &device)
+void pipeline_layout::build(device &device)
 {
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = 0;
+	pipeline_layout_info.pSetLayouts = nullptr;
+	pipeline_layout_info.pushConstantRangeCount = 0;
+	pipeline_layout_info.pPushConstantRanges = nullptr;
 
-	VULKAN_ASSERT_SUCCESS(vkCreatePipelineLayout(device.logical.handle, &pipelineLayoutInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreatePipelineLayout(device.m_logical.m_handle, &pipeline_layout_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-Pipeline::~Pipeline()
+pipeline::~pipeline()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroyPipeline(device, handle, nullptr);
+		vkDestroyPipeline(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void Pipeline::addShader(Shader &shader)
+void pipeline::add_shader(shader &shader)
 {
-	assert(shader.module != VK_NULL_HANDLE);
-
-	stages.push_back(shader.getPipelineShaderStageCreateInfo());
+	assert(shader.m_module != VK_NULL_HANDLE);
+	m_stages.push_back(shader.get_pipeline_shader_stage_create_info());
 }
 
-// (TODO, thoave01): Validation layer validates this automatically. Should be possible to set up automatically from
-// SPIR-V input, right?
-void Pipeline::addVertexBinding(u32 binding, size_t stride)
+void pipeline::add_vertex_binding(u32 binding, size_t stride)
 {
-	VkVertexInputBindingDescription bindingDescription{};
-	bindingDescription.binding = binding;
-	bindingDescription.stride = stride;
-	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	VkVertexInputBindingDescription binding_description = {};
+	binding_description.binding = binding;
+	binding_description.stride = stride;
+	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	vertexBindings.push_back(bindingDescription);
+	m_vertex_bindings.push_back(binding_description);
 }
 
-void Pipeline::addVertexAttribute(u32 binding, u32 location, VkFormat format, u32 offset)
+void pipeline::add_vertex_attribute(u32 binding, u32 location, VkFormat format, u32 offset)
 {
-	VkVertexInputAttributeDescription attributeDescription{};
-	attributeDescription.binding = binding;
-	attributeDescription.location = location;
-	attributeDescription.format = format;
-	attributeDescription.offset = offset;
+	VkVertexInputAttributeDescription attribute_description = {};
+	attribute_description.binding = binding;
+	attribute_description.location = location;
+	attribute_description.format = format;
+	attribute_description.offset = offset;
 
-	vertexAttributes.push_back(attributeDescription);
+	m_vertex_attributes.push_back(attribute_description);
 }
 
-void Pipeline::build(Device &device, PipelineLayout &pipelineLayout, RenderPass &renderPass, VkExtent2D extent)
+void pipeline::build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent)
 {
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = vertexBindings.size();
-	vertexInputInfo.pVertexBindingDescriptions = vertexBindings.data();
-	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributes.size();
-	vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes.data();
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_info.vertexBindingDescriptionCount = m_vertex_bindings.size();
+	vertex_input_info.pVertexBindingDescriptions = m_vertex_bindings.data();
+	vertex_input_info.vertexAttributeDescriptionCount = m_vertex_attributes.size();
+	vertex_input_info.pVertexAttributeDescriptions = m_vertex_attributes.data();
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
+	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	input_assembly.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport viewport{};
+	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
 	viewport.width = (float)extent.width;
@@ -86,86 +83,86 @@ void Pipeline::build(Device &device, PipelineLayout &pipelineLayout, RenderPass 
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	VkRect2D scissor{};
+	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
 	scissor.extent = extent;
 
-	VkPipelineViewportStateCreateInfo viewportState{};
-	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
-	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
+	VkPipelineViewportStateCreateInfo viewport_info = {};
+	viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_info.viewportCount = 1;
+	viewport_info.pViewports = &viewport;
+	viewport_info.scissorCount = 1;
+	viewport_info.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizer{};
-	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer.depthClampEnable = VK_FALSE;
-	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	rasterizer.depthBiasEnable = VK_FALSE;
-	rasterizer.depthBiasConstantFactor = 0.0f;
-	rasterizer.depthBiasClamp = 0.0f;
-	rasterizer.depthBiasSlopeFactor = 0.0f;
+	VkPipelineRasterizationStateCreateInfo rasterizer_info = {};
+	rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer_info.depthClampEnable = VK_FALSE;
+	rasterizer_info.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer_info.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer_info.lineWidth = 1.0f;
+	rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer_info.depthBiasEnable = VK_FALSE;
+	rasterizer_info.depthBiasConstantFactor = 0.0f;
+	rasterizer_info.depthBiasClamp = 0.0f;
+	rasterizer_info.depthBiasSlopeFactor = 0.0f;
 
-	VkPipelineMultisampleStateCreateInfo multisampling{};
-	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	multisampling.minSampleShading = 1.0f;
-	multisampling.pSampleMask = nullptr;
-	multisampling.alphaToCoverageEnable = VK_FALSE;
-	multisampling.alphaToOneEnable = VK_FALSE;
+	VkPipelineMultisampleStateCreateInfo multisampling_info = {};
+	multisampling_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling_info.sampleShadingEnable = VK_FALSE;
+	multisampling_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling_info.minSampleShading = 1.0f;
+	multisampling_info.pSampleMask = nullptr;
+	multisampling_info.alphaToCoverageEnable = VK_FALSE;
+	multisampling_info.alphaToOneEnable = VK_FALSE;
 
-	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.colorWriteMask =
+	VkPipelineColorBlendAttachmentState blend_attachment_state = {};
+	blend_attachment_state.colorWriteMask =
 	    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	blend_attachment_state.blendEnable = VK_FALSE;
+	blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+	blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
 
-	VkPipelineColorBlendStateCreateInfo colorBlending{};
-	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlending.logicOpEnable = VK_FALSE;
-	colorBlending.logicOp = VK_LOGIC_OP_COPY;
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
-	colorBlending.blendConstants[0] = 0.0f;
-	colorBlending.blendConstants[1] = 0.0f;
-	colorBlending.blendConstants[2] = 0.0f;
-	colorBlending.blendConstants[3] = 0.0f;
+	VkPipelineColorBlendStateCreateInfo blending_info = {};
+	blending_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	blending_info.logicOpEnable = VK_FALSE;
+	blending_info.logicOp = VK_LOGIC_OP_COPY;
+	blending_info.attachmentCount = 1;
+	blending_info.pAttachments = &blend_attachment_state;
+	blending_info.blendConstants[0] = 0.0f;
+	blending_info.blendConstants[1] = 0.0f;
+	blending_info.blendConstants[2] = 0.0f;
+	blending_info.blendConstants[3] = 0.0f;
 
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = stages.data();
+	VkGraphicsPipelineCreateInfo pipeline_info = {};
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = 2;
+	pipeline_info.pStages = m_stages.data();
 
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembly;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizer;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = nullptr;
-	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.pDynamicState = nullptr;
+	pipeline_info.pVertexInputState = &vertex_input_info;
+	pipeline_info.pInputAssemblyState = &input_assembly;
+	pipeline_info.pViewportState = &viewport_info;
+	pipeline_info.pRasterizationState = &rasterizer_info;
+	pipeline_info.pMultisampleState = &multisampling_info;
+	pipeline_info.pDepthStencilState = nullptr;
+	pipeline_info.pColorBlendState = &blending_info;
+	pipeline_info.pDynamicState = nullptr;
 
-	pipelineInfo.layout = pipelineLayout.handle;
+	pipeline_info.layout = pipeline_layout.m_handle;
 
-	pipelineInfo.renderPass = renderPass.handle;
-	pipelineInfo.subpass = 0;
+	pipeline_info.renderPass = render_pass.m_handle;
+	pipeline_info.subpass = 0;
 
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-	pipelineInfo.basePipelineIndex = -1;
+	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+	pipeline_info.basePipelineIndex = -1;
 
-	vkCreateGraphicsPipelines(device.logical.handle, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
+	vkCreateGraphicsPipelines(device.m_logical.m_handle, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &m_handle);
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

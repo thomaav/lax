@@ -1,36 +1,36 @@
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-void CommandBuffer::build(Device &device, CommandPool &commandPool)
+void command_buffer::build(device &device, command_pool &command_pool)
 {
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool.handle;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	VkCommandBufferAllocateInfo alloc_info = {};
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.commandPool = command_pool.m_handle;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandBufferCount = 1;
 
-	VULKAN_ASSERT_SUCCESS(vkAllocateCommandBuffers(device.logical.handle, &allocInfo, &handle));
+	VULKAN_ASSERT_SUCCESS(vkAllocateCommandBuffers(device.m_logical.m_handle, &alloc_info, &m_handle));
 
-	this->device = device.logical.handle;
-	this->commandPool = commandPool.handle;
+	m_device_handle = device.m_logical.m_handle;
+	m_command_pool_handle = command_pool.m_handle;
 }
 
-void CommandBuffer::begin()
+void command_buffer::begin()
 {
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = 0;
-	beginInfo.pInheritanceInfo = nullptr;
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = 0;
+	begin_info.pInheritanceInfo = nullptr;
 
-	VULKAN_ASSERT_SUCCESS(vkBeginCommandBuffer(handle, &beginInfo));
+	VULKAN_ASSERT_SUCCESS(vkBeginCommandBuffer(m_handle, &begin_info));
 }
 
-void CommandBuffer::end()
+void command_buffer::end()
 {
-	VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(handle));
+	VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(m_handle));
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

@@ -4,24 +4,24 @@
 
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Semaphore
+class semaphore
 {
 public:
-	Semaphore() = default;
-	~Semaphore();
+	semaphore() = default;
+	~semaphore();
 
-	Semaphore(const Semaphore &) = delete;
-	Semaphore operator=(const Semaphore &) = delete;
+	semaphore(const semaphore &) = delete;
+	semaphore operator=(const semaphore &) = delete;
 
-	void build(Device &device);
+	void build(device &device);
 
-	VkSemaphore handle{};
+	VkSemaphore m_handle = {};
 
 private:
-	VkDevice device{};
+	VkDevice m_device_handle = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

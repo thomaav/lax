@@ -8,53 +8,48 @@
 #include <renderer/vulkan/render_pass.h>
 #include <renderer/vulkan/shader.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class PipelineLayout
-{
-public:
-	PipelineLayout() = default;
-	~PipelineLayout();
-
-	PipelineLayout(const PipelineLayout &) = delete;
-	PipelineLayout operator=(const PipelineLayout &) = delete;
-
-	VkPipelineLayout handle{};
-
-	void build(Device &device);
-
-private:
-	VkDevice device{};
-};
-
-class Pipeline
+class pipeline_layout
 {
 public:
-	Pipeline() = default;
-	~Pipeline();
+	pipeline_layout() = default;
+	~pipeline_layout();
 
-	Pipeline(const Pipeline &) = delete;
-	Pipeline operator=(const Pipeline &) = delete;
+	pipeline_layout(const pipeline_layout &) = delete;
+	pipeline_layout operator=(const pipeline_layout &) = delete;
 
-	VkPipeline handle{};
+	void build(device &device);
 
-	void addShader(Shader &shader);
-
-	void addVertexBinding(u32 binding, size_t stride);
-
-	void addVertexAttribute(u32 binding, u32 location, VkFormat format, u32 offset);
-
-	void build(Device &device, PipelineLayout &pipelineLayout, RenderPass &renderPass, VkExtent2D extent);
+	VkPipelineLayout m_handle = {};
 
 private:
-	std::vector<VkPipelineShaderStageCreateInfo> stages{};
-
-	std::vector<VkVertexInputBindingDescription> vertexBindings{};
-
-	std::vector<VkVertexInputAttributeDescription> vertexAttributes{};
-
-	VkDevice device{};
+	VkDevice m_device_handle = {};
 };
 
-} /* namespace Vulkan */
+class pipeline
+{
+public:
+	pipeline() = default;
+	~pipeline();
+
+	pipeline(const pipeline &) = delete;
+	pipeline operator=(const pipeline &) = delete;
+
+	void add_shader(shader &shader);
+	void add_vertex_binding(u32 binding, size_t stride);
+	void add_vertex_attribute(u32 binding, u32 location, VkFormat format, u32 offset);
+	void build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent);
+
+	VkPipeline m_handle = {};
+
+private:
+	std::vector<VkPipelineShaderStageCreateInfo> m_stages = {};
+	std::vector<VkVertexInputBindingDescription> m_vertex_bindings = {};
+	std::vector<VkVertexInputAttributeDescription> m_vertex_attributes = {};
+
+	VkDevice m_device_handle = {};
+};
+
+} /* namespace vulkan */

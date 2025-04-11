@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 # C++ version.
 set(CMAKE_CXX_STANDARD 20)
@@ -43,10 +43,7 @@ target_link_libraries(basic vulkan_backend)
 target_link_libraries(basic platform)
 
 # Add external dependencies to applications.
-find_package(glfw3 3.3 REQUIRED FATAL_ERROR)
 target_link_libraries(basic glfw)
-
-find_package(Vulkan REQUIRED FATAL_ERROR)
 target_link_libraries(basic vulkan)
 
 # Add shaders to applications.

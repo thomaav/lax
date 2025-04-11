@@ -9,69 +9,51 @@
 #include <renderer/vulkan/instance.h>
 #include <renderer/vulkan/semaphore.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-/* (TODO, thoave01): Create full/individual surface and swapchain objects with destroy methods? */
-class WSI
+class wsi
 {
 public:
-	WSI() = default;
-	~WSI() = default;
+	wsi() = default;
+	~wsi() = default;
 
-	WSI(const WSI &) = delete;
-	WSI operator=(const WSI &) = delete;
-
-	struct
-	{
-		VkSurfaceKHR handle{};
-
-		Instance *instance{};
-	} surface{};
+	wsi(const wsi &) = delete;
+	wsi operator=(const wsi &) = delete;
 
 	struct
 	{
-		VkSwapchainKHR handle{};
+		VkSurfaceKHR handle = {};
+		instance *m_instance = {};
+	} m_surface{};
 
-		/* (TODO, thoave01): Maybe just store the VkHandle? */
-		/* (TODO, thoave01): Do we need the rest? Nah probably not. */
-		Device *device{};
-
-		VkFormat format{};
-
-		VkExtent2D extent{};
-
-		/* (TODO, thoave01): Initializing this stuff as Vulkan::Image properly. */
-		/* (TODO, thoave01): Requires some fixing of the swapchain in the WSI. */
-		/* (TODO, thoave01): Maybe make the swapchain class at the same time. */
-		std::vector<VkImage> images{};
-
-		std::vector<std::unique_ptr<Image>> vulkanImages{};
-
-		std::vector<std::unique_ptr<ImageView>> imageViews{};
-	} swapchain{};
-
-	/* (TODO, thoave01): Should WSI be aware of GLFW? Whatever. */
 	struct
 	{
-		glfwWindow handle{};
+		VkSwapchainKHR m_handle = {};
 
-		u32 width{ 800 };
+		device *m_device = nullptr;
 
-		u32 height{ 600 };
-	} window{};
+		VkFormat m_format = {};
+		VkExtent2D m_extent = {};
+		std::vector<VkImage> m_images = {};
+		std::vector<std::unique_ptr<image>> m_vulkan_images = {};
+		std::vector<std::unique_ptr<image_view>> m_image_views = {};
+	} m_swapchain = {};
 
-	void buildSurface(Instance &instance);
+	struct
+	{
+		glfw_window m_handle = {};
+		u32 m_width = 800;
+		u32 m_height = 600;
+	} window = {};
 
-	void destroySurface();
-
-	void buildSwapchain(Device &device);
-
-	void destroySwapchain();
-
-	void acquireImage(Semaphore &semaphore, u32 *imageIndex);
+	void build_surface(instance &instance);
+	void destroy_surface();
+	void build_swapchain(device &device);
+	void destroy_swapchain();
+	void acquire_image(semaphore &semaphore, u32 *image_index);
 
 private:
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

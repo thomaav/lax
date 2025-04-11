@@ -1,28 +1,26 @@
 #include <algorithm>
 #include <optional>
+#include <string_view>
 
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/util.h>
 #include <utils/type.h>
 #include <utils/util.h>
 
-namespace
+static std::optional<u32> find_queue_family_with_all_capabilities(VkPhysicalDevice physical_device)
 {
+	uint32_t queue_family_count = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
 
-std::optional<u32> findQueueFamilyWithAllCapabilities(VkPhysicalDevice physicalDevice)
-{
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_families.data());
 
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-	for (u32 i = 0; i < queueFamilyCount; ++i)
+	for (u32 i = 0; i < queue_family_count; ++i)
 	{
-		VkQueueFamilyProperties &queueFamilyProperties = queueFamilies[i];
-		if (queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
-		    queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT &&
-		    queueFamilyProperties.queueFlags & VK_QUEUE_TRANSFER_BIT)
+		VkQueueFamilyProperties &queue_family_properties = queue_families[i];
+		if (queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
+		    queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT &&
+		    queue_family_properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
 		{
 			return i;
 		}
@@ -31,26 +29,25 @@ std::optional<u32> findQueueFamilyWithAllCapabilities(VkPhysicalDevice physicalD
 	return {};
 }
 
-bool physicalDeviceHasRequiredExtensions(VkPhysicalDevice physicalDevice, std::vector<const char *> requiredExtensions)
+static bool physical_device_has_required_extensions(VkPhysicalDevice physical_device,
+                                                    std::vector<const char *> required_extensions)
 {
-	u32 deviceExtensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionCount, nullptr);
+	u32 device_extension_count = 0;
+	vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr);
 
-	std::vector<VkExtensionProperties> availableDeviceExtensions(deviceExtensionCount);
-	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtensionCount,
-	                                     availableDeviceExtensions.data());
+	std::vector<VkExtensionProperties> available_device_extensions(device_extension_count);
+	vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count,
+	                                     available_device_extensions.data());
 
 	bool available = true;
-	for (auto &extension : requiredExtensions)
+	for (auto &extension : required_extensions)
 	{
-		/* (TODO, thoave01): Look into C++20 ranges? */
-		auto v = std::find_if(availableDeviceExtensions.begin(), availableDeviceExtensions.end(),
-		                      [&extension](const auto &availableDeviceExtension) {
-			                      return std::string_view{ extension } ==
-			                             std::string_view{ availableDeviceExtension.extensionName };
-		                      });
+		auto v = std::find_if(
+		    available_device_extensions.begin(), available_device_extensions.end(),
+		    [&extension](const auto &availableDeviceExtension)
+		    { return std::string_view{ extension } == std::string_view{ availableDeviceExtension.extensionName }; });
 
-		if (v == availableDeviceExtensions.end())
+		if (v == available_device_extensions.end())
 		{
 			available = false;
 		}
@@ -58,87 +55,86 @@ bool physicalDeviceHasRequiredExtensions(VkPhysicalDevice physicalDevice, std::v
 	return available;
 }
 
-} /* namespace */
-
-namespace Vulkan
+namespace vulkan
 {
 
-void Device::addExtension(const char *extension)
+void device::add_extension(const char *extension)
 {
-	extensions.push_back(extension);
+	m_extensions.push_back(extension);
 }
 
-void Device::logInfo()
+void device::log_info()
 {
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(physical.handle, &deviceProperties);
-	info("Picked physical device %s", deviceProperties.deviceName);
+	VkPhysicalDeviceProperties device_properties;
+	vkGetPhysicalDeviceProperties(m_physical.m_handle, &device_properties);
+	info("Picked physical device %s", device_properties.deviceName);
 }
 
-/* (TODO, thoave01): Take Vulkan::Surface or whatever when we have abstraction. */
-void Device::build(Instance &instance, VkSurfaceKHR surface)
+void device::build(instance &instance, VkSurfaceKHR surface)
 {
-	findPhysicalDevice(instance, surface);
-	VULKAN_ASSERT_NOT_NULL(physical.handle);
+	find_physical_device(instance, surface, false);
+	VULKAN_ASSERT_NOT_NULL(m_physical.m_handle);
 
-	createLogicalDevice();
-	VULKAN_ASSERT_NOT_NULL(logical.handle);
+	create_logical_device();
+	VULKAN_ASSERT_NOT_NULL(m_logical.m_handle);
 }
 
-void Device::destroy()
+void device::destroy()
 {
-	vkDestroyDevice(logical.handle, nullptr);
+	vkDestroyDevice(m_logical.m_handle, nullptr);
 }
 
-void Device::wait()
+void device::wait()
 {
-	vkDeviceWaitIdle(logical.handle);
+	vkDeviceWaitIdle(m_logical.m_handle);
 }
 
-void Device::findPhysicalDevice(Instance &instance, VkSurfaceKHR surface)
+void device::find_physical_device(instance &instance, VkSurfaceKHR surface, bool must_be_discrete)
 {
-	u32 physicalDeviceCount = 0;
-	vkEnumeratePhysicalDevices(instance.handle, &physicalDeviceCount, nullptr);
+	u32 physical_device_count = 0;
+	vkEnumeratePhysicalDevices(instance.m_handle, &physical_device_count, nullptr);
 
-	if (physicalDeviceCount == 0)
+	if (physical_device_count == 0)
 	{
 		terminate("No Vulkan physical device found");
 	}
 
-	std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-	vkEnumeratePhysicalDevices(instance.handle, &physicalDeviceCount, physicalDevices.data());
+	std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
+	vkEnumeratePhysicalDevices(instance.m_handle, &physical_device_count, physical_devices.data());
 
-	for (u32 i = 0; i < physicalDeviceCount; ++i)
+	for (u32 i = 0; i < physical_device_count; ++i)
 	{
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;
+		VkPhysicalDeviceProperties device_properties;
+		VkPhysicalDeviceFeatures device_features;
 
-		vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
-		vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
+		vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
+		vkGetPhysicalDeviceFeatures(physical_devices[i], &device_features);
 
-		bool suiteable = true;
+		bool suitable = true;
 		{
-			/* Must be discrete GPU. */
-			suiteable &= deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+			if (must_be_discrete)
+			{
+				suitable &= device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+			}
 
 			/* Must have a queue with all capabilities (for now... simplest). */
-			std::optional<u32> queueFamilyIndex = findQueueFamilyWithAllCapabilities(physicalDevices[i]);
-			suiteable &= queueFamilyIndex.has_value();
+			std::optional<u32> queue_family_index = find_queue_family_with_all_capabilities(physical_devices[i]);
+			suitable &= queue_family_index.has_value();
 
 			/* Must have all required device extensions. */
-			suiteable &= physicalDeviceHasRequiredExtensions(physicalDevices[i], extensions);
+			suitable &= physical_device_has_required_extensions(physical_devices[i], m_extensions);
 
 			/* Also check for presentation support. */
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevices[i], *queueFamilyIndex, surface, &presentSupport);
-			suiteable &= presentSupport;
+			VkBool32 present_support = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], *queue_family_index, surface, &present_support);
+			suitable &= present_support;
 
-			if (suiteable)
+			if (suitable)
 			{
-				physical.handle = physicalDevices[i];
-				physical.queueFamily.all = *queueFamilyIndex;
+				m_physical.m_handle = physical_devices[i];
+				m_physical.m_queue_family.m_all = *queue_family_index;
 
-				logInfo();
+				log_info();
 				return;
 			}
 		}
@@ -147,31 +143,30 @@ void Device::findPhysicalDevice(Instance &instance, VkSurfaceKHR surface)
 	terminate("No suitable physical device found");
 }
 
-void Device::createLogicalDevice()
+void device::create_logical_device()
 {
-	u32 queueIndex = findQueueFamilyWithAllCapabilities(physical.handle).value();
+	u32 queueIndex = find_queue_family_with_all_capabilities(m_physical.m_handle).value();
 	{
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueIndex;
-		queueCreateInfo.queueCount = 1;
+		VkDeviceQueueCreateInfo queue_info = {};
+		queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queue_info.queueFamilyIndex = queueIndex;
+		queue_info.queueCount = 1;
+		float queue_priority = 1.0f;
+		queue_info.pQueuePriorities = &queue_priority;
 
-		float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		VkPhysicalDeviceFeatures device_features = {};
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
+		VkDeviceCreateInfo device_info = {};
+		device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		device_info.pQueueCreateInfos = &queue_info;
+		device_info.queueCreateInfoCount = 1;
+		device_info.pEnabledFeatures = &device_features;
 
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		device_info.enabledExtensionCount = m_extensions.size();
+		device_info.ppEnabledExtensionNames = m_extensions.data();
 
-		createInfo.enabledExtensionCount = extensions.size();
-		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		VULKAN_ASSERT_SUCCESS(vkCreateDevice(physical.handle, &createInfo, nullptr, &logical.handle));
+		VULKAN_ASSERT_SUCCESS(vkCreateDevice(m_physical.m_handle, &device_info, nullptr, &m_logical.m_handle));
 	}
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

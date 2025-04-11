@@ -1,42 +1,41 @@
+#include <algorithm>
+
 #include <renderer/vulkan/util.h>
 #include <renderer/vulkan/wsi.h>
 #include <utils/util.h>
 
-namespace
-{
-} /* namespace */
-
-namespace Vulkan
+namespace vulkan
 {
 
-void WSI::buildSurface(Instance &instance)
+void wsi::build_surface(instance &instance)
 {
-	window.handle.init(window.width, window.height);
-	VULKAN_ASSERT_SUCCESS(window.handle.createVulkanSurface(instance.handle, surface.handle));
+	window.m_handle.init(window.m_width, window.m_height);
+	VULKAN_ASSERT_SUCCESS(window.m_handle.create_vulkan_surface(instance.m_handle, m_surface.handle));
 
-	surface.instance = &instance;
+	m_surface.m_instance = &instance;
 }
 
-void WSI::destroySurface()
+void wsi::destroy_surface()
 {
-	vkDestroySurfaceKHR(surface.instance->handle, surface.handle, nullptr);
+	vkDestroySurfaceKHR(m_surface.m_instance->m_handle, m_surface.handle, nullptr);
 }
 
-void WSI::buildSwapchain(Device &device)
+void wsi::build_swapchain(device &device)
 {
 	/* Create swapchain. */
 	VkSurfaceCapabilitiesKHR capabilities;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.physical.handle, surface.handle, &capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.m_physical.m_handle, m_surface.handle, &capabilities);
 
 	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical.handle, surface.handle, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &formatCount, nullptr);
 	std::vector<VkSurfaceFormatKHR> availableFormats(formatCount);
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical.handle, surface.handle, &formatCount, availableFormats.data());
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &formatCount,
+	                                     availableFormats.data());
 
 	u32 presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical.handle, surface.handle, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &presentModeCount, nullptr);
 	std::vector<VkPresentModeKHR> availablePresentModes(presentModeCount);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical.handle, surface.handle, &presentModeCount,
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &presentModeCount,
 	                                          availablePresentModes.data());
 
 	if (availableFormats.empty() || availablePresentModes.empty())
@@ -91,7 +90,7 @@ void WSI::buildSwapchain(Device &device)
 	/* Choose swapchain extent. */
 	int width{};
 	int height{};
-	window.handle.getFramebufferSize(width, height);
+	window.m_handle.get_framebuffer_size(width, height);
 
 	VkExtent2D extent = {
 		static_cast<u32>(width),
@@ -111,7 +110,7 @@ void WSI::buildSwapchain(Device &device)
 	/* Create swapchain. */
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = surface.handle;
+	createInfo.surface = m_surface.handle;
 
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
@@ -133,52 +132,51 @@ void WSI::buildSwapchain(Device &device)
 
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateSwapchainKHR(device.logical.handle, &createInfo, nullptr, &swapchain.handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateSwapchainKHR(device.m_logical.m_handle, &createInfo, nullptr, &m_swapchain.m_handle));
 
 	/* Initialize swapchain object. */
 	{
-		swapchain.device = &device;
-		swapchain.format = surfaceFormat.format;
-		swapchain.extent = extent;
+		m_swapchain.m_device = &device;
+		m_swapchain.m_format = surfaceFormat.format;
+		m_swapchain.m_extent = extent;
 
 		/* Initialize images. */
-		vkGetSwapchainImagesKHR(swapchain.device->logical.handle, swapchain.handle, &imageCount, nullptr);
-		swapchain.images.resize(imageCount);
-		vkGetSwapchainImagesKHR(swapchain.device->logical.handle, swapchain.handle, &imageCount,
-		                        swapchain.images.data());
+		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &imageCount, nullptr);
+		m_swapchain.m_images.resize(imageCount);
+		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &imageCount,
+		                        m_swapchain.m_images.data());
 
 		/* Initalize image views. */
-		for (size_t i = 0; i < swapchain.images.size(); i++)
+		for (size_t i = 0; i < m_swapchain.m_images.size(); i++)
 		{
-			/* (TODO, thoave01): Fix this. */
-			std::unique_ptr<Image> image = std::make_unique<Image>();
-			image->handle = swapchain.images[i];
-			image->format = swapchain.format;
-			image->width = swapchain.extent.width;
-			image->height = swapchain.extent.height;
-			swapchain.vulkanImages.emplace_back(std::move(image));
+			std::unique_ptr<image> image_ = std::make_unique<image>();
+			image_->m_handle = m_swapchain.m_images[i];
+			image_->m_format = m_swapchain.m_format;
+			image_->m_width = m_swapchain.m_extent.width;
+			image_->m_height = m_swapchain.m_extent.height;
+			m_swapchain.m_vulkan_images.emplace_back(std::move(image_));
 
-			std::unique_ptr<ImageView> imageView = std::make_unique<ImageView>(*swapchain.vulkanImages[i]);
-			imageView->build(*swapchain.device);
-			swapchain.imageViews.emplace_back(std::move(imageView));
+			std::unique_ptr<image_view> imageView = std::make_unique<image_view>(*m_swapchain.m_vulkan_images[i]);
+			imageView->build(*m_swapchain.m_device);
+			m_swapchain.m_image_views.emplace_back(std::move(imageView));
 		}
 	}
 }
 
-void WSI::destroySwapchain()
+void wsi::destroy_swapchain()
 {
-	for (auto &imageView : swapchain.imageViews)
+	for (auto &imageView : m_swapchain.m_image_views)
 	{
 		imageView->destroy();
 	}
 
-	vkDestroySwapchainKHR(swapchain.device->logical.handle, swapchain.handle, nullptr);
+	vkDestroySwapchainKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, nullptr);
 }
 
-void WSI::acquireImage(Semaphore &signalSemaphore, u32 *imageIndex)
+void wsi::acquire_image(semaphore &signalSemaphore, u32 *imageIndex)
 {
-	VULKAN_ASSERT_SUCCESS(vkAcquireNextImageKHR(swapchain.device->logical.handle, swapchain.handle, UINT64_MAX,
-	                                            signalSemaphore.handle, VK_NULL_HANDLE, imageIndex));
+	VULKAN_ASSERT_SUCCESS(vkAcquireNextImageKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle,
+	                                            UINT64_MAX, signalSemaphore.m_handle, VK_NULL_HANDLE, imageIndex));
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

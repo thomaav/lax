@@ -4,51 +4,44 @@
 
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Image
+class image
 {
 public:
-	Image() = default;
-	~Image() = default;
+	image() = default;
+	~image() = default;
 
-	Image(const Image &) = delete;
-	Image operator=(const Image &) = delete;
+	image(const image &) = delete;
+	image operator=(const image &) = delete;
 
-	VkImage handle{};
-
-	VkFormat format{};
-
-	u32 width{};
-
-	u32 height{};
-
-	/* (TODO, thoave01): Actually initialize images this way. */
+	VkImage m_handle = {};
+	VkFormat m_format = {};
+	u32 m_width = {};
+	u32 m_height = {};
 
 private:
 };
 
-class ImageView
+class image_view
 {
 public:
-	ImageView(Image &image);
-	~ImageView() = default;
+	image_view(image &image);
+	~image_view() = default;
 
-	ImageView(const ImageView &) = delete;
-	ImageView operator=(const ImageView &) = delete;
+	image_view(const image_view &) = delete;
+	image_view operator=(const image_view &) = delete;
 
-	void build(Device &device);
-
+	void build(device &device);
 	void destroy();
 
-	VkImageView handle{};
+	VkImageView m_handle = {};
 
-	VkDevice device{};
-
-	const Image &image{};
+	VkDevice m_device_handle = {};
+	const image &m_image = {};
 
 private:
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

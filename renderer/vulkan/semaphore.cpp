@@ -1,25 +1,25 @@
 #include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-Semaphore::~Semaphore()
+semaphore::~semaphore()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroySemaphore(device, handle, nullptr);
+		vkDestroySemaphore(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void Semaphore::build(Device &device)
+void semaphore::build(device &device)
 {
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateSemaphore(device.logical.handle, &semaphoreInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateSemaphore(device.m_logical.m_handle, &semaphore_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

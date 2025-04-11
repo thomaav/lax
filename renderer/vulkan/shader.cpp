@@ -5,12 +5,12 @@
 #include <renderer/vulkan/util.h>
 #include <utils/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-void Shader::build(Device &device, VkShaderStageFlagBits stage, const char *filename)
+void shader::build(device &device, VkShaderStageFlagBits stage, const char *filename)
 {
-	std::string shaderCode{};
+	std::string shader_code = {};
 	{
 		std::ifstream file(filename, std::ios::binary);
 		if (!file.is_open())
@@ -18,35 +18,35 @@ void Shader::build(Device &device, VkShaderStageFlagBits stage, const char *file
 			terminate("Could not open shader %s", filename);
 		}
 
-		std::stringstream fileData{};
-		fileData << file.rdbuf();
-		shaderCode = fileData.str();
+		std::stringstream file_data = {};
+		file_data << file.rdbuf();
+		shader_code = file_data.str();
 	}
 
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = shaderCode.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t *>(shaderCode.c_str());
+	VkShaderModuleCreateInfo create_info = {};
+	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	create_info.codeSize = shader_code.size();
+	create_info.pCode = reinterpret_cast<const uint32_t *>(shader_code.c_str());
 
-	VULKAN_ASSERT_SUCCESS(vkCreateShaderModule(device.logical.handle, &createInfo, nullptr, &module));
+	VULKAN_ASSERT_SUCCESS(vkCreateShaderModule(device.m_logical.m_handle, &create_info, nullptr, &m_module));
 
-	this->device = device.logical.handle;
-	this->stage = stage;
+	m_device_handle = device.m_logical.m_handle;
+	m_stage = stage;
 }
 
-void Shader::destroy()
+void shader::destroy()
 {
-	vkDestroyShaderModule(device, module, nullptr);
+	vkDestroyShaderModule(m_device_handle, m_module, nullptr);
 }
 
-VkPipelineShaderStageCreateInfo Shader::getPipelineShaderStageCreateInfo()
+VkPipelineShaderStageCreateInfo shader::get_pipeline_shader_stage_create_info()
 {
 	VkPipelineShaderStageCreateInfo shaderStageInfo{};
 	shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStageInfo.stage = stage;
-	shaderStageInfo.module = module;
+	shaderStageInfo.stage = m_stage;
+	shaderStageInfo.module = m_module;
 	shaderStageInfo.pName = "main";
 	return shaderStageInfo;
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

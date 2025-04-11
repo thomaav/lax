@@ -4,28 +4,26 @@
 
 #include <renderer/vulkan/device.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Fence
+class fence
 {
 public:
-	Fence() = default;
-	~Fence();
+	fence() = default;
+	~fence();
 
-	Fence(const Fence &) = delete;
-	Fence operator=(const Fence &) = delete;
+	fence(const fence &) = delete;
+	fence operator=(const fence &) = delete;
 
-	void build(Device &device);
-
+	void build(device &device);
 	void reset();
-
 	void wait();
 
-	VkFence handle{};
+	VkFence m_handle = {};
 
 private:
-	VkDevice device{};
+	VkDevice m_device_handle = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

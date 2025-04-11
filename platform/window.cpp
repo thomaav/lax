@@ -3,10 +3,7 @@
 #include <platform/window.h>
 #include <utils/util.h>
 
-namespace
-{
-
-void defaultKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void default_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	UNUSED(scancode);
 	UNUSED(mods);
@@ -21,38 +18,32 @@ void defaultKeyCallback(GLFWwindow *window, int key, int scancode, int action, i
 	}
 }
 
-} /* namespace */
-
-glfwWindow::glfwWindow()
+glfw_window::~glfw_window()
 {
-}
-
-glfwWindow::~glfwWindow()
-{
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(m_window);
 	glfwTerminate();
 }
 
-void glfwWindow::init(u32 width, u32 height)
+void glfw_window::init(u32 width, u32 height)
 {
-	this->width = width;
-	this->height = height;
+	m_width = width;
+	m_height = height;
 
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	window = glfwCreateWindow(width, height, "window", nullptr, nullptr);
+	m_window = glfwCreateWindow(width, height, "window", nullptr, nullptr);
 
-	glfwSetKeyCallback(window, defaultKeyCallback);
+	glfwSetKeyCallback(m_window, default_key_callback);
 }
 
-bool glfwWindow::step()
+bool glfw_window::step()
 {
 	glfwPollEvents();
 
-	if (glfwWindowShouldClose(window))
+	if (glfwWindowShouldClose(m_window))
 	{
 		return false;
 	}
@@ -60,12 +51,12 @@ bool glfwWindow::step()
 	return true;
 }
 
-VkResult glfwWindow::createVulkanSurface(VkInstance instance, VkSurfaceKHR &surface)
+VkResult glfw_window::create_vulkan_surface(VkInstance instance, VkSurfaceKHR &surface)
 {
-	return glfwCreateWindowSurface(instance, window, nullptr, &surface);
+	return glfwCreateWindowSurface(instance, m_window, nullptr, &surface);
 }
 
-void glfwWindow::getFramebufferSize(int &width, int &height)
+void glfw_window::get_framebuffer_size(int &width, int &height)
 {
-	glfwGetFramebufferSize(window, &width, &height);
+	glfwGetFramebufferSize(m_window, &width, &height);
 }

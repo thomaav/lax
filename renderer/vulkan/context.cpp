@@ -19,105 +19,94 @@
 /* (TODO, thoave01): Remove later. */
 #include <glm/glm.hpp>
 
-namespace Vulkan
+namespace vulkan
 {
 
-Context::~Context()
+context::~context()
 {
 	/* Destroy device. */
-	wsi.destroySwapchain();
-	device.destroy();
+	m_wsi.destroy_swapchain();
+	m_device.destroy();
 
 	/* Destroy instance. */
-	wsi.destroySurface();
-	instance.destroy();
+	m_wsi.destroy_surface();
+	m_instance.destroy();
 }
 
-void Context::addInstanceExtension(const char *extension)
+void context::add_instance_extension(const char *extension)
 {
-	instance.addExtension(extension);
+	m_instance.add_extension(extension);
 }
 
-void Context::addInstanceLayer(const char *layer)
+void context::add_device_extension(const char *extension)
 {
-	instance.addLayer(layer);
+	m_device.add_extension(extension);
 }
 
-void Context::addDeviceExtension(const char *extension)
-{
-	/* (TODO, thoave01): Assert if we already built the context. */
-	device.addExtension(extension);
-}
-
-struct Vertex
+struct vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
 };
 
-/* (TODO, thoave01): Blabla platform window can be templated. Fuck it use glfwWindow. */
-void Context::build()
+void context::build()
 {
 	/* Instance initialization. */
 	{
-		/* (TODO, thoave01): Some error handling? */
-		instance.build();
-
-		/* (TODO, thoave01): WSI should be optional. */
-		/* (TODO, thoave01): WSI width/height or something. */
-		wsi.buildSurface(instance);
+		m_instance.build();
+		m_wsi.build_surface(m_instance);
 	}
 
 	/* Device initialization. */
 	{
-		device.build(instance, wsi.surface.handle);
-		wsi.buildSwapchain(device);
-		queue.build(device);
+		m_device.build(m_instance, m_wsi.m_surface.handle);
+		m_wsi.build_swapchain(m_device);
+		m_queue.build(m_device);
 	}
 
-	const std::vector<Vertex> vertices = { { { 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
+	const std::vector<vertex> vertices = { { { 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
 		                                   { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } },
 		                                   { { -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } } };
 
-	Shader vertexShader{};
-	vertexShader.build(device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
+	shader vertexShader{};
+	vertexShader.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
 
-	Shader fragmentShader{};
-	fragmentShader.build(device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
+	shader fragmentShader{};
+	fragmentShader.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
 
 	/* Create a pipeline. */
 	{
-		PipelineLayout pipelineLayout{};
-		pipelineLayout.build(device);
+		pipeline_layout pipelineLayout{};
+		pipelineLayout.build(m_device);
 
-		RenderPass renderPass{};
-		renderPass.build(device, wsi.swapchain.format);
+		render_pass renderPass{};
+		renderPass.build(m_device, m_wsi.m_swapchain.m_format);
 
-		Pipeline pipeline{};
+		pipeline pipeline{};
 		{
-			pipeline.addShader(vertexShader);
-			pipeline.addShader(fragmentShader);
+			pipeline.add_shader(vertexShader);
+			pipeline.add_shader(fragmentShader);
 
-			pipeline.addVertexBinding(0, sizeof(Vertex));
-			pipeline.addVertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, pos));
-			pipeline.addVertexAttribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, color));
+			pipeline.add_vertex_binding(0, sizeof(vertex));
+			pipeline.add_vertex_attribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(vertex, pos));
+			pipeline.add_vertex_attribute(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(vertex, color));
 		}
-		pipeline.build(device, pipelineLayout, renderPass, wsi.swapchain.extent);
+		pipeline.build(m_device, pipelineLayout, renderPass, m_wsi.m_swapchain.m_extent);
 
-		std::vector<Framebuffer> swapchainFramebuffers(wsi.swapchain.images.size());
-		for (u32 i = 0; i < wsi.swapchain.images.size(); i++)
+		std::vector<framebuffer> swapchainFramebuffers(m_wsi.m_swapchain.m_images.size());
+		for (u32 i = 0; i < m_wsi.m_swapchain.m_images.size(); i++)
 		{
-			swapchainFramebuffers[i].addColorAttachment(*wsi.swapchain.imageViews[i]);
-			swapchainFramebuffers[i].build(device, renderPass);
+			swapchainFramebuffers[i].add_color_attachment(*m_wsi.m_swapchain.m_image_views[i]);
+			swapchainFramebuffers[i].build(m_device, renderPass);
 		}
 
-		CommandPool commandPool{};
-		commandPool.build(device);
+		command_pool commandPool{};
+		commandPool.build(m_device);
 
-		std::vector<CommandBuffer> commandBuffers(wsi.swapchain.images.size());
+		std::vector<command_buffer> commandBuffers(m_wsi.m_swapchain.m_images.size());
 		for (auto &commandBuffer : commandBuffers)
 		{
-			commandBuffer.build(device, commandPool);
+			commandBuffer.build(m_device, commandPool);
 		}
 
 		for (size_t i = 0; i < commandBuffers.size(); i++)
@@ -126,46 +115,46 @@ void Context::build()
 			{
 				VkRenderPassBeginInfo renderPassInfo{};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				renderPassInfo.renderPass = renderPass.handle;
-				renderPassInfo.framebuffer = swapchainFramebuffers[i].handle;
+				renderPassInfo.renderPass = renderPass.m_handle;
+				renderPassInfo.framebuffer = swapchainFramebuffers[i].m_handle;
 
 				renderPassInfo.renderArea.offset = { 0, 0 };
-				renderPassInfo.renderArea.extent = wsi.swapchain.extent;
+				renderPassInfo.renderArea.extent = m_wsi.m_swapchain.m_extent;
 
 				VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 				renderPassInfo.clearValueCount = 1;
 				renderPassInfo.pClearValues = &clearColor;
 
-				vkCmdBeginRenderPass(commandBuffers[i].handle, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRenderPass(commandBuffers[i].m_handle, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 				{
-					vkCmdBindPipeline(commandBuffers[i].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.handle);
-					vkCmdDraw(commandBuffers[i].handle, 3, 1, 0, 0);
+					vkCmdBindPipeline(commandBuffers[i].m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.m_handle);
+					vkCmdDraw(commandBuffers[i].m_handle, 3, 1, 0, 0);
 				}
-				vkCmdEndRenderPass(commandBuffers[i].handle);
+				vkCmdEndRenderPass(commandBuffers[i].m_handle);
 			}
 			commandBuffers[i].end();
 		}
 
 		constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
-		std::vector<Semaphore> imageAvailableSemaphores(MAX_FRAMES_IN_FLIGHT);
-		std::vector<Semaphore> renderFinishedSemaphores(MAX_FRAMES_IN_FLIGHT);
-		std::vector<Fence> frameFences(MAX_FRAMES_IN_FLIGHT);
-		std::vector<Fence *> imageFences(wsi.swapchain.images.size(), nullptr);
+		std::vector<semaphore> imageAvailableSemaphores(MAX_FRAMES_IN_FLIGHT);
+		std::vector<semaphore> renderFinishedSemaphores(MAX_FRAMES_IN_FLIGHT);
+		std::vector<fence> frameFences(MAX_FRAMES_IN_FLIGHT);
+		std::vector<fence *> imageFences(m_wsi.m_swapchain.m_images.size(), nullptr);
 		for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 		{
-			imageAvailableSemaphores[i].build(device);
-			renderFinishedSemaphores[i].build(device);
-			frameFences[i].build(device);
+			imageAvailableSemaphores[i].build(m_device);
+			renderFinishedSemaphores[i].build(m_device);
+			frameFences[i].build(m_device);
 		}
 
 		u32 frame = 0u;
-		while (wsi.window.handle.step())
+		while (m_wsi.window.m_handle.step())
 		{
 			frameFences[frame].wait();
 
 			uint32_t imageIndex{};
-			wsi.acquireImage(imageAvailableSemaphores[frame], &imageIndex);
+			m_wsi.acquire_image(imageAvailableSemaphores[frame], &imageIndex);
 
 			if (imageFences[imageIndex] != nullptr)
 			{
@@ -174,18 +163,18 @@ void Context::build()
 			imageFences[imageIndex] = &frameFences[frame];
 
 			frameFences[frame].reset();
-			queue.submit(commandBuffers[imageIndex], imageAvailableSemaphores[frame], renderFinishedSemaphores[frame],
-			             frameFences[frame]);
-			queue.present(renderFinishedSemaphores[frame], wsi, imageIndex);
+			m_queue.submit(commandBuffers[imageIndex], imageAvailableSemaphores[frame], renderFinishedSemaphores[frame],
+			               frameFences[frame]);
+			m_queue.present(renderFinishedSemaphores[frame], m_wsi, imageIndex);
 
 			frame = (frame + 1) % MAX_FRAMES_IN_FLIGHT;
 		}
 
-		device.wait();
+		m_device.wait();
 	}
 
 	fragmentShader.destroy();
 	vertexShader.destroy();
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

@@ -4,46 +4,46 @@
 #include <renderer/vulkan/util.h>
 #include <utils/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-RenderPass::~RenderPass()
+render_pass::~render_pass()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroyRenderPass(device, handle, nullptr);
+		vkDestroyRenderPass(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void RenderPass::build(Device &device, VkFormat format)
+void render_pass::build(device &device, VkFormat format)
 {
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	VkAttachmentDescription color_attachment_desc = {};
+	color_attachment_desc.format = format;
+	color_attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attachment_desc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attachment_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachment_desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkAttachmentReference color_attachment_ref = {};
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	VkSubpassDescription subpass{};
+	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pColorAttachments = &color_attachment_ref;
 
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
+	VkRenderPassCreateInfo render_pass_info = {};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	render_pass_info.attachmentCount = 1;
+	render_pass_info.pAttachments = &color_attachment_desc;
+	render_pass_info.subpassCount = 1;
+	render_pass_info.pSubpasses = &subpass;
 
-	VkSubpassDependency dependency{};
+	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependency.dstSubpass = 0;
 
@@ -52,57 +52,57 @@ void RenderPass::build(Device &device, VkFormat format)
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
+	render_pass_info.dependencyCount = 1;
+	render_pass_info.pDependencies = &dependency;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateRenderPass(device.logical.handle, &renderPassInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateRenderPass(device.m_logical.m_handle, &render_pass_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-Framebuffer::~Framebuffer()
+framebuffer::~framebuffer()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroyFramebuffer(device, handle, nullptr);
+		vkDestroyFramebuffer(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void Framebuffer::addColorAttachment(ImageView &attachment)
+void framebuffer::add_color_attachment(image_view &attachment)
 {
-	colorAttachments.push_back(attachment.handle);
+	m_color_attachments.push_back(attachment.m_handle);
 
-	if (width == 0 && height == 0)
+	if (m_width == 0 && m_height == 0)
 	{
-		width = attachment.image.width;
-		height = attachment.image.height;
+		m_width = attachment.m_image.m_width;
+		m_height = attachment.m_image.m_height;
 	}
 	else
 	{
-		assert(width == attachment.image.width);
-		assert(height == attachment.image.height);
+		assert(m_width == attachment.m_image.m_width);
+		assert(m_height == attachment.m_image.m_height);
 	}
 }
 
-void Framebuffer::build(Device &device, RenderPass &renderPass)
+void framebuffer::build(device &device, render_pass &render_pass)
 {
-	if (colorAttachments.size() == 0)
+	if (m_color_attachments.size() == 0)
 	{
 		terminate("Attempting to build framebuffer with no attachments");
 	}
 
-	VkFramebufferCreateInfo framebufferInfo{};
-	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferInfo.renderPass = renderPass.handle;
-	framebufferInfo.attachmentCount = 1;
-	framebufferInfo.pAttachments = colorAttachments.data();
-	framebufferInfo.width = width;
-	framebufferInfo.height = height;
-	framebufferInfo.layers = 1;
+	VkFramebufferCreateInfo framebuffer_info = {};
+	framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebuffer_info.renderPass = render_pass.m_handle;
+	framebuffer_info.attachmentCount = 1;
+	framebuffer_info.pAttachments = m_color_attachments.data();
+	framebuffer_info.width = m_width;
+	framebuffer_info.height = m_height;
+	framebuffer_info.layers = 1;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateFramebuffer(device.logical.handle, &framebufferInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateFramebuffer(device.m_logical.m_handle, &framebuffer_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

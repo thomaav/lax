@@ -1,42 +1,42 @@
 #include <renderer/vulkan/image.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-ImageView::ImageView(Image &image)
-    : image{ image }
+image_view::image_view(image &image)
+    : m_image(image)
 {
 }
 
-void ImageView::build(Device &device)
+void image_view::build(device &device)
 {
-	VkImageViewCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.image = image.handle;
+	VkImageViewCreateInfo create_info = {};
+	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	create_info.image = m_image.m_handle;
 
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.format = image.format;
+	create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	create_info.format = m_image.m_format;
 
-	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.layerCount = 1;
+	create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	create_info.subresourceRange.baseMipLevel = 0;
+	create_info.subresourceRange.levelCount = 1;
+	create_info.subresourceRange.baseArrayLayer = 0;
+	create_info.subresourceRange.layerCount = 1;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.logical.handle, &createInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-void ImageView::destroy()
+void image_view::destroy()
 {
-	vkDestroyImageView(device, handle, nullptr);
+	vkDestroyImageView(m_device_handle, m_handle, nullptr);
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

@@ -1,27 +1,27 @@
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/util.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-CommandPool::~CommandPool()
+command_pool::~command_pool()
 {
-	if (handle != VK_NULL_HANDLE)
+	if (m_handle != VK_NULL_HANDLE)
 	{
-		vkDestroyCommandPool(device, handle, nullptr);
+		vkDestroyCommandPool(m_device_handle, m_handle, nullptr);
 	}
 }
 
-void CommandPool::build(Device &device)
+void command_pool::build(device &device)
 {
-	VkCommandPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = *device.physical.queueFamily.all;
-	poolInfo.flags = 0;
+	VkCommandPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.queueFamilyIndex = *device.m_physical.m_queue_family.m_all;
+	pool_info.flags = 0;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.logical.handle, &poolInfo, nullptr, &handle));
+	VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.m_logical.m_handle, &pool_info, nullptr, &m_handle));
 
-	this->device = device.logical.handle;
+	m_device_handle = device.m_logical.m_handle;
 }
 
-} /* namespace Vulkan */
+} /* namespace vulkan */

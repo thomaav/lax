@@ -7,50 +7,45 @@
 #include <renderer/vulkan/render_pass.h>
 #include <utils/type.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class RenderPass
-{
-public:
-	RenderPass() = default;
-	~RenderPass();
-
-	RenderPass(const RenderPass &) = delete;
-	RenderPass operator=(const RenderPass &) = delete;
-
-	void build(Device &device, VkFormat format);
-
-	VkRenderPass handle{};
-
-private:
-	VkDevice device{};
-};
-
-class Framebuffer
+class render_pass
 {
 public:
-	Framebuffer() = default;
-	~Framebuffer();
+	render_pass() = default;
+	~render_pass();
 
-	Framebuffer(const Framebuffer &) = delete;
-	Framebuffer operator=(const Framebuffer &) = delete;
+	render_pass(const render_pass &) = delete;
+	render_pass operator=(const render_pass &) = delete;
 
-	VkFramebuffer handle{};
+	void build(device &device, VkFormat format);
 
-	/* (TODO, thoave01): Assert on size when adding views? */
-	void addColorAttachment(ImageView &attachment);
-
-	void build(Device &device, RenderPass &renderPass);
+	VkRenderPass m_handle = {};
 
 private:
-	std::vector<VkImageView> colorAttachments{};
-
-	u32 width{};
-
-	u32 height{};
-
-	VkDevice device{};
+	VkDevice m_device_handle = {};
 };
 
-} /* namespace Vulkan */
+class framebuffer
+{
+public:
+	framebuffer() = default;
+	~framebuffer();
+
+	framebuffer(const framebuffer &) = delete;
+	framebuffer operator=(const framebuffer &) = delete;
+
+	VkFramebuffer m_handle = {};
+
+	void add_color_attachment(image_view &attachment);
+	void build(device &device, render_pass &render_pass);
+
+private:
+	std::vector<VkImageView> m_color_attachments = {};
+	u32 m_width = 0;
+	u32 m_height = 0;
+	VkDevice m_device_handle = {};
+};
+
+} /* namespace vulkan */

@@ -6,56 +6,46 @@
 #include <renderer/vulkan/instance.h>
 #include <utils/type.h>
 
-namespace Vulkan
+namespace vulkan
 {
 
-class Device
+class device
 {
 public:
-	Device() = default;
-	~Device() = default;
+	device() = default;
+	~device() = default;
 
-	Device(const Device &) = delete;
-	Device operator=(const Device &) = delete;
+	device(const device &) = delete;
+	device operator=(const device &) = delete;
 
 	struct
 	{
-		VkPhysicalDevice handle{};
-
+		VkPhysicalDevice m_handle = {};
 		struct
 		{
-			/* (TODO, thoave01): Populate non-all ones? */
-			std::optional<u32> graphics{};
-
-			std::optional<u32> compute{};
-
-			std::optional<u32> transfer{};
-
-			std::optional<u32> all{};
-		} queueFamily{};
-	} physical{};
+			std::optional<u32> m_graphics = {}; /* unused */
+			std::optional<u32> m_compute = {};  /* unused */
+			std::optional<u32> m_transfer = {}; /* unused */
+			std::optional<u32> m_all = {};
+		} m_queue_family = {};
+	} m_physical = {};
 
 	struct
 	{
-		VkDevice handle{};
-	} logical{};
+		VkDevice m_handle = {};
+	} m_logical = {};
 
-	void addExtension(const char *extension);
-
-	void logInfo();
-
-	void build(Instance &instance, VkSurfaceKHR surface);
-
+	void add_extension(const char *extension);
+	void log_info();
+	void build(instance &instance, VkSurfaceKHR surface);
 	void destroy();
-
 	void wait();
 
 private:
-	std::vector<const char *> extensions{};
+	void find_physical_device(instance &instance, VkSurfaceKHR surface, bool must_be_discrete);
+	void create_logical_device();
 
-	void findPhysicalDevice(Instance &instance, VkSurfaceKHR surface);
-
-	void createLogicalDevice();
+	std::vector<const char *> m_extensions = {};
 };
 
-} /* namespace Vulkan */
+} /* namespace vulkan */
