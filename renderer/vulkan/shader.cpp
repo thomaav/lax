@@ -8,7 +8,7 @@
 namespace vulkan
 {
 
-void shader::build(device &device, VkShaderStageFlagBits stage, const char *filename)
+void shader_module::build(device &device, VkShaderStageFlagBits stage, const char *filename)
 {
 	std::string shader_code = {};
 	{
@@ -34,12 +34,12 @@ void shader::build(device &device, VkShaderStageFlagBits stage, const char *file
 	m_stage = stage;
 }
 
-void shader::destroy()
+void shader_module::destroy()
 {
 	vkDestroyShaderModule(m_device_handle, m_module, nullptr);
 }
 
-VkPipelineShaderStageCreateInfo shader::get_pipeline_shader_stage_create_info()
+VkPipelineShaderStageCreateInfo shader_module::get_pipeline_shader_stage_create_info()
 {
 	VkPipelineShaderStageCreateInfo shaderStageInfo{};
 	shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

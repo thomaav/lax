@@ -7,14 +7,14 @@
 namespace vulkan
 {
 
-class shader
+class shader_module
 {
 public:
-	shader() = default;
-	~shader() = default;
+	shader_module() = default;
+	~shader_module() = default;
 
-	shader(const shader &) = delete;
-	shader operator=(const shader &) = delete;
+	shader_module(const shader_module &) = delete;
+	shader_module operator=(const shader_module &) = delete;
 
 	void build(vulkan::device &device, VkShaderStageFlagBits stage, const char *filename);
 	void destroy();

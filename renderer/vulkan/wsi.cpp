@@ -26,40 +26,41 @@ void wsi::build_swapchain(device &device)
 	VkSurfaceCapabilitiesKHR capabilities;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.m_physical.m_handle, m_surface.handle, &capabilities);
 
-	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &formatCount, nullptr);
-	std::vector<VkSurfaceFormatKHR> availableFormats(formatCount);
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &formatCount,
-	                                     availableFormats.data());
+	uint32_t format_count;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &format_count, nullptr);
+	std::vector<VkSurfaceFormatKHR> available_formats(format_count);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device.m_physical.m_handle, m_surface.handle, &format_count,
+	                                     available_formats.data());
 
-	u32 presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &presentModeCount, nullptr);
-	std::vector<VkPresentModeKHR> availablePresentModes(presentModeCount);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &presentModeCount,
-	                                          availablePresentModes.data());
+	u32 present_mode_count;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &present_mode_count,
+	                                          nullptr);
+	std::vector<VkPresentModeKHR> available_present_modes(present_mode_count);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &present_mode_count,
+	                                          available_present_modes.data());
 
-	if (availableFormats.empty() || availablePresentModes.empty())
+	if (available_formats.empty() || available_present_modes.empty())
 
 	{
 		terminate("No suiteable swapchain formats");
 	}
 
-	if (availablePresentModes.empty())
+	if (available_present_modes.empty())
 
 	{
 		terminate("No suiteable swapchain present modes");
 	}
 
 	/* Choose swapchain surface format. */
-	VkSurfaceFormatKHR surfaceFormat{};
+	VkSurfaceFormatKHR surface_format = {};
 
 	bool found = false;
-	for (const auto &availableFormat : availableFormats)
+	for (const auto &available_format : available_formats)
 	{
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-		    availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+		    available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
-			surfaceFormat = availableFormat;
+			surface_format = available_format;
 			found = true;
 		}
 	}
@@ -70,91 +71,91 @@ void wsi::build_swapchain(device &device)
 	}
 
 	/* Choose swapchain presentation mode. */
-	VkPresentModeKHR presentMode{};
+	VkPresentModeKHR present_mode = {};
 
 	found = false;
-	for (const auto &availablePresentMode : availablePresentModes)
+	for (const auto &available_present_mode : available_present_modes)
 	{
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+		if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
 		{
-			presentMode = availablePresentMode;
+			present_mode = available_present_mode;
 			found = true;
 		}
 	}
 
 	if (!found)
 	{
-		presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	}
 
 	/* Choose swapchain extent. */
-	int width{};
-	int height{};
+	int width = 0;
+	int height = 0;
 	window.m_handle.get_framebuffer_size(width, height);
 
 	VkExtent2D extent = {
-		static_cast<u32>(width),
-		static_cast<u32>(height),
+		(u32)width,
+		(u32)height,
 	};
 
 	extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 	extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 	/* Swapchain image count. */
-	u32 imageCount = capabilities.minImageCount + 1;
-	if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount)
+	u32 image_count = capabilities.minImageCount + 1;
+	if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount)
 	{
-		imageCount = capabilities.maxImageCount;
+		image_count = capabilities.maxImageCount;
 	}
 
 	/* Create swapchain. */
-	VkSwapchainCreateInfoKHR createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = m_surface.handle;
+	VkSwapchainCreateInfoKHR create_info = {};
+	create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	create_info.surface = m_surface.handle;
 
-	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = extent;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	create_info.minImageCount = image_count;
+	create_info.imageFormat = surface_format.format;
+	create_info.imageColorSpace = surface_format.colorSpace;
+	create_info.imageExtent = extent;
+	create_info.imageArrayLayers = 1;
+	create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	/* (TODO, thoave01): We are assuming a single queue. */
-	createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	createInfo.queueFamilyIndexCount = 0;
-	createInfo.pQueueFamilyIndices = nullptr;
+	create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	create_info.queueFamilyIndexCount = 0;
+	create_info.pQueueFamilyIndices = nullptr;
 
-	createInfo.preTransform = capabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	create_info.preTransform = capabilities.currentTransform;
+	create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
+	create_info.presentMode = present_mode;
+	create_info.clipped = VK_TRUE;
 
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateSwapchainKHR(device.m_logical.m_handle, &createInfo, nullptr, &m_swapchain.m_handle));
+	VULKAN_ASSERT_SUCCESS(
+	    vkCreateSwapchainKHR(device.m_logical.m_handle, &create_info, nullptr, &m_swapchain.m_handle));
 
 	/* Initialize swapchain object. */
 	{
 		m_swapchain.m_device = &device;
-		m_swapchain.m_format = surfaceFormat.format;
+		m_swapchain.m_format = surface_format.format;
 		m_swapchain.m_extent = extent;
 
 		/* Initialize images. */
-		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &imageCount, nullptr);
-		m_swapchain.m_images.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &imageCount,
+		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &image_count, nullptr);
+		m_swapchain.m_images.resize(image_count);
+		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &image_count,
 		                        m_swapchain.m_images.data());
 
 		/* Initalize image views. */
 		for (size_t i = 0; i < m_swapchain.m_images.size(); i++)
 		{
-			std::unique_ptr<image> image_ = std::make_unique<image>();
-			image_->m_handle = m_swapchain.m_images[i];
-			image_->m_format = m_swapchain.m_format;
-			image_->m_width = m_swapchain.m_extent.width;
-			image_->m_height = m_swapchain.m_extent.height;
-			m_swapchain.m_vulkan_images.emplace_back(std::move(image_));
+			std::unique_ptr<image> img = std::make_unique<image>();
+			img->m_handle = m_swapchain.m_images[i];
+			img->m_format = m_swapchain.m_format;
+			img->m_width = m_swapchain.m_extent.width;
+			img->m_height = m_swapchain.m_extent.height;
+			m_swapchain.m_vulkan_images.emplace_back(std::move(img));
 
 			std::unique_ptr<image_view> imageView = std::make_unique<image_view>(*m_swapchain.m_vulkan_images[i]);
 			imageView->build(*m_swapchain.m_device);
@@ -165,18 +166,18 @@ void wsi::build_swapchain(device &device)
 
 void wsi::destroy_swapchain()
 {
-	for (auto &imageView : m_swapchain.m_image_views)
+	for (auto &image_view : m_swapchain.m_image_views)
 	{
-		imageView->destroy();
+		image_view->destroy();
 	}
 
 	vkDestroySwapchainKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, nullptr);
 }
 
-void wsi::acquire_image(semaphore &signalSemaphore, u32 *imageIndex)
+void wsi::acquire_image(semaphore &semaphore, u32 *image_index)
 {
 	VULKAN_ASSERT_SUCCESS(vkAcquireNextImageKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle,
-	                                            UINT64_MAX, signalSemaphore.m_handle, VK_NULL_HANDLE, imageIndex));
+	                                            UINT64_MAX, semaphore.m_handle, VK_NULL_HANDLE, image_index));
 }
 
 } /* namespace vulkan */

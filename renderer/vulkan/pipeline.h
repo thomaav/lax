@@ -37,7 +37,7 @@ public:
 	pipeline(const pipeline &) = delete;
 	pipeline operator=(const pipeline &) = delete;
 
-	void add_shader(shader &shader);
+	void add_shader(shader_module &shader);
 	void add_vertex_binding(u32 binding, size_t stride);
 	void add_vertex_attribute(u32 binding, u32 location, VkFormat format, u32 offset);
 	void build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent);

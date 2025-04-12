@@ -68,10 +68,10 @@ void context::build()
 		                                   { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } },
 		                                   { { -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } } };
 
-	shader vertexShader{};
+	shader_module vertexShader{};
 	vertexShader.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
 
-	shader fragmentShader{};
+	shader_module fragmentShader{};
 	fragmentShader.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
 
 	/* Create a pipeline. */
