@@ -1,7 +1,8 @@
 #pragma once
 
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include <third_party/volk/volk.h>
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>
@@ -24,7 +25,9 @@ public:
 
 	void add_instance_extension(const char *extension);
 	void add_device_extension(const char *extension);
+
 	void build();
+	void backend_test();
 
 private:
 	instance m_instance = {};

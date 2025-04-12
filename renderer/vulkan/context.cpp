@@ -52,27 +52,22 @@ struct vertex
 void context::build()
 {
 	/* Instance initialization. */
-	{
-		m_instance.build();
-		m_wsi.build_surface(m_instance);
-	}
+	m_instance.build();
+	m_wsi.build_surface(m_instance);
 
 	/* Device initialization. */
-	{
-		m_device.build(m_instance, m_wsi.m_surface.handle);
-		m_wsi.build_swapchain(m_device);
-		m_queue.build(m_device);
-	}
+	m_device.build(m_instance, m_wsi.m_surface.handle);
+	m_wsi.build_swapchain(m_device);
+	m_queue.build(m_device);
+}
 
-	const std::vector<vertex> vertices = { { { 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
-		                                   { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f } },
-		                                   { { -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } } };
+void context::backend_test()
+{
+	shader_module vertex_shader_module = {};
+	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
 
-	shader_module vertexShader{};
-	vertexShader.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
-
-	shader_module fragmentShader{};
-	fragmentShader.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
+	shader_module fragment_shader_module = {};
+	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
 
 	/* Create a pipeline. */
 	{
@@ -84,8 +79,8 @@ void context::build()
 
 		pipeline pipeline{};
 		{
-			pipeline.add_shader(vertexShader);
-			pipeline.add_shader(fragmentShader);
+			pipeline.add_shader(vertex_shader_module);
+			pipeline.add_shader(fragment_shader_module);
 
 			pipeline.add_vertex_binding(0, sizeof(vertex));
 			pipeline.add_vertex_attribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(vertex, pos));
@@ -172,9 +167,6 @@ void context::build()
 
 		m_device.wait();
 	}
-
-	fragmentShader.destroy();
-	vertexShader.destroy();
 }
 
 } /* namespace vulkan */

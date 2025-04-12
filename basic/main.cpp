@@ -8,21 +8,14 @@ int main(int argc, char *argv[])
 
 	vulkan::context ctx{};
 
-	/* Required for GLFW. */
+	/* (TODO, thoave01): Get GLFW extension requirements from platform. */
 	ctx.add_instance_extension("VK_KHR_surface");
 	ctx.add_instance_extension("VK_KHR_xcb_surface");
 	ctx.add_instance_extension("VK_KHR_get_physical_device_properties2");
 
-	/* I don't really need anything yet. */
-	ctx.add_device_extension("VK_KHR_maintenance2");
-	ctx.add_device_extension("VK_KHR_multiview");
-	ctx.add_device_extension("VK_KHR_create_renderpass2");
 	ctx.add_device_extension("VK_KHR_swapchain");
+	ctx.add_device_extension("VK_EXT_shader_object");
 
 	ctx.build();
-
-	// while (window.step())
-	// {
-	// 	;
-	// }
+	ctx.backend_test();
 }
