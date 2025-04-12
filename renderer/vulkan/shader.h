@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <third_party/volk/volk.h>
 
 #include <renderer/vulkan/device.h>
 
@@ -19,11 +19,11 @@ public:
 	void build(device &device, VkShaderStageFlagBits stage, const char *filename);
 	VkPipelineShaderStageCreateInfo get_pipeline_shader_stage_create_info();
 
-	VkShaderModule m_module = {};
-	VkDevice m_device_handle = {};
-	VkShaderStageFlagBits m_stage = {};
+	VkShaderModule m_handle = {};
 
 private:
+	VkDevice m_device_handle = {};
+	VkShaderStageFlagBits m_stage = {};
 };
 
 class shader_object
@@ -40,6 +40,7 @@ public:
 	VkShaderEXT m_handle;
 
 private:
+	VkDevice m_device_handle = {};
 };
 
 } /* namespace vulkan */

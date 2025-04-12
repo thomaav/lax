@@ -10,7 +10,10 @@ namespace vulkan
 
 shader_module::~shader_module()
 {
-	vkDestroyShaderModule(m_device_handle, m_module, nullptr);
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkDestroyShaderModule(m_device_handle, m_handle, nullptr);
+	}
 }
 
 void shader_module::build(device &device, VkShaderStageFlagBits stage, const char *filename)
@@ -33,7 +36,7 @@ void shader_module::build(device &device, VkShaderStageFlagBits stage, const cha
 	create_info.codeSize = shader_code.size();
 	create_info.pCode = reinterpret_cast<const uint32_t *>(shader_code.c_str());
 
-	VULKAN_ASSERT_SUCCESS(vkCreateShaderModule(device.m_logical.m_handle, &create_info, nullptr, &m_module));
+	VULKAN_ASSERT_SUCCESS(vkCreateShaderModule(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
 	m_device_handle = device.m_logical.m_handle;
 	m_stage = stage;
@@ -44,14 +47,17 @@ VkPipelineShaderStageCreateInfo shader_module::get_pipeline_shader_stage_create_
 	VkPipelineShaderStageCreateInfo shader_stage_info{};
 	shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shader_stage_info.stage = m_stage;
-	shader_stage_info.module = m_module;
+	shader_stage_info.module = m_handle;
 	shader_stage_info.pName = "main";
 	return shader_stage_info;
 }
 
 shader_object::~shader_object()
 {
-	assert(false);
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkDestroyShaderEXT(m_device_handle, m_handle, nullptr);
+	}
 }
 
 static VkShaderStageFlags get_next_stage(VkShaderStageFlagBits stage)
@@ -107,6 +113,8 @@ void shader_object::build(device &device, VkShaderStageFlagBits stage, const cha
 		.pSpecializationInfo = nullptr,                    //
 	};
 	VULKAN_ASSERT_SUCCESS(vkCreateShadersEXT(device.m_logical.m_handle, 1, &info, nullptr, &m_handle));
+
+	m_device_handle = device.m_logical.m_handle;
 }
 
 } /* namespace vulkan */

@@ -2,7 +2,8 @@
 
 #include <map>
 #include <vector>
-#include <vulkan/vulkan.h>
+
+#include <third_party/volk/volk.h>
 
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/render_pass.h>

@@ -1,7 +1,9 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
+// clang-format off
+#include <third_party/volk/volk.h>
 #include <GLFW/glfw3.h>
+// clang-format on
 
 #include <utils/type.h>
 
@@ -20,7 +22,7 @@ public:
 	void get_framebuffer_size(int &width, int &height);
 
 private:
-	u32 m_width{ 0 };
-	u32 m_height{ 0 };
-	GLFWwindow *m_window{ nullptr };
+	u32 m_width = 0;
+	u32 m_height = 0;
+	GLFWwindow *m_window = nullptr;
 };

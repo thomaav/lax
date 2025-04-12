@@ -1,7 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <vulkan/vulkan.h>
+
+#include <third_party/volk/volk.h>
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>

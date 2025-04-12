@@ -20,11 +20,12 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
-target_link_libraries(vulkan_backend PRIVATE volk)
-
 file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
 add_library(platform STATIC ${PLATFORM_SOURCES})
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
+target_link_libraries(vulkan_backend PRIVATE volk)
+target_link_libraries(platform PRIVATE volk)
 
 # Include paths for renderer and backends.
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})

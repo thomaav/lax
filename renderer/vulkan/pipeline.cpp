@@ -36,7 +36,7 @@ pipeline::~pipeline()
 
 void pipeline::add_shader(shader_module &shader)
 {
-	assert(shader.m_module != VK_NULL_HANDLE);
+	assert(shader.m_handle != VK_NULL_HANDLE);
 	m_stages.push_back(shader.get_pipeline_shader_stage_create_info());
 }
 

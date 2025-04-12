@@ -51,18 +51,29 @@ struct vertex
 
 void context::build()
 {
+	/* Initialize loading. */
+	VULKAN_ASSERT_SUCCESS(volkInitialize());
+
 	/* Instance initialization. */
 	m_instance.build();
+	volkLoadInstance(m_instance.m_handle);
 	m_wsi.build_surface(m_instance);
 
 	/* Device initialization. */
 	m_device.build(m_instance, m_wsi.m_surface.handle);
+	volkLoadDevice(m_device.m_logical.m_handle);
 	m_wsi.build_swapchain(m_device);
 	m_queue.build(m_device);
 }
 
 void context::backend_test()
 {
+	shader_object vertex_shader_object = {};
+	vertex_shader_object.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
+
+	shader_object fragment_shader_object = {};
+	fragment_shader_object.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
+
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
 
