@@ -26,6 +26,7 @@ public:
 	{
 		VkSurfaceKHR handle = {};
 		instance *m_instance = {};
+		glfw_window *m_window = {};
 	} m_surface{};
 
 	struct
@@ -41,14 +42,7 @@ public:
 		std::vector<std::unique_ptr<image_view>> m_image_views = {};
 	} m_swapchain = {};
 
-	struct
-	{
-		glfw_window m_handle = {};
-		u32 m_width = 800;
-		u32 m_height = 600;
-	} window = {};
-
-	void build_surface(instance &instance);
+	void build_surface(glfw_window &window, instance &instance);
 	void destroy_surface();
 	void build_swapchain(device &device);
 	void destroy_swapchain();

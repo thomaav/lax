@@ -7,12 +7,12 @@
 namespace vulkan
 {
 
-void wsi::build_surface(instance &instance)
+void wsi::build_surface(glfw_window &window, instance &instance)
 {
-	window.m_handle.init(window.m_width, window.m_height);
-	VULKAN_ASSERT_SUCCESS(window.m_handle.create_vulkan_surface(instance.m_handle, m_surface.handle));
+	VULKAN_ASSERT_SUCCESS(window.create_vulkan_surface(instance.m_handle, m_surface.handle));
 
 	m_surface.m_instance = &instance;
+	m_surface.m_window = &window;
 }
 
 void wsi::destroy_surface()
@@ -40,20 +40,17 @@ void wsi::build_swapchain(device &device)
 	                                          available_present_modes.data());
 
 	if (available_formats.empty() || available_present_modes.empty())
-
 	{
-		terminate("No suiteable swapchain formats");
+		terminate("No suitable swapchain formats");
 	}
 
 	if (available_present_modes.empty())
-
 	{
-		terminate("No suiteable swapchain present modes");
+		terminate("No suitable swapchain present modes");
 	}
 
 	/* Choose swapchain surface format. */
 	VkSurfaceFormatKHR surface_format = {};
-
 	bool found = false;
 	for (const auto &available_format : available_formats)
 	{
@@ -72,7 +69,6 @@ void wsi::build_swapchain(device &device)
 
 	/* Choose swapchain presentation mode. */
 	VkPresentModeKHR present_mode = {};
-
 	found = false;
 	for (const auto &available_present_mode : available_present_modes)
 	{
@@ -91,7 +87,7 @@ void wsi::build_swapchain(device &device)
 	/* Choose swapchain extent. */
 	int width = 0;
 	int height = 0;
-	window.m_handle.get_framebuffer_size(width, height);
+	m_surface.m_window->get_framebuffer_size(width, height);
 
 	VkExtent2D extent = {
 		(u32)width,
@@ -157,9 +153,9 @@ void wsi::build_swapchain(device &device)
 			img->m_height = m_swapchain.m_extent.height;
 			m_swapchain.m_vulkan_images.emplace_back(std::move(img));
 
-			std::unique_ptr<image_view> imageView = std::make_unique<image_view>(*m_swapchain.m_vulkan_images[i]);
-			imageView->build(*m_swapchain.m_device);
-			m_swapchain.m_image_views.emplace_back(std::move(imageView));
+			std::unique_ptr<image_view> img_view = std::make_unique<image_view>(*m_swapchain.m_vulkan_images[i]);
+			img_view->build(*m_swapchain.m_device);
+			m_swapchain.m_image_views.emplace_back(std::move(img_view));
 		}
 	}
 }

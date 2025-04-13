@@ -40,35 +40,14 @@ void pipeline::add_shader(shader_module &shader)
 	m_stages.push_back(shader.get_pipeline_shader_stage_create_info());
 }
 
-void pipeline::add_vertex_binding(u32 binding, size_t stride)
-{
-	VkVertexInputBindingDescription binding_description = {};
-	binding_description.binding = binding;
-	binding_description.stride = stride;
-	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	m_vertex_bindings.push_back(binding_description);
-}
-
-void pipeline::add_vertex_attribute(u32 binding, u32 location, VkFormat format, u32 offset)
-{
-	VkVertexInputAttributeDescription attribute_description = {};
-	attribute_description.binding = binding;
-	attribute_description.location = location;
-	attribute_description.format = format;
-	attribute_description.offset = offset;
-
-	m_vertex_attributes.push_back(attribute_description);
-}
-
 void pipeline::build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent)
 {
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = m_vertex_bindings.size();
-	vertex_input_info.pVertexBindingDescriptions = m_vertex_bindings.data();
-	vertex_input_info.vertexAttributeDescriptionCount = m_vertex_attributes.size();
-	vertex_input_info.pVertexAttributeDescriptions = m_vertex_attributes.data();
+	vertex_input_info.vertexBindingDescriptionCount = 0;
+	vertex_input_info.pVertexBindingDescriptions = nullptr;
+	vertex_input_info.vertexAttributeDescriptionCount = 0;
+	vertex_input_info.pVertexAttributeDescriptions = nullptr;
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

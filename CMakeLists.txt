@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
+# Compiler.
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+
 # C++ version.
 set(CMAKE_CXX_STANDARD 20)
-add_compile_options(-Wall -Wextra -pedantic -Werror)
+add_compile_options(-Wall -Wextra)
 
 # Dump compile-commands.json.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
@@ -29,6 +33,7 @@ target_link_libraries(platform PRIVATE volk)
 
 # Include paths for renderer and backends.
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
+target_include_directories(vulkan_backend SYSTEM PUBLIC ${VULKAN_SDK_INCLUDE_DIR})
 target_include_directories(platform PUBLIC ${CMAKE_SOURCE_DIR})
 
 # Include applications.

@@ -38,13 +38,13 @@ public:
 
 	void add_extension(const char *extension);
 	void log_info();
-	void build(instance &instance, VkSurfaceKHR surface);
+	void build(instance &instance, VkSurfaceKHR surface, const VpProfileProperties &vp_profile_properties);
 	void destroy();
 	void wait();
 
 private:
 	void find_physical_device(instance &instance, VkSurfaceKHR surface, bool must_be_discrete);
-	void create_logical_device();
+	void create_logical_device(instance &instance, const VpProfileProperties &vp_profile_properties);
 
 	std::vector<const char *> m_extensions = {};
 };

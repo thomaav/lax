@@ -3,6 +3,9 @@
 #include <vector>
 
 #include <third_party/volk/volk.h>
+#include <vulkan/vulkan_profiles.hpp>
+
+#include <platform/window.h>
 
 namespace vulkan
 {
@@ -17,7 +20,7 @@ public:
 	instance operator=(const instance &) = delete;
 
 	void add_extension(const char *extension);
-	void build();
+	void build(glfw_window &window, const VpProfileProperties &vp_profile_properties);
 	void destroy();
 
 	VkInstance m_handle = {};

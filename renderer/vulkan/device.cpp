@@ -70,12 +70,12 @@ void device::log_info()
 	info("Picked physical device %s", device_properties.deviceName);
 }
 
-void device::build(instance &instance, VkSurfaceKHR surface)
+void device::build(instance &instance, VkSurfaceKHR surface, const VpProfileProperties &vp_profile_properties)
 {
 	find_physical_device(instance, surface, false);
 	VULKAN_ASSERT_NOT_NULL(m_physical.m_handle);
 
-	create_logical_device();
+	create_logical_device(instance, vp_profile_properties);
 	VULKAN_ASSERT_NOT_NULL(m_logical.m_handle);
 }
 
@@ -143,30 +143,38 @@ void device::find_physical_device(instance &instance, VkSurfaceKHR surface, bool
 	terminate("No suitable physical device found");
 }
 
-void device::create_logical_device()
+void device::create_logical_device(instance &instance, const VpProfileProperties &vp_profile_properties)
 {
-	u32 queueIndex = find_queue_family_with_all_capabilities(m_physical.m_handle).value();
+	VkBool32 profile_supported = true;
+	vpGetPhysicalDeviceProfileSupport(instance.m_handle, m_physical.m_handle, &vp_profile_properties,
+	                                  &profile_supported);
+	if (!profile_supported)
 	{
-		VkDeviceQueueCreateInfo queue_info = {};
-		queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queue_info.queueFamilyIndex = queueIndex;
-		queue_info.queueCount = 1;
-		float queue_priority = 1.0f;
-		queue_info.pQueuePriorities = &queue_priority;
-
-		VkPhysicalDeviceFeatures device_features = {};
-
-		VkDeviceCreateInfo device_info = {};
-		device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		device_info.pQueueCreateInfos = &queue_info;
-		device_info.queueCreateInfoCount = 1;
-		device_info.pEnabledFeatures = &device_features;
-
-		device_info.enabledExtensionCount = m_extensions.size();
-		device_info.ppEnabledExtensionNames = m_extensions.data();
-
-		VULKAN_ASSERT_SUCCESS(vkCreateDevice(m_physical.m_handle, &device_info, nullptr, &m_logical.m_handle));
+		terminate("Requested Vulkan profile not supported, error at device creation");
 	}
+
+	u32 queue_index = find_queue_family_with_all_capabilities(m_physical.m_handle).value();
+	VkDeviceQueueCreateInfo queue_create_info = {};
+	queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queue_create_info.queueFamilyIndex = queue_index;
+	queue_create_info.queueCount = 1;
+	float queue_priority = 1.0f;
+	queue_create_info.pQueuePriorities = &queue_priority;
+
+	VkDeviceCreateInfo device_create_info = {};
+	device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	device_create_info.pQueueCreateInfos = &queue_create_info;
+	device_create_info.queueCreateInfoCount = 1;
+	add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	device_create_info.enabledExtensionCount = m_extensions.size();
+	device_create_info.ppEnabledExtensionNames = m_extensions.data();
+
+	VpDeviceCreateInfo vp_device_create_info{};
+	vp_device_create_info.pCreateInfo = &device_create_info;
+	vp_device_create_info.pEnabledFullProfiles = &vp_profile_properties;
+	vp_device_create_info.enabledFullProfileCount = 1;
+
+	VULKAN_ASSERT_SUCCESS(vpCreateDevice(m_physical.m_handle, &vp_device_create_info, nullptr, &m_logical.m_handle));
 }
 
 } /* namespace vulkan */

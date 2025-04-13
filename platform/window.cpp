@@ -60,3 +60,10 @@ void glfw_window::get_framebuffer_size(int &width, int &height)
 {
 	glfwGetFramebufferSize(m_window, &width, &height);
 }
+
+std::vector<const char *> glfw_window::get_required_surface_extensions()
+{
+	u32 extension_count = 0;
+	const char **extensions = glfwGetRequiredInstanceExtensions(&extension_count);
+	return { extensions, extensions + extension_count };
+}

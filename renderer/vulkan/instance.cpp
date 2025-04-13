@@ -36,28 +36,31 @@ void instance::check_extensions_available()
 	}
 }
 
-void instance::build()
+void instance::build(glfw_window &window, const VpProfileProperties &vp_profile_properties)
 {
-	VkApplicationInfo app_info = {};
-	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	app_info.pApplicationName = nullptr;
-	app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	app_info.pEngineName = nullptr;
-	app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	app_info.apiVersion = VK_API_VERSION_1_0;
+	VkBool32 profile_supported = true;
+	vpGetInstanceProfileSupport(nullptr, &vp_profile_properties, &profile_supported);
+	if (!profile_supported)
+	{
+		terminate("Requested Vulkan profile not supported, error at instance creation");
+	}
 
-	VkInstanceCreateInfo instance_info = {};
-	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instance_info.pApplicationInfo = &app_info;
-
+	VkInstanceCreateInfo instance_create_info = {};
+	instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	for (const char *extension : window.get_required_surface_extensions())
+	{
+		add_extension(extension);
+	}
 	check_extensions_available();
-	instance_info.enabledExtensionCount = m_extensions.size();
-	instance_info.ppEnabledExtensionNames = m_extensions.data();
+	instance_create_info.enabledExtensionCount = m_extensions.size();
+	instance_create_info.ppEnabledExtensionNames = m_extensions.data();
 
-	instance_info.enabledLayerCount = 0;
-	instance_info.ppEnabledLayerNames = nullptr;
+	VpInstanceCreateInfo vp_instance_create_info = {};
+	vp_instance_create_info.pEnabledFullProfiles = &vp_profile_properties;
+	vp_instance_create_info.enabledFullProfileCount = 1;
+	vp_instance_create_info.pCreateInfo = &instance_create_info;
 
-	VULKAN_ASSERT_SUCCESS(vkCreateInstance(&instance_info, nullptr, &m_handle));
+	VULKAN_ASSERT_SUCCESS(vpCreateInstance(&vp_instance_create_info, nullptr, &m_handle));
 }
 
 void instance::destroy()

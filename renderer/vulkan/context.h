@@ -30,6 +30,7 @@ public:
 	void backend_test();
 
 private:
+	glfw_window m_window = {};
 	instance m_instance = {};
 	device m_device = {};
 	wsi m_wsi = {};
