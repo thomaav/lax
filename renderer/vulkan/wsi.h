@@ -2,7 +2,10 @@
 
 #include <memory>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
+#pragma clang diagnostic pop
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>

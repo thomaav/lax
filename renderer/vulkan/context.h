@@ -2,7 +2,11 @@
 
 #include <vector>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
+#include <vulkan/vulkan_profiles.hpp>
+#pragma clang diagnostic pop
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>

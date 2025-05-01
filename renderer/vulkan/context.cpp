@@ -3,9 +3,6 @@
 #include <optional>
 #include <string_view>
 
-#include <third_party/volk/volk.h>
-#include <vulkan/vulkan_profiles.hpp>
-
 #include <platform/window.h>
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/command_pool.h>

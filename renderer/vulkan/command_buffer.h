@@ -1,6 +1,9 @@
 #pragma once
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
+#pragma clang diagnostic pop
 
 #include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/device.h>

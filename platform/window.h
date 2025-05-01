@@ -3,8 +3,11 @@
 #include <vector>
 
 // clang-format off
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
 #include <GLFW/glfw3.h>
+#pragma clang diagnostic pop
 // clang-format on
 
 #include <utils/type.h>

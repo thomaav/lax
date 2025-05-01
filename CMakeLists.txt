@@ -50,6 +50,12 @@ target_link_libraries(basic platform)
 target_link_libraries(basic glfw)
 target_link_libraries(basic vulkan)
 
+# Not added by default on Mac, but it's where the Vulkan SDK puts the global installation.
+if(APPLE)
+  target_include_directories(basic PUBLIC /usr/local/include)
+  target_link_directories(basic PUBLIC /usr/local/lib)
+endif()
+
 # Add shaders to applications.
 add_custom_target(copy_shaders
   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/basic/shaders ${BASH_EXECUTABLE} ./compile.sh
