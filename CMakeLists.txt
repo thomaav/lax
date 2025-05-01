@@ -23,17 +23,35 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 # Build libraries.
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
+target_link_libraries(vulkan_backend PRIVATE volk)
 
 file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
 add_library(platform STATIC ${PLATFORM_SOURCES})
-
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
-target_link_libraries(vulkan_backend PRIVATE volk)
 target_link_libraries(platform PRIVATE volk)
+
+if(APPLE)
+  file(GLOB METAL_BACKEND_CPP_SOURCES "${PROJECT_SOURCE_DIR}/renderer/metal/*.cpp")
+  file(GLOB METAL_BACKEND_MM_SOURCES "${PROJECT_SOURCE_DIR}/renderer/metal/*.mm")
+  set_source_files_properties(${METAL_BACKEND_MM_SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
+  add_library(metal_backend STATIC ${METAL_BACKEND_CPP_SOURCES} ${METAL_BACKEND_MM_SOURCES})
+  target_link_libraries(metal_backend PRIVATE
+	"-framework Metal"
+    "-framework MetalKit"
+    "-framework AppKit"
+    "-framework Foundation"
+    "-framework QuartzCore"
+	volk
+  )
+endif()
 
 # Include paths for renderer and backends.
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
 target_include_directories(vulkan_backend SYSTEM PUBLIC ${VULKAN_SDK_INCLUDE_DIR})
+if(APPLE)
+  target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
+  target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")
+endif()
 target_include_directories(platform PUBLIC ${CMAKE_SOURCE_DIR})
 
 # Include applications.
@@ -44,6 +62,9 @@ add_executable(basic ${PROJECT_SOURCE_DIR}/basic/main.cpp)
 
 # Add library dependencies to applications.
 target_link_libraries(basic vulkan_backend)
+if(APPLE)
+  target_link_libraries(basic metal_backend)
+endif()
 target_link_libraries(basic platform)
 
 # Add external dependencies to applications.

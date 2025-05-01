@@ -7,6 +7,10 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
 #include <GLFW/glfw3.h>
+#if defined(__APPLE__)
+#define GLFW_EXPOSE_NATIVE_COCOA
+#include <GLFW/glfw3native.h>
+#endif
 #pragma clang diagnostic pop
 // clang-format on
 
@@ -27,8 +31,11 @@ public:
 	void get_framebuffer_size(int &width, int &height);
 	std::vector<const char *> get_required_surface_extensions();
 
+	/* (TODO, thoave01): private; this is just for Metal testing. */
+	/* (TODO, thoave01): We should just expose get_cocoa_window under LAX_METAL. */
+	GLFWwindow *m_window = nullptr;
+
 private:
 	u32 m_width = 0;
 	u32 m_height = 0;
-	GLFWwindow *m_window = nullptr;
 };

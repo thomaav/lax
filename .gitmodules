@@ -1,3 +1,6 @@
 [submodule "volk"]
 	path = third_party/volk
 	url = https://github.com/zeux/volk.git
+[submodule "metal-cpp-cmake"]
+	path = third_party/metal-cpp-cmake
+	url = https://github.com/LeeTeng2001/metal-cpp-cmake

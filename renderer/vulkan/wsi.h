@@ -25,6 +25,12 @@ public:
 	wsi(const wsi &) = delete;
 	wsi operator=(const wsi &) = delete;
 
+	void build_surface(glfw_window &window, instance &instance);
+	void destroy_surface();
+	void build_swapchain(device &device);
+	void destroy_swapchain();
+	void acquire_image(semaphore &semaphore, u32 *image_index);
+
 	struct
 	{
 		VkSurfaceKHR handle = {};
@@ -44,12 +50,6 @@ public:
 		std::vector<std::unique_ptr<image>> m_vulkan_images = {};
 		std::vector<std::unique_ptr<image_view>> m_image_views = {};
 	} m_swapchain = {};
-
-	void build_surface(glfw_window &window, instance &instance);
-	void destroy_surface();
-	void build_swapchain(device &device);
-	void destroy_swapchain();
-	void acquire_image(semaphore &semaphore, u32 *image_index);
 
 private:
 };
