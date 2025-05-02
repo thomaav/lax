@@ -1,6 +1,10 @@
+#include <filesystem>
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include <model/model.h>
 #include <utils/util.h>
@@ -8,27 +12,57 @@
 void model::load(const char *path)
 {
 	Assimp::Importer importer = {};
-	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate);
+	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 	if (nullptr == scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || nullptr == scene->mRootNode)
 	{
 		terminate("Assimp could not load %s", path);
 	}
 
+	/* Parse the mesh. */
 	m_meshes.reserve(scene->mNumMeshes);
 	for (u32 mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx)
 	{
 		const aiMesh *assimp_mesh = scene->mMeshes[mesh_idx];
+		const aiMaterial *assimp_material = scene->mMaterials[assimp_mesh->mMaterialIndex];
+
+		m_meshes.push_back({});
 		mesh &mesh = m_meshes[mesh_idx];
 
 		/* Add vertices. */
 		for (u32 v_idx = 0; v_idx < assimp_mesh->mNumVertices; ++v_idx)
 		{
+			vertex vertex = {};
+
+			/* Get position. */
 			const aiVector3D &pos = assimp_mesh->mVertices[v_idx];
-			const vertex vertex = {
-				.position = { pos.x, pos.y, pos.z },
-				.normal = {},
-				.uv = {},
-			};
+			vertex.position = { pos.x, pos.y, pos.z };
+
+			/* Get normal. */
+			if (assimp_mesh->HasNormals())
+			{
+				const aiVector3D &normal = assimp_mesh->mNormals[v_idx];
+				vertex.normal = { normal.x, normal.y, normal.z };
+			}
+
+			/* Get UV. */
+			if (assimp_mesh->HasTextureCoords(0))
+			{
+				const aiVector3D &uv = assimp_mesh->mTextureCoords[0][v_idx];
+				vertex.uv = { uv.x, uv.y };
+			}
+
+			/* Get color. */
+			if (assimp_mesh->HasVertexColors(0))
+			{
+				const aiColor4D &color = assimp_mesh->mColors[0][v_idx];
+				vertex.color = { color.r, color.g, color.b, color.a };
+			}
+			else
+			{
+				float random_color = random_float();
+				vertex.color = { random_color, random_color, random_color, 1.0f };
+			}
+
 			mesh.m_vertices.push_back(vertex);
 		}
 
@@ -40,6 +74,23 @@ void model::load(const char *path)
 			{
 				mesh.m_indices.push_back(face.mIndices[i_idx]);
 			}
+		}
+
+		/* Add material. */
+		// aiString texture_path = {};
+		// if (AI_SUCCESS != assimp_material->GetTexture(aiTextureType_DIFFUSE, 0, &texture_path))
+		// {
+		// 	terminate("Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
+		// }
+
+		std::filesystem::path p(path);
+		std::string full_path = p.parent_path().string() + "/viking_room.png";
+		int channels;
+		stbi_uc *data = stbi_load(full_path.c_str(), &mesh.m_width, &mesh.m_height, &channels, STBI_rgb_alpha);
+		if (nullptr != data)
+		{
+			mesh.m_texture.assign(data, data + mesh.m_width * mesh.m_height * 4);
+			stbi_image_free(data);
 		}
 	}
 }

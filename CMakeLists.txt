@@ -58,6 +58,7 @@ if(APPLE)
   target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/assimp/include")
+  target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/stb")
 endif()
 target_include_directories(platform PUBLIC ${CMAKE_SOURCE_DIR})
 

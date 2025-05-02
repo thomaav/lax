@@ -12,7 +12,9 @@ struct vertex
 	glm::vec3 position = {};
 	glm::vec3 normal = {};
 	glm::vec2 uv = {};
+	glm::vec4 color = {};
 };
+static_assert(sizeof(vertex) == 48, "Unexpected struct vertex size");
 
 class mesh
 {
@@ -25,6 +27,9 @@ public:
 
 	std::vector<vertex> m_vertices = {};
 	std::vector<u32> m_indices = {};
+
+	std::vector<unsigned char> m_texture = {};
+	int m_width, m_height;
 
 private:
 };

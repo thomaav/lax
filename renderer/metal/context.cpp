@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <sstream>
 
@@ -9,6 +10,14 @@
 #include <model/model.h>
 #include <renderer/metal/context.h>
 #include <utils/util.h>
+
+struct uniforms
+{
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3, "Unexpected struct uniform size");
 
 namespace metal
 {
@@ -27,8 +36,10 @@ void context::build()
 void context::backend_test()
 {
 	model model = {};
-	model.load("bin/models/model.obj");
-	terminate("done");
+	model.load("bin/assets/models/viking_room.obj");
+	info("mesh count %u", model.m_meshes.size());
+	info("vertex count %u", model.m_meshes[0].m_vertices.size());
+	info("index count %u", model.m_meshes[0].m_indices.size());
 
 	NS::Error *error = nullptr;
 
@@ -36,12 +47,43 @@ void context::backend_test()
 	MTL::CommandQueue *queue = m_metal_device->newCommandQueue();
 
 	/* Create vertex buffer. */
-	constexpr simd::float3 vertices[] = {
-		{ -0.5f, -0.5f, 0.0f }, //
-		{ 0.5f, -0.5f, 0.0f },  //
-		{ 0.0f, 0.5f, 0.0f }    //
-	};
-	MTL::Buffer *vertex_buffer = m_metal_device->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
+	MTL::Buffer *vertex_buffer = m_metal_device->newBuffer(
+	    model.m_meshes[0].m_vertices.data(),
+	    sizeof(model.m_meshes[0].m_vertices[0]) * model.m_meshes[0].m_vertices.size(), MTL::ResourceStorageModeShared);
+	MTL::Buffer *index_buffer = m_metal_device->newBuffer(
+	    model.m_meshes[0].m_indices.data(), sizeof(model.m_meshes[0].m_indices[0]) * model.m_meshes[0].m_indices.size(),
+	    MTL::ResourceStorageModeShared);
+
+	/* Create uniforms. */
+	uniforms uniforms = {};
+	uniforms.model = glm::mat4(1.0f);
+	uniforms.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	uniforms.projection = glm::perspective(glm::radians(45.0f), 800 / (float)600, 0.1f, 10.0f);
+	MTL::Buffer *uniform_buffer =
+	    m_metal_device->newBuffer(&uniforms, sizeof(uniforms), MTL::ResourceStorageModeShared);
+
+	/* Create texture. */
+	MTL::TextureDescriptor *td = MTL::TextureDescriptor::alloc()->init();
+	td->setWidth(model.m_meshes[0].m_width);
+	td->setHeight(model.m_meshes[0].m_height);
+	td->setPixelFormat(MTL::PixelFormatRGBA8Unorm_sRGB);
+	td->setTextureType(MTL::TextureType2D);
+	td->setStorageMode(MTL::StorageModeShared);
+	td->setUsage(MTL::ResourceUsageSample | MTL::ResourceUsageRead);
+	MTL::Texture *texture = m_metal_device->newTexture(td);
+	texture->replaceRegion(MTL::Region(0, 0, 0, model.m_meshes[0].m_width, model.m_meshes[0].m_height, 1), 0,
+	                       model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_width * 4);
+	td->release();
+
+	/* Create depth texture. */
+	MTL::TextureDescriptor *dtd = MTL::TextureDescriptor::alloc()->init();
+	dtd->setTextureType(MTL::TextureType2D);
+	dtd->setPixelFormat(MTL::PixelFormatDepth16Unorm);
+	dtd->setWidth(800);
+	dtd->setHeight(600);
+	dtd->setUsage(MTL::TextureUsageRenderTarget);
+	MTL::Texture *depth_texture = m_metal_device->newTexture(dtd);
+	dtd->release();
 
 	/* Load shaders. */
 	std::string shader_code = {};
@@ -85,6 +127,7 @@ void context::backend_test()
 	ppl_desc->setVertexFunction(vs);
 	ppl_desc->setFragmentFunction(fs);
 	ppl_desc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+	ppl_desc->setDepthAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
 	MTL::RenderPipelineState *ppl = m_metal_device->newRenderPipelineState(ppl_desc, &error);
 	if (nullptr != error)
 	{
@@ -97,6 +140,18 @@ void context::backend_test()
 	cad->setLoadAction(MTL::LoadActionClear);
 	cad->setClearColor(MTL::ClearColor(41.0f / 255.0f, 42.0f / 255.0f, 48.0f / 255.0f, 1.0));
 	cad->setStoreAction(MTL::StoreActionStore);
+	MTL::RenderPassDepthAttachmentDescriptor *dad = rpd->depthAttachment();
+	dad->setTexture(depth_texture);
+	dad->setLoadAction(MTL::LoadActionClear);
+	dad->setStoreAction(MTL::StoreActionDontCare);
+	dad->setClearDepth(1.0);
+
+	/* Create depth/stencil state. */
+	MTL::DepthStencilDescriptor *dsd = MTL::DepthStencilDescriptor::alloc()->init();
+	dsd->setDepthCompareFunction(MTL::CompareFunction::CompareFunctionLess);
+	dsd->setDepthWriteEnabled(true);
+	MTL::DepthStencilState *ds_state = m_metal_device->newDepthStencilState(dsd);
+	dsd->release();
 
 	/* Release temporary objects used for loading. */
 	ppl_desc->release();
@@ -106,16 +161,27 @@ void context::backend_test()
 
 	while (m_window.step())
 	{
+		static auto start_time = std::chrono::high_resolution_clock::now();
+		auto current_time = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+		struct uniforms *uniforms_ptr = reinterpret_cast<struct uniforms *>(uniform_buffer->contents());
+		uniforms_ptr->model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
 		NS::AutoreleasePool *pool = NS::AutoreleasePool::alloc()->init();
 		{
 			CA::MetalDrawable *surface = reinterpret_cast<CA::MetalDrawable *>(m_wsi.get_next_drawable());
-			cad->setTexture(surface->texture());
+			rpd->colorAttachments()->object(0)->setTexture(surface->texture());
 
 			MTL::CommandBuffer *cmd_buf = queue->commandBuffer();
 			MTL::RenderCommandEncoder *rce = cmd_buf->renderCommandEncoder(rpd);
 			rce->setRenderPipelineState(ppl);
-			rce->setVertexBuffer(vertex_buffer, 0, 0);
-			rce->drawPrimitives(MTL::PrimitiveTypeTriangle, (NS::UInteger)0, (NS::UInteger)3);
+			rce->setDepthStencilState(ds_state);
+			rce->setVertexBuffer(vertex_buffer, /* offset = */ 0, /* index = */ 0);
+			rce->setVertexBuffer(uniform_buffer, /* offset = */ 0, /* index = */ 1);
+			rce->setFragmentTexture(texture, /* index 0 = */ 0);
+			rce->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, model.m_meshes[0].m_indices.size(),
+			                           MTL::IndexTypeUInt32, index_buffer,
+			                           /* indexBufferOffset = */ (NS::UInteger)0);
 			rce->endEncoding();
 
 			cmd_buf->presentDrawable(surface);
@@ -128,8 +194,11 @@ void context::backend_test()
 	rpd->release();
 	ppl->release();
 	vertex_buffer->release();
+	index_buffer->release();
+	texture->release();
+	depth_texture->release();
+	ds_state->release();
 	queue->release();
 	m_metal_device->release();
 }
-
 }
