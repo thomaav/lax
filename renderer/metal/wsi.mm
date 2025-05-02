@@ -14,7 +14,7 @@ void wsi::build(glfw_window &window, MTL::Device *metal_device)
 	NSWindow *ns_window = glfwGetCocoaWindow(window.m_window);
 	CAMetalLayer *metal_layer = [CAMetalLayer layer];
 	metal_layer.device = (__bridge id<MTLDevice>)metal_device;
-	metal_layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+	metal_layer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 	ns_window.contentView.layer = metal_layer;
 	ns_window.contentView.wantsLayer = YES;
 
