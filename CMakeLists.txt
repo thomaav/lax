@@ -21,9 +21,13 @@ set(CMAKE_LIBRARY_DIR ./lib)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 
 # Build libraries.
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/assimp" assimp)
+
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
 target_link_libraries(vulkan_backend PRIVATE volk)
 
 file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
@@ -31,7 +35,7 @@ add_library(platform STATIC ${PLATFORM_SOURCES})
 target_link_libraries(platform PRIVATE volk)
 
 if(APPLE)
-  file(GLOB METAL_BACKEND_CPP_SOURCES "${PROJECT_SOURCE_DIR}/renderer/metal/*.cpp")
+  file(GLOB METAL_BACKEND_CPP_SOURCES "${PROJECT_SOURCE_DIR}/renderer/metal/*.cpp" "${PROJECT_SOURCE_DIR}/model/*.cpp") # (TODO, thoave01): Remove model.
   file(GLOB METAL_BACKEND_MM_SOURCES "${PROJECT_SOURCE_DIR}/renderer/metal/*.mm")
   set_source_files_properties(${METAL_BACKEND_MM_SOURCES} PROPERTIES COMPILE_FLAGS "-x objective-c++")
   add_library(metal_backend STATIC ${METAL_BACKEND_CPP_SOURCES} ${METAL_BACKEND_MM_SOURCES})
@@ -42,6 +46,8 @@ if(APPLE)
     "-framework Foundation"
     "-framework QuartzCore"
 	volk
+	assimp
+	glm
   )
 endif()
 
@@ -51,6 +57,7 @@ target_include_directories(vulkan_backend SYSTEM PUBLIC ${VULKAN_SDK_INCLUDE_DIR
 if(APPLE)
   target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")
+  target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/assimp/include")
 endif()
 target_include_directories(platform PUBLIC ${CMAKE_SOURCE_DIR})
 
@@ -79,7 +86,7 @@ endif()
 
 # Add shaders to applications.
 add_custom_target(copy_shaders
-  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/basic/shaders ${BASH_EXECUTABLE} ./compile.sh
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/basic/shaders ${CMAKE_CURRENT_BINARY_DIR}/bin/shaders
+  COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/assets/shaders ${BASH_EXECUTABLE} ./compile.sh
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/bin/assets
 )
 add_dependencies(basic copy_shaders)

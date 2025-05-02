@@ -1,0 +1,2 @@
+assets/models/viking_room.obj filter=lfs diff=lfs merge=lfs -text
+assets/models/viking_room.png filter=lfs diff=lfs merge=lfs -text

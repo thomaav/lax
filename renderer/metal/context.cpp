@@ -6,6 +6,7 @@
 #include <MetalKit/MetalKit.hpp>
 #include <simd/simd.h>
 
+#include <model/model.h>
 #include <renderer/metal/context.h>
 #include <utils/util.h>
 
@@ -25,6 +26,10 @@ void context::build()
 
 void context::backend_test()
 {
+	model model = {};
+	model.load("bin/models/model.obj");
+	terminate("done");
+
 	NS::Error *error = nullptr;
 
 	/* Create queue. */
