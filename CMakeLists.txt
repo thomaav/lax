@@ -53,7 +53,7 @@ endif()
 
 # Include paths for renderer and backends.
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
-target_include_directories(vulkan_backend SYSTEM PUBLIC ${VULKAN_SDK_INCLUDE_DIR})
+target_include_directories(vulkan_backend PUBLIC ${VULKAN_SDK_INCLUDE_DIR})
 if(APPLE)
   target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")

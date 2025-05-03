@@ -46,10 +46,10 @@ void context::backend_test()
 	/* Load shaders. */
 	std::string shader_code = {};
 	{
-		std::ifstream file("bin/shaders/metal_library.metal", std::ios::binary);
+		std::ifstream file("bin/assets/shaders/metal_library.metal", std::ios::binary);
 		if (!file.is_open())
 		{
-			terminate("Could not open shader %s", "bin/shaders/metal_library.metal");
+			terminate("Could not open shader %s", "bin/assets/shaders/metal_library.metal");
 		}
 
 		std::stringstream file_data = {};

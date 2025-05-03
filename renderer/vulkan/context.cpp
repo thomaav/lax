@@ -66,10 +66,10 @@ void context::build()
 void context::backend_test()
 {
 	shader_module vertex_shader_module = {};
-	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/shaders/basic.vert.spv");
+	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
 
 	shader_module fragment_shader_module = {};
-	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/shaders/basic.frag.spv");
+	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/basic.frag.spv");
 
 	pipeline_layout pipeline_layout = {};
 	pipeline_layout.build(m_device);

@@ -1,5 +1,8 @@
+#if defined(__APPLE__)
 #include <renderer/metal/context.h>
+#elif defined(__linux__)
 #include <renderer/vulkan/context.h>
+#endif
 #include <utils/util.h>
 
 int main(int argc, char *argv[])
