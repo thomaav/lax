@@ -36,10 +36,7 @@ void context::build()
 void context::backend_test()
 {
 	model model = {};
-	model.load("bin/assets/models/viking_room.obj");
-	info("mesh count %u", model.m_meshes.size());
-	info("vertex count %u", model.m_meshes[0].m_vertices.size());
-	info("index count %u", model.m_meshes[0].m_indices.size());
+	model.load("bin/assets/models/DamagedHelmet.glb");
 
 	NS::Error *error = nullptr;
 
@@ -57,8 +54,9 @@ void context::backend_test()
 	/* Create uniforms. */
 	uniforms uniforms = {};
 	uniforms.model = glm::mat4(1.0f);
-	uniforms.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	uniforms.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	uniforms.projection = glm::perspective(glm::radians(45.0f), 800 / (float)600, 0.1f, 10.0f);
+	uniforms.projection[1][1] *= -1.0f;
 	MTL::Buffer *uniform_buffer =
 	    m_metal_device->newBuffer(&uniforms, sizeof(uniforms), MTL::ResourceStorageModeShared);
 

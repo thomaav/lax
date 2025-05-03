@@ -12,7 +12,7 @@
 void model::load(const char *path)
 {
 	Assimp::Importer importer = {};
-	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 	if (nullptr == scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || nullptr == scene->mRootNode)
 	{
 		terminate("Assimp could not load %s", path);
@@ -77,20 +77,30 @@ void model::load(const char *path)
 		}
 
 		/* Add material. */
-		// aiString texture_path = {};
-		// if (AI_SUCCESS != assimp_material->GetTexture(aiTextureType_DIFFUSE, 0, &texture_path))
-		// {
-		// 	terminate("Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
-		// }
-
-		std::filesystem::path p(path);
-		std::string full_path = p.parent_path().string() + "/viking_room.png";
-		int channels;
-		stbi_uc *data = stbi_load(full_path.c_str(), &mesh.m_width, &mesh.m_height, &channels, STBI_rgb_alpha);
-		if (nullptr != data)
+		constexpr u32 texture_idx = 0;
+		aiString texture_path = {};
+		if (AI_SUCCESS == assimp_material->GetTexture(aiTextureType_DIFFUSE, texture_idx, &texture_path))
 		{
-			mesh.m_texture.assign(data, data + mesh.m_width * mesh.m_height * 4);
-			stbi_image_free(data);
+			/* Validate texture. */
+			aiTexture *texture = scene->mTextures[texture_idx];
+			if (nullptr == texture)
+			{
+				terminate("Assimp could not get diffuse aiTexture for %s, mesh %u", path, mesh_idx);
+			}
+			if (texture->mHeight != 0)
+			{
+				terminate("Found raw texture data with Assimp, handling not implemented");
+			}
+
+			/* Decode texture data. */
+			int channels;
+			stbi_uc *texture_data = stbi_load_from_memory((u8 *)texture->pcData, /* len = */ texture->mWidth,
+			                                              &mesh.m_width, &mesh.m_height, &channels, STBI_rgb_alpha);
+			mesh.m_texture.assign(texture_data, texture_data + mesh.m_width * mesh.m_height * 4);
+		}
+		else
+		{
+			terminate("Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
 		}
 	}
 }
