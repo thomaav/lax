@@ -17,7 +17,7 @@ class device
 {
 public:
 	device() = default;
-	~device() = default;
+	~device();
 
 	device(const device &) = delete;
 	device operator=(const device &) = delete;
@@ -42,7 +42,6 @@ public:
 	void add_extension(const char *extension);
 	void log_info();
 	void build(instance &instance, VkSurfaceKHR surface, const VpProfileProperties &vp_profile_properties);
-	void destroy();
 	void wait();
 
 private:

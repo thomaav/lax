@@ -7,17 +7,27 @@
 namespace vulkan
 {
 
+wsi::~wsi()
+{
+	/* Destroy swapchain. */
+	if (VK_NULL_HANDLE != m_swapchain.m_handle)
+	{
+		vkDestroySwapchainKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, nullptr);
+	}
+
+	/* Destroy surface. */
+	if (VK_NULL_HANDLE != m_surface.handle)
+	{
+		vkDestroySurfaceKHR(m_surface.m_instance->m_handle, m_surface.handle, nullptr);
+	}
+}
+
 void wsi::build_surface(glfw_window &window, instance &instance)
 {
 	VULKAN_ASSERT_SUCCESS(window.create_vulkan_surface(instance.m_handle, m_surface.handle));
 
 	m_surface.m_instance = &instance;
 	m_surface.m_window = &window;
-}
-
-void wsi::destroy_surface()
-{
-	vkDestroySurfaceKHR(m_surface.m_instance->m_handle, m_surface.handle, nullptr);
 }
 
 void wsi::build_swapchain(device &device)
@@ -158,16 +168,6 @@ void wsi::build_swapchain(device &device)
 			m_swapchain.m_image_views.emplace_back(std::move(img_view));
 		}
 	}
-}
-
-void wsi::destroy_swapchain()
-{
-	for (auto &image_view : m_swapchain.m_image_views)
-	{
-		image_view->destroy();
-	}
-
-	vkDestroySwapchainKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, nullptr);
 }
 
 void wsi::acquire_image(semaphore &semaphore, u32 *image_index)

@@ -25,10 +25,19 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/assimp" assimp)
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross" spirv_cross)
+set(VMA_BUILD_SAMPLE OFF)
+set(VMA_IMPLEMENTATION_BUILD ON)
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator" vma)
 
-file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp")
+file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/model/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
-target_link_libraries(vulkan_backend PRIVATE volk)
+target_link_libraries(vulkan_backend PRIVATE
+  volk
+  assimp
+  spirv-cross-core
+  GPUOpen::VulkanMemoryAllocator
+)
 
 file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
 add_library(platform STATIC ${PLATFORM_SOURCES})
@@ -47,13 +56,17 @@ if(APPLE)
     "-framework QuartzCore"
 	volk
 	assimp
-	glm
+	glm # (TODO, thoave01): Also use precompiled for Vulkan.
   )
 endif()
 
 # Include paths for renderer and backends.
 target_include_directories(vulkan_backend PUBLIC ${CMAKE_SOURCE_DIR})
 target_include_directories(vulkan_backend PUBLIC ${VULKAN_SDK_INCLUDE_DIR})
+target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/assimp/include")
+target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/stb")
+target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross")
+target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator")
 if(APPLE)
   target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")

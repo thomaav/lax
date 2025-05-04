@@ -3,9 +3,10 @@
 #include <optional>
 #include <string_view>
 
+#include <model/model.h>
 #include <platform/window.h>
+#include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
-#include <renderer/vulkan/command_pool.h>
 #include <renderer/vulkan/context.h>
 #include <renderer/vulkan/fence.h>
 #include <renderer/vulkan/pipeline.h>
@@ -21,13 +22,6 @@ namespace vulkan
 
 context::~context()
 {
-	/* Destroy device. */
-	m_wsi.destroy_swapchain();
-	m_device.destroy();
-
-	/* Destroy instance. */
-	m_wsi.destroy_surface();
-	m_instance.destroy();
 }
 
 void context::add_instance_extension(const char *extension)
@@ -61,10 +55,19 @@ void context::build()
 	volkLoadDevice(m_device.m_logical.m_handle);
 	m_wsi.build_swapchain(m_device);
 	m_queue.build(m_device);
+
+	/* Resource management initialization. */
+	m_resource_allocator.build(m_instance, m_device);
 }
 
 void context::backend_test()
 {
+	model model = {};
+	model.load("bin/assets/models/DamagedHelmet.glb");
+
+	buffer tmp_buffer = {};
+	m_resource_allocator.allocate_buffer(tmp_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 2048);
+
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
 
@@ -75,12 +78,13 @@ void context::backend_test()
 	pipeline_layout.build(m_device);
 
 	render_pass render_pass = {};
-	render_pass.m_handle = VK_NULL_HANDLE;
+	render_pass.use_dynamic_rendering();
+	render_pass.build(m_device, VK_FORMAT_UNDEFINED);
 
 	pipeline pipeline = {};
 	pipeline.add_shader(vertex_shader_module);
 	pipeline.add_shader(fragment_shader_module);
-	pipeline.build(m_device, pipeline_layout, render_pass, m_wsi.m_swapchain.m_extent);
+	pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
 
 	command_pool command_pool = {};
 	command_pool.build(m_device);

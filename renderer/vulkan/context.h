@@ -10,6 +10,7 @@
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/device_memory.h>
 #include <renderer/vulkan/instance.h>
 #include <renderer/vulkan/queue.h>
 #include <renderer/vulkan/wsi.h>
@@ -39,6 +40,7 @@ private:
 	device m_device = {};
 	wsi m_wsi = {};
 	queue m_queue = {};
+	resource_allocator m_resource_allocator = {};
 };
 
 } /* namespace vulkan */

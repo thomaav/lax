@@ -17,14 +17,13 @@ class instance
 {
 public:
 	instance() = default;
-	~instance() = default;
+	~instance();
 
 	instance(const instance &) = delete;
 	instance operator=(const instance &) = delete;
 
 	void add_extension(const char *extension);
 	void build(glfw_window &window, const VpProfileProperties &vp_profile_properties);
-	void destroy();
 
 	VkInstance m_handle = {};
 

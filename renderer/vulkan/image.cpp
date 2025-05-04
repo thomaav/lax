@@ -4,6 +4,11 @@
 namespace vulkan
 {
 
+image_view::~image_view()
+{
+	vkDestroyImageView(m_device_handle, m_handle, nullptr);
+}
+
 image_view::image_view(image &image)
     : m_image(image)
 {
@@ -32,11 +37,6 @@ void image_view::build(device &device)
 	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
 	m_device_handle = device.m_logical.m_handle;
-}
-
-void image_view::destroy()
-{
-	vkDestroyImageView(m_device_handle, m_handle, nullptr);
 }
 
 } /* namespace vulkan */

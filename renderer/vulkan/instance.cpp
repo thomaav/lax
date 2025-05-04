@@ -9,6 +9,11 @@
 namespace vulkan
 {
 
+instance::~instance()
+{
+	vkDestroyInstance(m_handle, nullptr);
+}
+
 void instance::add_extension(const char *extension)
 {
 	m_extensions.push_back(extension);
@@ -61,11 +66,6 @@ void instance::build(glfw_window &window, const VpProfileProperties &vp_profile_
 	vp_instance_create_info.pCreateInfo = &instance_create_info;
 
 	VULKAN_ASSERT_SUCCESS(vpCreateInstance(&vp_instance_create_info, nullptr, &m_handle));
-}
-
-void instance::destroy()
-{
-	vkDestroyInstance(m_handle, nullptr);
 }
 
 } /* namespace vulkan */

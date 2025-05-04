@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 #pragma clang diagnostic push
@@ -42,13 +43,14 @@ public:
 	pipeline operator=(const pipeline &) = delete;
 
 	void add_shader(shader_module &shader);
-	void build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent);
+	void build(device &device, render_pass &render_pass, VkExtent2D extent);
 
 	VkPipeline m_handle = {};
 
 private:
 	VkDevice m_device_handle = {};
-	std::vector<VkPipelineShaderStageCreateInfo> m_stages = {};
+	std::unordered_map<VkShaderStageFlagBits, shader_module *> m_shader_modules = {};
+	pipeline_layout m_pipeline_layout = {};
 };
 
 } /* namespace vulkan */

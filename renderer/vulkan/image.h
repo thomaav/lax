@@ -31,13 +31,12 @@ class image_view
 {
 public:
 	image_view(image &image);
-	~image_view() = default;
+	~image_view();
 
 	image_view(const image_view &) = delete;
 	image_view operator=(const image_view &) = delete;
 
 	void build(device &device);
-	void destroy();
 
 	VkImageView m_handle = {};
 

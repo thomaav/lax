@@ -15,8 +15,19 @@ render_pass::~render_pass()
 	}
 }
 
+void render_pass::use_dynamic_rendering()
+{
+	m_dynamic_rendering = true;
+}
+
 void render_pass::build(device &device, VkFormat format)
 {
+	if (m_dynamic_rendering)
+	{
+		m_handle = VK_NULL_HANDLE;
+		return;
+	}
+
 	VkAttachmentDescription color_attachment_desc = {};
 	color_attachment_desc.format = format;
 	color_attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;

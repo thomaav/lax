@@ -22,12 +22,14 @@ public:
 	render_pass(const render_pass &) = delete;
 	render_pass operator=(const render_pass &) = delete;
 
+	void use_dynamic_rendering();
 	void build(device &device, VkFormat format);
 
 	VkRenderPass m_handle = {};
 
 private:
 	VkDevice m_device_handle = {};
+	bool m_dynamic_rendering = false;
 };
 
 class framebuffer

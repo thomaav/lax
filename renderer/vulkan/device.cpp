@@ -58,6 +58,14 @@ static bool physical_device_has_required_extensions(VkPhysicalDevice physical_de
 namespace vulkan
 {
 
+device::~device()
+{
+	if (VK_NULL_HANDLE != m_logical.m_handle)
+	{
+		vkDestroyDevice(m_logical.m_handle, nullptr);
+	}
+}
+
 void device::add_extension(const char *extension)
 {
 	m_extensions.push_back(extension);
@@ -77,11 +85,6 @@ void device::build(instance &instance, VkSurfaceKHR surface, const VpProfileProp
 
 	create_logical_device(instance, vp_profile_properties);
 	VULKAN_ASSERT_NOT_NULL(m_logical.m_handle);
-}
-
-void device::destroy()
-{
-	vkDestroyDevice(m_logical.m_handle, nullptr);
 }
 
 void device::wait()

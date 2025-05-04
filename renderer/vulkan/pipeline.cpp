@@ -1,5 +1,6 @@
 #include <renderer/vulkan/pipeline.h>
 #include <renderer/vulkan/util.h>
+#include <utils/util.h>
 
 namespace vulkan
 {
@@ -37,17 +38,23 @@ pipeline::~pipeline()
 void pipeline::add_shader(shader_module &shader)
 {
 	assert(shader.m_handle != VK_NULL_HANDLE);
-	m_stages.push_back(shader.get_pipeline_shader_stage_create_info());
+	m_shader_modules[shader.m_stage] = &shader;
 }
 
-void pipeline::build(device &device, pipeline_layout &pipeline_layout, render_pass &render_pass, VkExtent2D extent)
+void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent)
 {
+	if (!m_shader_modules.contains(VK_SHADER_STAGE_VERTEX_BIT))
+	{
+		terminate("Cannot build a pipeline without a vertex shader");
+	}
+
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = 0;
-	vertex_input_info.pVertexBindingDescriptions = nullptr;
-	vertex_input_info.vertexAttributeDescriptionCount = 0;
-	vertex_input_info.pVertexAttributeDescriptions = nullptr;
+	shader_module *vertex_shader = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT];
+	vertex_input_info.vertexBindingDescriptionCount = 1;
+	vertex_input_info.pVertexBindingDescriptions = &vertex_shader->m_vbd;
+	vertex_input_info.vertexAttributeDescriptionCount = vertex_shader->m_vads.size();
+	vertex_input_info.pVertexAttributeDescriptions = vertex_shader->m_vads.data();
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
 	input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -117,10 +124,15 @@ void pipeline::build(device &device, pipeline_layout &pipeline_layout, render_pa
 	blending_info.blendConstants[2] = 0.0f;
 	blending_info.blendConstants[3] = 0.0f;
 
+	std::vector<VkPipelineShaderStageCreateInfo> stage_create_infos = {};
+	for (const auto &sm : m_shader_modules)
+	{
+		stage_create_infos.push_back(sm.second->get_pipeline_shader_stage_create_info());
+	}
 	VkGraphicsPipelineCreateInfo pipeline_info = {};
 	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipeline_info.stageCount = 2;
-	pipeline_info.pStages = m_stages.data();
+	pipeline_info.stageCount = stage_create_infos.size();
+	pipeline_info.pStages = stage_create_infos.data();
 
 	pipeline_info.pVertexInputState = &vertex_input_info;
 	pipeline_info.pInputAssemblyState = &input_assembly;
@@ -131,7 +143,8 @@ void pipeline::build(device &device, pipeline_layout &pipeline_layout, render_pa
 	pipeline_info.pColorBlendState = &blending_info;
 	pipeline_info.pDynamicState = nullptr;
 
-	pipeline_info.layout = pipeline_layout.m_handle;
+	m_pipeline_layout.build(device);
+	pipeline_info.layout = m_pipeline_layout.m_handle;
 
 	pipeline_info.renderPass = render_pass.m_handle;
 	pipeline_info.subpass = 0;
