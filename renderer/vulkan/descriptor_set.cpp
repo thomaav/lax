@@ -27,11 +27,11 @@ void descriptor_set_layout::build(device &device)
 {
 	m_device_handle = device.m_logical.m_handle;
 	VkDescriptorSetLayoutCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,       //
-		.pNext = nullptr,                                                   //
-		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT, //
-		.bindingCount = (u32)m_bindings.size(),                             //
-		.pBindings = m_bindings.data(),                                     //
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, //
+		.pNext = nullptr,                                             //
+		.flags = 0,                                                   //
+		.bindingCount = (u32)m_bindings.size(),                       //
+		.pBindings = m_bindings.data(),                               //
 	};
 	VULKAN_ASSERT_SUCCESS(vkCreateDescriptorSetLayout(m_device_handle, &create_info, nullptr, &m_handle));
 }

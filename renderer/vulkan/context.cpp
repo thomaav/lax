@@ -3,6 +3,9 @@
 #include <optional>
 #include <string_view>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <model/model.h>
 #include <platform/window.h>
 #include <renderer/vulkan/buffer.h>
@@ -16,6 +19,14 @@
 #include <renderer/vulkan/util.h>
 #include <utils/type.h>
 #include <utils/util.h>
+
+struct uniforms
+{
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3, "Unexpected struct uniform size");
 
 namespace vulkan
 {
@@ -39,6 +50,7 @@ void context::build()
 	/* Initialize loading. */
 	VULKAN_ASSERT_SUCCESS(volkInitialize());
 
+	m_device.add_extension("VK_KHR_push_descriptor");
 	const VpProfileProperties profile_properties = {
 		VP_LUNARG_MINIMUM_REQUIREMENTS_1_3_NAME,        //
 		VP_LUNARG_MINIMUM_REQUIREMENTS_1_3_SPEC_VERSION //
@@ -66,13 +78,33 @@ void context::backend_test()
 	model model = {};
 	model.load("bin/assets/models/DamagedHelmet.glb");
 
-	const u8 buffer_data[] = { 1, 2, 3 };
-	buffer tmp_buffer = {};
-	m_resource_allocator.allocate_buffer(tmp_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 2048);
-	tmp_buffer.fill(buffer_data, sizeof(buffer_data));
+	/* Vertex input. */
+	buffer vertex_buffer = {};
+	m_resource_allocator.allocate_buffer(vertex_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+	                                     sizeof(model.m_meshes[0].m_vertices[0]) * model.m_meshes[0].m_vertices.size());
+	vertex_buffer.fill(model.m_meshes[0].m_vertices.data(),
+	                   sizeof(model.m_meshes[0].m_vertices[0]) * model.m_meshes[0].m_vertices.size());
+	buffer index_buffer = {};
+	m_resource_allocator.allocate_buffer(index_buffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+	                                     sizeof(model.m_meshes[0].m_indices[0]) * model.m_meshes[0].m_indices.size());
+	index_buffer.fill(model.m_meshes[0].m_indices.data(),
+	                  sizeof(model.m_meshes[0].m_indices[0]) * model.m_meshes[0].m_indices.size());
 
-	image tmp_image = {};
-	m_resource_allocator.allocate_image(tmp_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT, 32, 32);
+	/* Uniform buffer. */
+	uniforms uniforms = {};
+	uniforms.model = glm::mat4(1.0f);
+	uniforms.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	uniforms.projection = glm::perspective(glm::radians(45.0f), 800 / (float)600, 0.1f, 10.0f);
+	uniforms.projection[1][1] *= -1.0f;
+	buffer uniform_buffer = {};
+	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
+	uniform_buffer.fill(&uniforms, sizeof(uniforms));
+
+	/* Texture. */
+	image texture = {};
+	m_resource_allocator.allocate_image(texture, VK_FORMAT_R8G8B8A8_SRGB,
+	                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 32, 32);
+	texture.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_width * 4);
 
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
@@ -173,6 +205,28 @@ void context::backend_test()
 			vkCmdBeginRendering(command_buffers[i].m_handle, &rendering_info);
 			{
 				vkCmdBindPipeline(command_buffers[i].m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.m_handle);
+				constexpr VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(command_buffers[i].m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
+				vkCmdBindIndexBuffer(command_buffers[i].m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
+
+				/* (TODO, thoave01): Add to command buffer as methods. E.g. set_buffer(). */
+				VkDescriptorBufferInfo buffer_info = {};
+				buffer_info.buffer = uniform_buffer.m_handle;
+				buffer_info.offset = 0;
+				buffer_info.range = VK_WHOLE_SIZE;
+				VkWriteDescriptorSet write = {};
+				write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				write.pNext = nullptr;
+				write.dstSet = 0;
+				write.dstBinding = 0;
+				write.dstArrayElement = 0;
+				write.descriptorCount = 1;
+				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				write.pBufferInfo = &buffer_info;
+				/* (TODO, thoave01): We have to actually make a pipeline layout at some point. */
+				vkCmdPushDescriptorSetKHR(command_buffers[i].m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				                          pipeline.m_pipeline_layout.m_handle, 0, 1, &write);
+
 				vkCmdDraw(command_buffers[i].m_handle, 3, 1, 0, 0);
 			}
 			vkCmdEndRendering(command_buffers[i].m_handle);

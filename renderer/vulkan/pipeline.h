@@ -47,10 +47,12 @@ public:
 
 	VkPipeline m_handle = {};
 
+	/* (TODO, thoave01): Hide again? */
+	pipeline_layout m_pipeline_layout = {};
+
 private:
 	VkDevice m_device_handle = {};
 	std::unordered_map<VkShaderStageFlagBits, shader_module *> m_shader_modules = {};
-	pipeline_layout m_pipeline_layout = {};
 };
 
 } /* namespace vulkan */

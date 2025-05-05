@@ -1,3 +1,4 @@
+#include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/context.h>
 #include <renderer/vulkan/image.h>
@@ -21,12 +22,17 @@ void image::build_external_image(VkImage handle, VkFormat format, u32 width, u32
 	m_format = format;
 	m_width = width;
 	m_height = height;
+	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
 void image::build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
 {
 	m_allocator = allocator;
 	m_external_image = false;
+	m_format = format;
+	m_width = width;
+	m_height = height;
+	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	const VkExtent3D extent = {
 		.width = width,   //
@@ -81,6 +87,46 @@ void image::transition_layout(context &context, VkImageLayout old_layout, VkImag
 	}
 	command_buffer.end();
 	context.m_queue.submit_and_wait(command_buffer);
+	m_layout = new_layout;
+}
+
+/* (TODO, thoave01): There are multiple submissions in here. Could use VK_EXT_host_image_copy? */
+void image::fill(context &context, const void *data, size_t size)
+{
+	VkImageLayout old_layout = m_layout;
+	if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL != m_layout)
+	{
+		transition_layout(context, old_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	}
+
+	buffer staging_buffer = {};
+	context.m_resource_allocator.allocate_buffer(staging_buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+	staging_buffer.fill(data, size);
+
+	command_buffer command_buffer = {};
+	command_buffer.build(context.m_device, context.m_command_pool);
+	command_buffer.begin();
+	{
+		VkBufferImageCopy region = {};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { m_width, m_height, 1 };
+		vkCmdCopyBufferToImage(command_buffer.m_handle, staging_buffer.m_handle, m_handle,
+		                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	}
+	command_buffer.end();
+	context.m_queue.submit_and_wait(command_buffer);
+
+	if (m_layout != old_layout && old_layout != VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		transition_layout(context, m_layout, old_layout);
+	}
 }
 
 image_view::~image_view()
