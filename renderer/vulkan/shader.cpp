@@ -72,8 +72,16 @@ void shader_module::reflect(std::vector<u32> &binary)
 	/* Descriptor sets. */
 	for (const auto &image : resources.sampled_images)
 	{
-		UNUSED(image);
-		terminate("No support for sampled image descriptors");
+		if (compiler.get_decoration(image.id, spv::DecorationDescriptorSet) != 0)
+		{
+			terminate("Only single descriptor set at index 0 supported");
+		}
+
+		const u32 binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+		m_dsl.add_binding(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		info("combined image sampler set %u binding %u name %s",
+		     compiler.get_decoration(image.id, spv::DecorationDescriptorSet), binding, image.name.c_str());
 	}
 	for (const auto &image : resources.subpass_inputs)
 	{

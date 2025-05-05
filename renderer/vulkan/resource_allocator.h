@@ -8,6 +8,7 @@
 
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/image.h>
 #include <renderer/vulkan/instance.h>
 
 namespace vulkan
@@ -24,6 +25,7 @@ public:
 
 	void build(instance &instance, device &device);
 	void allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+	void allocate_image(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 
 private:
 	instance *m_instance = nullptr;

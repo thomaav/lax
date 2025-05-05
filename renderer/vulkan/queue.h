@@ -25,6 +25,7 @@ public:
 
 	void build(device &device);
 	void submit(command_buffer &command_buffer, semaphore &wait_semaphore, semaphore &signal_semaphore, fence &fence);
+	void submit_and_wait(command_buffer &command_buffer);
 	void present(semaphore &signal_semaphore, wsi &wsi, u32 image_index);
 	void wait();
 

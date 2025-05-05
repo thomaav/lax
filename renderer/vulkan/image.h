@@ -3,28 +3,37 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
+#include <vma/vk_mem_alloc.h>
 #pragma clang diagnostic pop
-
-#include <renderer/vulkan/device.h>
 
 namespace vulkan
 {
+
+/* Forward declarations. */
+class context;
 
 class image
 {
 public:
 	image() = default;
-	~image() = default;
+	~image();
 
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
+	void build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	void build_external_image(VkImage handle, VkFormat format, u32 width, u32 height);
+	void transition_layout(context &context, VkImageLayout old_layout, VkImageLayout new_layout);
+
+	bool m_external_image = false;
 	VkImage m_handle = {};
 	VkFormat m_format = {};
 	u32 m_width = {};
 	u32 m_height = {};
 
 private:
+	VmaAllocator m_allocator = VK_NULL_HANDLE;
+	VmaAllocation m_allocation = VK_NULL_HANDLE;
 };
 
 class image_view

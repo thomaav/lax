@@ -149,21 +149,19 @@ void wsi::build_swapchain(device &device)
 
 		/* Initialize images. */
 		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &image_count, nullptr);
-		m_swapchain.m_images.resize(image_count);
+		m_swapchain.m_vulkan_images.resize(image_count);
 		vkGetSwapchainImagesKHR(m_swapchain.m_device->m_logical.m_handle, m_swapchain.m_handle, &image_count,
-		                        m_swapchain.m_images.data());
+		                        m_swapchain.m_vulkan_images.data());
 
 		/* Initalize image views. */
-		for (size_t i = 0; i < m_swapchain.m_images.size(); i++)
+		for (size_t i = 0; i < m_swapchain.m_vulkan_images.size(); i++)
 		{
 			std::unique_ptr<image> img = std::make_unique<image>();
-			img->m_handle = m_swapchain.m_images[i];
-			img->m_format = m_swapchain.m_format;
-			img->m_width = m_swapchain.m_extent.width;
-			img->m_height = m_swapchain.m_extent.height;
-			m_swapchain.m_vulkan_images.emplace_back(std::move(img));
+			img->build_external_image(m_swapchain.m_vulkan_images[i], m_swapchain.m_format, m_swapchain.m_extent.width,
+			                          m_swapchain.m_extent.height);
+			m_swapchain.m_images.emplace_back(std::move(img));
 
-			std::unique_ptr<image_view> img_view = std::make_unique<image_view>(*m_swapchain.m_vulkan_images[i]);
+			std::unique_ptr<image_view> img_view = std::make_unique<image_view>(*m_swapchain.m_images[i]);
 			img_view->build(*m_swapchain.m_device);
 			m_swapchain.m_image_views.emplace_back(std::move(img_view));
 		}

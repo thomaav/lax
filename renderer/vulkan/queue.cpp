@@ -30,6 +30,16 @@ void queue::submit(command_buffer &command_buffer, semaphore &wait_semaphore, se
 	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(m_handle, 1, &submit_info, fence.m_handle));
 }
 
+void queue::submit_and_wait(command_buffer &command_buffer)
+{
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &command_buffer.m_handle;
+	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(m_handle, 1, &submit_info, VK_NULL_HANDLE));
+	VULKAN_ASSERT_SUCCESS(vkQueueWaitIdle(m_handle));
+}
+
 void queue::present(semaphore &wait_semaphore, wsi &wsi, u32 image_index)
 {
 	VkPresentInfoKHR present_info = {};

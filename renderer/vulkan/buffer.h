@@ -21,6 +21,7 @@ public:
 	buffer operator=(const buffer &) = delete;
 
 	void build(VmaAllocator allocator, VkBufferUsageFlags usage, VkDeviceSize size);
+	void fill(const void *data, size_t size);
 
 	VkBuffer m_handle = {};
 

@@ -58,6 +58,7 @@ void context::build()
 
 	/* Resource management initialization. */
 	m_resource_allocator.build(m_instance, m_device);
+	m_command_pool.build(m_device);
 }
 
 void context::backend_test()
@@ -65,8 +66,13 @@ void context::backend_test()
 	model model = {};
 	model.load("bin/assets/models/DamagedHelmet.glb");
 
+	const u8 buffer_data[] = { 1, 2, 3 };
 	buffer tmp_buffer = {};
 	m_resource_allocator.allocate_buffer(tmp_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 2048);
+	tmp_buffer.fill(buffer_data, sizeof(buffer_data));
+
+	image tmp_image = {};
+	m_resource_allocator.allocate_image(tmp_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT, 32, 32);
 
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
@@ -86,12 +92,15 @@ void context::backend_test()
 	pipeline.add_shader(fragment_shader_module);
 	pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
 
-	command_pool command_pool = {};
-	command_pool.build(m_device);
+	for (std::unique_ptr<image> &image : m_wsi.m_swapchain.m_images)
+	{
+		image->transition_layout(*this, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	}
+
 	std::vector<command_buffer> command_buffers(m_wsi.m_swapchain.m_images.size());
 	for (auto &command_buffer : command_buffers)
 	{
-		command_buffer.build(m_device, command_pool);
+		command_buffer.build(m_device, m_command_pool);
 	}
 
 	for (size_t i = 0; i < command_buffers.size(); i++)
@@ -117,7 +126,7 @@ void context::backend_test()
 				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,                 //
 				.srcQueueFamilyIndex = 0,                                        //
 				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_images[i],                          //
+				.image = m_wsi.m_swapchain.m_vulkan_images[i],                   //
 				.subresourceRange = img_range,                                   //
 			};
 			const VkDependencyInfo begin_rendering_dependency_info = {
@@ -180,7 +189,7 @@ void context::backend_test()
 				.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                    //
 				.srcQueueFamilyIndex = 0,                                        //
 				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_images[i],                          //
+				.image = m_wsi.m_swapchain.m_vulkan_images[i],                   //
 				.subresourceRange = img_range,                                   //
 			};
 			VkDependencyInfo end_rendering_dependency_info = {

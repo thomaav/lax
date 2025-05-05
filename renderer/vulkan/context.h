@@ -10,9 +10,9 @@
 
 #include <platform/window.h>
 #include <renderer/vulkan/device.h>
-#include <renderer/vulkan/device_memory.h>
 #include <renderer/vulkan/instance.h>
 #include <renderer/vulkan/queue.h>
+#include <renderer/vulkan/resource_allocator.h>
 #include <renderer/vulkan/wsi.h>
 #include <utils/type.h>
 
@@ -34,13 +34,16 @@ public:
 	void build();
 	void backend_test();
 
-private:
+	/* (TODO, thoave01): Hide this again. */
 	glfw_window m_window = {};
 	instance m_instance = {};
 	device m_device = {};
 	wsi m_wsi = {};
 	queue m_queue = {};
 	resource_allocator m_resource_allocator = {};
+	command_pool m_command_pool = {};
+
+private:
 };
 
 } /* namespace vulkan */
