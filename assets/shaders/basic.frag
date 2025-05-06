@@ -1,9 +1,11 @@
 #version 460
 
-layout(set = 0, binding = 1) uniform sampler2D texture;
-
 layout(location = 0) out vec4 out_color;
 
+layout(location = 0) in vec2 uv;
+
+layout(set = 0, binding = 1) uniform sampler2D diffuse;
+
 void main() {
-    out_color = vec4(1.0, 0.0, 0.0, 1.0);
+    out_color = texture(diffuse, uv);
 }

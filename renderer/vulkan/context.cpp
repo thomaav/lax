@@ -95,7 +95,9 @@ void context::backend_test()
 	uniforms.model = glm::mat4(1.0f);
 	uniforms.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	uniforms.projection = glm::perspective(glm::radians(45.0f), 800 / (float)600, 0.1f, 10.0f);
+#if defined(__APPLE__)
 	uniforms.projection[1][1] *= -1.0f;
+#endif
 	buffer uniform_buffer = {};
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
@@ -103,8 +105,9 @@ void context::backend_test()
 	/* Texture. */
 	image texture_image = {};
 	m_resource_allocator.allocate_image(texture_image, VK_FORMAT_R8G8B8A8_SRGB,
-	                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 32, 32);
-	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_width * 4);
+	                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+	                                    model.m_meshes[0].m_width, model.m_meshes[0].m_height);
+	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_texture.size());
 	texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	texture texture = {};
 	texture.build(m_device, texture_image);
@@ -215,7 +218,9 @@ void context::backend_test()
 				command_buffers[i].set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				command_buffers[i].set_texture(1, texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-				vkCmdDraw(command_buffers[i].m_handle, 3, 1, 0, 0);
+				vkCmdDrawIndexed(command_buffers[i].m_handle, model.m_meshes[0].m_indices.size(),
+				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
+				                 /* firstInstance = */ 0);
 			}
 			vkCmdEndRendering(command_buffers[i].m_handle);
 
