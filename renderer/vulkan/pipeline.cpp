@@ -13,12 +13,30 @@ pipeline_layout::~pipeline_layout()
 	}
 }
 
+void pipeline_layout::add_resource_bindings(shader_resource_binding *bindings, u32 binding_count)
+{
+	for (u32 i = 0; i < binding_count; ++i)
+	{
+		m_resource_bindings.push_back(bindings[i]);
+	}
+}
+
 void pipeline_layout::build(device &device)
 {
+	for (const shader_resource_binding &binding : m_resource_bindings)
+	{
+		if (binding.set != 0)
+		{
+			terminate("Only descriptor set index 0 is supported");
+		}
+		m_dset_layout.add_binding(binding.binding, binding.type);
+	}
+	m_dset_layout.build(device);
+
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 0;
-	pipeline_layout_info.pSetLayouts = nullptr;
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &m_dset_layout.m_handle;
 	pipeline_layout_info.pushConstantRangeCount = 0;
 	pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -143,6 +161,11 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	pipeline_info.pColorBlendState = &blending_info;
 	pipeline_info.pDynamicState = nullptr;
 
+	for (const auto &sm : m_shader_modules)
+	{
+		shader_module *sm_ptr = sm.second;
+		m_pipeline_layout.add_resource_bindings(sm_ptr->m_resource_bindings.data(), sm_ptr->m_resource_bindings.size());
+	}
 	m_pipeline_layout.build(device);
 	pipeline_info.layout = m_pipeline_layout.m_handle;
 

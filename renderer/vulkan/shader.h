@@ -11,6 +11,13 @@
 namespace vulkan
 {
 
+struct shader_resource_binding
+{
+	u32 set;
+	u32 binding;
+	VkDescriptorType type;
+};
+
 class shader_module
 {
 public:
@@ -28,7 +35,7 @@ public:
 
 	VkVertexInputBindingDescription m_vbd = {};
 	std::vector<VkVertexInputAttributeDescription> m_vads = {};
-	descriptor_set_layout m_dsl = {}; /* (TODO, thoave01): Single descriptor set for now. */
+	std::vector<shader_resource_binding> m_resource_bindings = {};
 
 private:
 	void reflect(std::vector<u32> &binary);

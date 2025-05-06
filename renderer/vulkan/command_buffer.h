@@ -5,7 +5,9 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
+#include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/device.h>
+#include <renderer/vulkan/pipeline.h>
 
 namespace vulkan
 {
@@ -39,13 +41,16 @@ public:
 	void build(device &device, command_pool &command_pool);
 	void begin();
 	void end();
-	void set_uniform_buffer(VkPipelineLayout layout, u32 binding, void *buffer);
+	void bind_pipeline(pipeline &pipeline, VkPipelineBindPoint bind_point);
+	void set_uniform_buffer(u32 binding, buffer &buffer, VkPipelineBindPoint bind_point);
+	void set_texture(u32 binding, texture &texture, VkPipelineBindPoint bind_point);
 
 	VkCommandBuffer m_handle = {};
 
 private:
 	VkDevice m_device_handle = {};
 	VkCommandPool m_command_pool_handle = {};
+	pipeline *m_pipeline = nullptr;
 };
 
 } /* namespace vulkan */

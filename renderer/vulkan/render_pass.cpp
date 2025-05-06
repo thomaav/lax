@@ -85,13 +85,13 @@ void framebuffer::add_color_attachment(image_view &attachment)
 
 	if (m_width == 0 && m_height == 0)
 	{
-		m_width = attachment.m_image.m_width;
-		m_height = attachment.m_image.m_height;
+		m_width = attachment.m_image->m_width;
+		m_height = attachment.m_image->m_height;
 	}
 	else
 	{
-		assert(m_width == attachment.m_image.m_width);
-		assert(m_height == attachment.m_image.m_height);
+		assert(m_width == attachment.m_image->m_width);
+		assert(m_height == attachment.m_image->m_height);
 	}
 }
 

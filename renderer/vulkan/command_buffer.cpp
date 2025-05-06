@@ -53,4 +53,48 @@ void command_buffer::end()
 	VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(m_handle));
 }
 
+void command_buffer::bind_pipeline(pipeline &pipeline, VkPipelineBindPoint bind_point)
+{
+	m_pipeline = &pipeline;
+	vkCmdBindPipeline(m_handle, bind_point, pipeline.m_handle);
+}
+
+void command_buffer::set_uniform_buffer(u32 binding, buffer &buffer, VkPipelineBindPoint bind_point)
+{
+	VkDescriptorBufferInfo buffer_info = {};
+	buffer_info.buffer = buffer.m_handle;
+	buffer_info.offset = 0;
+	buffer_info.range = VK_WHOLE_SIZE;
+
+	VkWriteDescriptorSet write = {};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+	write.dstSet = 0;
+	write.dstBinding = binding;
+	write.dstArrayElement = 0;
+	write.descriptorCount = 1;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	write.pBufferInfo = &buffer_info;
+	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout.m_handle, 0, 1, &write);
+}
+
+void command_buffer::set_texture(u32 binding, texture &texture, VkPipelineBindPoint bind_point)
+{
+	VkDescriptorImageInfo image_info = {};
+	image_info.sampler = texture.m_sampler;
+	image_info.imageView = texture.m_image_view.m_handle;
+	image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	VkWriteDescriptorSet write = {};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+	write.dstSet = 0;
+	write.dstBinding = binding;
+	write.dstArrayElement = 0;
+	write.descriptorCount = 1;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.pImageInfo = &image_info;
+	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout.m_handle, 0, 1, &write);
+}
+
 } /* namespace vulkan */

@@ -101,10 +101,13 @@ void context::backend_test()
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 	/* Texture. */
-	image texture = {};
-	m_resource_allocator.allocate_image(texture, VK_FORMAT_R8G8B8A8_SRGB,
+	image texture_image = {};
+	m_resource_allocator.allocate_image(texture_image, VK_FORMAT_R8G8B8A8_SRGB,
 	                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 32, 32);
-	texture.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_width * 4);
+	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_width * 4);
+	texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	texture texture = {};
+	texture.build(m_device, texture_image);
 
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
@@ -126,7 +129,7 @@ void context::backend_test()
 
 	for (std::unique_ptr<image> &image : m_wsi.m_swapchain.m_images)
 	{
-		image->transition_layout(*this, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		image->transition_layout(*this, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	}
 
 	std::vector<command_buffer> command_buffers(m_wsi.m_swapchain.m_images.size());
@@ -204,28 +207,13 @@ void context::backend_test()
 			/* Render. */
 			vkCmdBeginRendering(command_buffers[i].m_handle, &rendering_info);
 			{
-				vkCmdBindPipeline(command_buffers[i].m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.m_handle);
+				command_buffers[i].bind_pipeline(pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				constexpr VkDeviceSize offset = 0;
 				vkCmdBindVertexBuffers(command_buffers[i].m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
 				vkCmdBindIndexBuffer(command_buffers[i].m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
 
-				/* (TODO, thoave01): Add to command buffer as methods. E.g. set_buffer(). */
-				VkDescriptorBufferInfo buffer_info = {};
-				buffer_info.buffer = uniform_buffer.m_handle;
-				buffer_info.offset = 0;
-				buffer_info.range = VK_WHOLE_SIZE;
-				VkWriteDescriptorSet write = {};
-				write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				write.pNext = nullptr;
-				write.dstSet = 0;
-				write.dstBinding = 0;
-				write.dstArrayElement = 0;
-				write.descriptorCount = 1;
-				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				write.pBufferInfo = &buffer_info;
-				/* (TODO, thoave01): We have to actually make a pipeline layout at some point. */
-				vkCmdPushDescriptorSetKHR(command_buffers[i].m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				                          pipeline.m_pipeline_layout.m_handle, 0, 1, &write);
+				command_buffers[i].set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffers[i].set_texture(1, texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
 				vkCmdDraw(command_buffers[i].m_handle, 3, 1, 0, 0);
 			}

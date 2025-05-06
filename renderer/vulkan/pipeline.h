@@ -25,12 +25,15 @@ public:
 	pipeline_layout(const pipeline_layout &) = delete;
 	pipeline_layout operator=(const pipeline_layout &) = delete;
 
+	void add_resource_bindings(shader_resource_binding *bindings, u32 binding_count);
 	void build(device &device);
 
 	VkPipelineLayout m_handle = {};
 
 private:
 	VkDevice m_device_handle = {};
+	std::vector<shader_resource_binding> m_resource_bindings = {};
+	descriptor_set_layout m_dset_layout = {};
 };
 
 class pipeline

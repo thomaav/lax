@@ -63,7 +63,7 @@ void image::build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usa
 	VULKAN_ASSERT_SUCCESS(vmaCreateImage(allocator, &create_info, &alloc_info, &m_handle, &m_allocation, nullptr));
 }
 
-void image::transition_layout(context &context, VkImageLayout old_layout, VkImageLayout new_layout)
+void image::transition_layout(context &context, VkImageLayout new_layout)
 {
 	command_buffer command_buffer = {};
 	command_buffer.build(context.m_device, context.m_command_pool);
@@ -71,7 +71,7 @@ void image::transition_layout(context &context, VkImageLayout old_layout, VkImag
 	{
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = old_layout;
+		barrier.oldLayout = m_layout;
 		barrier.newLayout = new_layout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -96,7 +96,7 @@ void image::fill(context &context, const void *data, size_t size)
 	VkImageLayout old_layout = m_layout;
 	if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL != m_layout)
 	{
-		transition_layout(context, old_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transition_layout(context, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	}
 
 	buffer staging_buffer = {};
@@ -125,7 +125,7 @@ void image::fill(context &context, const void *data, size_t size)
 
 	if (m_layout != old_layout && old_layout != VK_IMAGE_LAYOUT_UNDEFINED)
 	{
-		transition_layout(context, m_layout, old_layout);
+		transition_layout(context, old_layout);
 	}
 }
 
@@ -137,19 +137,16 @@ image_view::~image_view()
 	}
 }
 
-image_view::image_view(image &image)
-    : m_image(image)
+void image_view::build(device &device, image &image)
 {
-}
+	m_image = &image;
 
-void image_view::build(device &device)
-{
 	VkImageViewCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	create_info.image = m_image.m_handle;
+	create_info.image = m_image->m_handle;
 
 	create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	create_info.format = m_image.m_format;
+	create_info.format = m_image->m_format;
 
 	create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -165,6 +162,41 @@ void image_view::build(device &device)
 	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
 	m_device_handle = device.m_logical.m_handle;
+}
+
+texture::~texture()
+{
+	if (VK_NULL_HANDLE != m_sampler)
+	{
+		vkDestroySampler(m_device_handle, m_sampler, nullptr);
+	}
+}
+
+void texture::build(device &device, image &image)
+{
+	m_device_handle = device.m_logical.m_handle;
+
+	m_image_view.build(device, image);
+	VkSamplerCreateInfo sampler_info = {};
+	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler_info.pNext = nullptr;
+	sampler_info.flags = 0;
+	sampler_info.magFilter = VK_FILTER_LINEAR;
+	sampler_info.minFilter = VK_FILTER_LINEAR;
+	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler_info.mipLodBias = 0.0f;
+	sampler_info.anisotropyEnable = VK_FALSE; /* (TODO, thoave01): Anisotropy. */
+	sampler_info.maxAnisotropy = 0.0f;
+	sampler_info.compareEnable = VK_FALSE;
+	sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+	sampler_info.minLod = 0.0f;
+	sampler_info.maxLod = 0.0f;
+	sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	sampler_info.unnormalizedCoordinates = VK_FALSE;
+	VULKAN_ASSERT_SUCCESS(vkCreateSampler(m_device_handle, &sampler_info, nullptr, &m_sampler));
 }
 
 } /* namespace vulkan */

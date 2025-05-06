@@ -24,7 +24,7 @@ public:
 
 	void build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	void build_external_image(VkImage handle, VkFormat format, u32 width, u32 height);
-	void transition_layout(context &context, VkImageLayout old_layout, VkImageLayout new_layout);
+	void transition_layout(context &context, VkImageLayout new_layout);
 	void fill(context &context, const void *data, size_t size);
 
 	bool m_external_image = false;
@@ -42,20 +42,38 @@ private:
 class image_view
 {
 public:
-	image_view(image &image);
+	image_view() = default;
 	~image_view();
 
 	image_view(const image_view &) = delete;
 	image_view operator=(const image_view &) = delete;
 
-	void build(device &device);
+	void build(device &device, image &image);
 
 	VkImageView m_handle = {};
-
-	VkDevice m_device_handle = {};
-	const image &m_image = {};
+	image *m_image = nullptr;
 
 private:
+	VkDevice m_device_handle = {};
+};
+
+class texture
+{
+public:
+	texture() = default;
+	~texture();
+
+	texture(const texture &) = delete;
+	texture operator=(const texture &) = delete;
+
+	void build(device &device, image &image);
+
+	image *m_image = nullptr;
+	image_view m_image_view = {};
+	VkSampler m_sampler = VK_NULL_HANDLE;
+
+private:
+	VkDevice m_device_handle = {};
 };
 
 } /* namespace vulkan */

@@ -161,8 +161,8 @@ void wsi::build_swapchain(device &device)
 			                          m_swapchain.m_extent.height);
 			m_swapchain.m_images.emplace_back(std::move(img));
 
-			std::unique_ptr<image_view> img_view = std::make_unique<image_view>(*m_swapchain.m_images[i]);
-			img_view->build(*m_swapchain.m_device);
+			std::unique_ptr<image_view> img_view = std::make_unique<image_view>();
+			img_view->build(*m_swapchain.m_device, *m_swapchain.m_images[i]);
 			m_swapchain.m_image_views.emplace_back(std::move(img_view));
 		}
 	}

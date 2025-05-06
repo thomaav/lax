@@ -77,11 +77,10 @@ void shader_module::reflect(std::vector<u32> &binary)
 			terminate("Only single descriptor set at index 0 supported");
 		}
 
+		const u32 set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(image.id, spv::DecorationBinding);
-		m_dsl.add_binding(binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-		info("combined image sampler set %u binding %u name %s",
-		     compiler.get_decoration(image.id, spv::DecorationDescriptorSet), binding, image.name.c_str());
+		m_resource_bindings.push_back({ set, binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
+		info("combined image sampler set %u binding %u name %s", set, binding, image.name.c_str());
 	}
 	for (const auto &image : resources.subpass_inputs)
 	{
@@ -110,18 +109,16 @@ void shader_module::reflect(std::vector<u32> &binary)
 			terminate("Only single descriptor set at index 0 supported");
 		}
 
+		const u32 set = compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(buffer.id, spv::DecorationBinding);
-		m_dsl.add_binding(binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-
-		info("uniform buffer set %u binding %u name %s",
-		     compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet), binding, buffer.name.c_str());
+		m_resource_bindings.push_back({ set, binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER });
+		info("uniform buffer set %u binding %u name %s", set, binding, buffer.name.c_str());
 	}
 	for (const auto &buffer : resources.storage_buffers)
 	{
 		UNUSED(buffer);
 		terminate("No support for storage buffer descriptors");
 	}
-	m_dsl.build(*m_device);
 
 	/* Push constants. */
 	if (!resources.push_constant_buffers.empty())
