@@ -26,6 +26,8 @@ public:
 	void build(device &device, VkFormat format);
 
 	VkRenderPass m_handle = {};
+	VkFormat m_format = VK_FORMAT_UNDEFINED;
+	VkPipelineRenderingCreateInfo m_rendering_info = {};
 
 private:
 	VkDevice m_device_handle = {};

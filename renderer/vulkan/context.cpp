@@ -120,7 +120,7 @@ void context::backend_test()
 
 	render_pass render_pass = {};
 	render_pass.use_dynamic_rendering();
-	render_pass.build(m_device, VK_FORMAT_UNDEFINED);
+	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format);
 
 	pipeline pipeline = {};
 	pipeline.add_shader(vertex_shader_module);

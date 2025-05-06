@@ -171,6 +171,8 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 
 	pipeline_info.renderPass = render_pass.m_handle;
 	pipeline_info.subpass = 0;
+	/* (TODO, thoave01): More general way of handling pNexts. */
+	pipeline_info.pNext = VK_NULL_HANDLE == render_pass.m_handle ? &render_pass.m_rendering_info : nullptr;
 
 	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 	pipeline_info.basePipelineIndex = -1;

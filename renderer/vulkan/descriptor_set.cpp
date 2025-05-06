@@ -29,7 +29,7 @@ void descriptor_set_layout::build(device &device)
 	VkDescriptorSetLayoutCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, //
 		.pNext = nullptr,                                             //
-		.flags = 0,                                                   //
+		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT, //
 		.bindingCount = (u32)m_bindings.size(),                       //
 		.pBindings = m_bindings.data(),                               //
 	};
