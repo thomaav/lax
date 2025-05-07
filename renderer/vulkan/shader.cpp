@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 
@@ -50,7 +51,16 @@ void shader_module::reflect(std::vector<u32> &binary)
 	{
 		constexpr u32 default_binding = 0;
 		u32 stride = 0;
-		for (const auto &input : resources.stage_inputs)
+
+		std::vector<spirv_cross::Resource> sorted_inputs(resources.stage_inputs.begin(), resources.stage_inputs.end());
+		std::sort(sorted_inputs.begin(), sorted_inputs.end(),
+		          [&](const spirv_cross::Resource &a, const spirv_cross::Resource &b)
+		          {
+			          uint32_t loc_a = compiler.get_decoration(a.id, spv::DecorationLocation);
+			          uint32_t loc_b = compiler.get_decoration(b.id, spv::DecorationLocation);
+			          return loc_a < loc_b;
+		          });
+		for (const auto &input : sorted_inputs)
 		{
 			const spirv_cross::SPIRType &type = compiler.get_type(input.type_id);
 			VkVertexInputAttributeDescription attr = {};
@@ -60,8 +70,6 @@ void shader_module::reflect(std::vector<u32> &binary)
 			attr.offset = stride;
 			m_vads.push_back(attr);
 			stride += type.vecsize * sizeof(float);
-
-			info("location %u name %s vecsize %u", attr.location, input.name.c_str(), type.vecsize);
 		}
 
 		m_vbd.binding = default_binding;
@@ -80,7 +88,6 @@ void shader_module::reflect(std::vector<u32> &binary)
 		const u32 set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 		m_resource_bindings.push_back({ set, binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER });
-		info("combined image sampler set %u binding %u name %s", set, binding, image.name.c_str());
 	}
 	for (const auto &image : resources.subpass_inputs)
 	{
@@ -112,7 +119,6 @@ void shader_module::reflect(std::vector<u32> &binary)
 		const u32 set = compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(buffer.id, spv::DecorationBinding);
 		m_resource_bindings.push_back({ set, binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER });
-		info("uniform buffer set %u binding %u name %s", set, binding, buffer.name.c_str());
 	}
 	for (const auto &buffer : resources.storage_buffers)
 	{
