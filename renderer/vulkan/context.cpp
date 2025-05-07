@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <optional>
 #include <string_view>
@@ -144,15 +145,25 @@ void context::backend_test()
 		image->transition_layout(*this, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	}
 
-	std::vector<command_buffer> command_buffers(m_wsi.m_swapchain.m_images.size());
-	for (auto &command_buffer : command_buffers)
-	{
-		command_buffer.build(m_device, m_command_pool);
-	}
+	semaphore image_available_semaphore = {};
+	image_available_semaphore.build(m_device);
+	semaphore render_finished_semaphore = {};
+	render_finished_semaphore.build(m_device);
 
-	for (size_t i = 0; i < command_buffers.size(); i++)
+	while (m_window.step())
 	{
-		command_buffers[i].begin();
+		static auto start_time = std::chrono::high_resolution_clock::now();
+		auto current_time = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+		uniforms.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		uniform_buffer.fill(&uniforms, sizeof(uniforms));
+
+		u32 image_idx = 0;
+		m_wsi.acquire_image(image_available_semaphore, &image_idx);
+
+		command_buffer command_buffer = {};
+		command_buffer.build(m_device, m_command_pool);
+		command_buffer.begin();
 		{
 			/* Transition image for rendering. */
 			const VkImageSubresourceRange img_range = {
@@ -173,7 +184,7 @@ void context::backend_test()
 				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,                 //
 				.srcQueueFamilyIndex = 0,                                        //
 				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_vulkan_images[i],                   //
+				.image = m_wsi.m_swapchain.m_vulkan_images[image_idx],           //
 				.subresourceRange = img_range,                                   //
 			};
 			const VkDependencyInfo begin_rendering_dependency_info = {
@@ -187,22 +198,22 @@ void context::backend_test()
 				.imageMemoryBarrierCount = 1,                     //
 				.pImageMemoryBarriers = &begin_rendering_barrier, //
 			};
-			vkCmdPipelineBarrier2(command_buffers[i].m_handle, &begin_rendering_dependency_info);
+			vkCmdPipelineBarrier2(command_buffer.m_handle, &begin_rendering_dependency_info);
 
 			/* Create render pass. */
 			VkClearValue clear_color = {};
 			clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 			const VkRenderingAttachmentInfo color_attachment = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      //
-				.pNext = nullptr,                                          //
-				.imageView = m_wsi.m_swapchain.m_image_views[i]->m_handle, //
-				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   //
-				.resolveMode = VK_RESOLVE_MODE_NONE,                       //
-				.resolveImageView = VK_NULL_HANDLE,                        //
-				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,           //
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                     //
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                   //
-				.clearValue = clear_color,                                 //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,              //
+				.pNext = nullptr,                                                  //
+				.imageView = m_wsi.m_swapchain.m_image_views[image_idx]->m_handle, //
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,           //
+				.resolveMode = VK_RESOLVE_MODE_NONE,                               //
+				.resolveImageView = VK_NULL_HANDLE,                                //
+				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                   //
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                             //
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                           //
+				.clearValue = clear_color,                                         //
 			};
 			VkClearValue clear_depth = {};
 			clear_depth.depthStencil = { 1.0f, 0 };
@@ -232,21 +243,21 @@ void context::backend_test()
 			};
 
 			/* Render. */
-			vkCmdBeginRendering(command_buffers[i].m_handle, &rendering_info);
+			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 			{
-				command_buffers[i].bind_pipeline(pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.bind_pipeline(pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				constexpr VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(command_buffers[i].m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
-				vkCmdBindIndexBuffer(command_buffers[i].m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
+				vkCmdBindIndexBuffer(command_buffer.m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
 
-				command_buffers[i].set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffers[i].set_texture(1, color_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.set_texture(1, color_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-				vkCmdDrawIndexed(command_buffers[i].m_handle, model.m_meshes[0].m_indices.size(),
+				vkCmdDrawIndexed(command_buffer.m_handle, model.m_meshes[0].m_indices.size(),
 				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
 				                 /* firstInstance = */ 0);
 			}
-			vkCmdEndRendering(command_buffers[i].m_handle);
+			vkCmdEndRendering(command_buffer.m_handle);
 
 			/* Transition image for presentation. */
 			VkImageMemoryBarrier2 end_rendering_barrier = {
@@ -260,7 +271,7 @@ void context::backend_test()
 				.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                    //
 				.srcQueueFamilyIndex = 0,                                        //
 				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_vulkan_images[i],                   //
+				.image = m_wsi.m_swapchain.m_vulkan_images[image_idx],           //
 				.subresourceRange = img_range,                                   //
 			};
 			VkDependencyInfo end_rendering_dependency_info = {
@@ -274,47 +285,16 @@ void context::backend_test()
 				.imageMemoryBarrierCount = 1,                   //
 				.pImageMemoryBarriers = &end_rendering_barrier, //
 			};
-			vkCmdPipelineBarrier2(command_buffers[i].m_handle, &end_rendering_dependency_info);
+			vkCmdPipelineBarrier2(command_buffer.m_handle, &end_rendering_dependency_info);
 		}
-		command_buffers[i].end();
+		command_buffer.end();
+
+		fence unused_fence = {};
+		semaphore unused_semaphore = {};
+		m_queue.submit(command_buffer, image_available_semaphore, render_finished_semaphore, unused_fence);
+		m_queue.present(render_finished_semaphore, m_wsi, image_idx);
+		m_device.wait();
 	}
-
-	constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
-
-	std::vector<semaphore> imageAvailableSemaphores(MAX_FRAMES_IN_FLIGHT);
-	std::vector<semaphore> renderFinishedSemaphores(MAX_FRAMES_IN_FLIGHT);
-	std::vector<fence> frameFences(MAX_FRAMES_IN_FLIGHT);
-	std::vector<fence *> imageFences(m_wsi.m_swapchain.m_images.size(), nullptr);
-	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		imageAvailableSemaphores[i].build(m_device);
-		renderFinishedSemaphores[i].build(m_device);
-		frameFences[i].build(m_device);
-	}
-
-	u32 frame = 0u;
-	while (m_window.step())
-	{
-		frameFences[frame].wait();
-
-		uint32_t imageIndex{};
-		m_wsi.acquire_image(imageAvailableSemaphores[frame], &imageIndex);
-
-		if (imageFences[imageIndex] != nullptr)
-		{
-			imageFences[imageIndex]->wait();
-		}
-		imageFences[imageIndex] = &frameFences[frame];
-
-		frameFences[frame].reset();
-		m_queue.submit(command_buffers[imageIndex], imageAvailableSemaphores[frame], renderFinishedSemaphores[frame],
-		               frameFences[frame]);
-		m_queue.present(renderFinishedSemaphores[frame], m_wsi, imageIndex);
-
-		frame = (frame + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
-
-	m_device.wait();
 }
 
 } /* namespace vulkan */

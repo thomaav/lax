@@ -16,16 +16,22 @@ void queue::submit(command_buffer &command_buffer, semaphore &wait_semaphore, se
 
 	VkSemaphore wait_semaphores[] = { wait_semaphore.m_handle };
 	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submit_info.waitSemaphoreCount = 1;
-	submit_info.pWaitSemaphores = wait_semaphores;
-	submit_info.pWaitDstStageMask = wait_stages;
+	if (VK_NULL_HANDLE != wait_semaphore.m_handle)
+	{
+		submit_info.waitSemaphoreCount = 1;
+		submit_info.pWaitSemaphores = wait_semaphores;
+		submit_info.pWaitDstStageMask = wait_stages;
+	}
 
 	submit_info.commandBufferCount = 1;
 	submit_info.pCommandBuffers = &command_buffer.m_handle;
 
 	VkSemaphore signal_semaphores[] = { signal_semaphore.m_handle };
-	submit_info.signalSemaphoreCount = 1;
-	submit_info.pSignalSemaphores = signal_semaphores;
+	if (VK_NULL_HANDLE != signal_semaphore.m_handle)
+	{
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = signal_semaphores;
+	}
 
 	VULKAN_ASSERT_SUCCESS(vkQueueSubmit(m_handle, 1, &submit_info, fence.m_handle));
 }
@@ -46,8 +52,11 @@ void queue::present(semaphore &wait_semaphore, wsi &wsi, u32 image_index)
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
 	VkSemaphore wait_semaphores[] = { wait_semaphore.m_handle };
-	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores = wait_semaphores;
+	if (VK_NULL_HANDLE != wait_semaphore.m_handle)
+	{
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores = wait_semaphores;
+	}
 
 	VkSwapchainKHR swapchains[] = { wsi.m_swapchain.m_handle };
 	present_info.swapchainCount = 1;

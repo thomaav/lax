@@ -108,7 +108,7 @@ void wsi::build_swapchain(device &device)
 	extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 	/* Swapchain image count. */
-	u32 image_count = capabilities.minImageCount + 1;
+	u32 image_count = capabilities.minImageCount;
 	if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount)
 	{
 		image_count = capabilities.maxImageCount;
