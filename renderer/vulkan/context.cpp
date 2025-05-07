@@ -109,8 +109,17 @@ void context::backend_test()
 	                                    model.m_meshes[0].m_width, model.m_meshes[0].m_height);
 	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_texture.size());
 	texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	texture texture = {};
-	texture.build(m_device, texture_image);
+	texture color_texture = {};
+	color_texture.build(m_device, texture_image);
+
+	/* Depth texture. */
+	image depth_texture_image = {};
+	m_resource_allocator.allocate_image(depth_texture_image, VK_FORMAT_D32_SFLOAT,
+	                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, m_wsi.m_swapchain.m_extent.width,
+	                                    m_wsi.m_swapchain.m_extent.height);
+	depth_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	texture depth_texture = {};
+	depth_texture.build(m_device, depth_texture_image);
 
 	shader_module vertex_shader_module = {};
 	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
@@ -123,7 +132,7 @@ void context::backend_test()
 
 	render_pass render_pass = {};
 	render_pass.use_dynamic_rendering();
-	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format);
+	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format, VK_FORMAT_D32_SFLOAT);
 
 	pipeline pipeline = {};
 	pipeline.add_shader(vertex_shader_module);
@@ -181,7 +190,8 @@ void context::backend_test()
 			vkCmdPipelineBarrier2(command_buffers[i].m_handle, &begin_rendering_dependency_info);
 
 			/* Create render pass. */
-			const VkClearValue clear_color = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+			VkClearValue clear_color = {};
+			clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 			const VkRenderingAttachmentInfo color_attachment = {
 				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      //
 				.pNext = nullptr,                                          //
@@ -194,6 +204,20 @@ void context::backend_test()
 				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                   //
 				.clearValue = clear_color,                                 //
 			};
+			VkClearValue clear_depth = {};
+			clear_depth.depthStencil = { 1.0f, 0 };
+			const VkRenderingAttachmentInfo depth_attachment = {
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+				.pNext = nullptr,                                        //
+				.imageView = depth_texture.m_image_view.m_handle,        //
+				.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
+				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+				.resolveImageView = VK_NULL_HANDLE,                      //
+				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
+				.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
+				.clearValue = clear_depth,                               //
+			};
 			const VkRenderingInfo rendering_info = {
 				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,              //
 				.pNext = nullptr,                                       //
@@ -203,7 +227,7 @@ void context::backend_test()
 				.viewMask = 0,                                          //
 				.colorAttachmentCount = 1,                              //
 				.pColorAttachments = &color_attachment,                 //
-				.pDepthAttachment = nullptr,                            //
+				.pDepthAttachment = &depth_attachment,                  //
 				.pStencilAttachment = nullptr,                          //
 			};
 
@@ -216,7 +240,7 @@ void context::backend_test()
 				vkCmdBindIndexBuffer(command_buffers[i].m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
 
 				command_buffers[i].set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffers[i].set_texture(1, texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffers[i].set_texture(1, color_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
 				vkCmdDrawIndexed(command_buffers[i].m_handle, model.m_meshes[0].m_indices.size(),
 				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,

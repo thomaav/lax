@@ -38,11 +38,5 @@ fragment half4 fragment_shader(vertex_varyings varyings [[stage_in]], //
                                texture2d<half, access::sample> texture [[texture(0)]])
 {
 	constexpr sampler s(address::repeat, filter::linear);
-	half4 color = texture.sample(s, varyings.uv).rgba;
-	if (color.x == 0.0f && color.y == 0.0f && color.z == 0.0f)
-	{
-		color.x = varyings.uv.x;
-		color.y = varyings.uv.y;
-	}
-	return color;
+	return texture.sample(s, varyings.uv).rgba;
 }

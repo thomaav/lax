@@ -120,6 +120,21 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	multisampling_info.alphaToCoverageEnable = VK_FALSE;
 	multisampling_info.alphaToOneEnable = VK_FALSE;
 
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, //
+		.pNext = nullptr,                                                    //
+		.flags = 0,                                                          //
+		.depthTestEnable = VK_TRUE,                                          //
+		.depthWriteEnable = VK_TRUE,                                         //
+		.depthCompareOp = VK_COMPARE_OP_LESS,                                //
+		.depthBoundsTestEnable = VK_FALSE,                                   //
+		.stencilTestEnable = VK_FALSE,                                       //
+		.front = {},                                                         //
+		.back = {},                                                          //
+		.minDepthBounds = 0.0f,                                              //
+		.maxDepthBounds = 0.0f,                                              //
+	};
+
 	VkPipelineColorBlendAttachmentState blend_attachment_state = {};
 	blend_attachment_state.colorWriteMask =
 	    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -157,7 +172,7 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	pipeline_info.pViewportState = &viewport_info;
 	pipeline_info.pRasterizationState = &rasterizer_info;
 	pipeline_info.pMultisampleState = &multisampling_info;
-	pipeline_info.pDepthStencilState = nullptr;
+	pipeline_info.pDepthStencilState = &depth_stencil_info;
 	pipeline_info.pColorBlendState = &blending_info;
 	pipeline_info.pDynamicState = nullptr;
 

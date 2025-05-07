@@ -20,7 +20,7 @@ void render_pass::use_dynamic_rendering()
 	m_dynamic_rendering = true;
 }
 
-void render_pass::build(device &device, VkFormat format)
+void render_pass::build(device &device, VkFormat color_format, VkFormat depth_format)
 {
 	m_device_handle = device.m_logical.m_handle;
 
@@ -30,13 +30,14 @@ void render_pass::build(device &device, VkFormat format)
 	}
 
 	m_handle = VK_NULL_HANDLE;
-	m_format = format;
+	m_color_format = color_format;
+	m_depth_format = depth_format;
 	m_rendering_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	m_rendering_info.pNext = nullptr;
 	m_rendering_info.viewMask = 0;
 	m_rendering_info.colorAttachmentCount = 1;
-	m_rendering_info.pColorAttachmentFormats = &m_format;
-	m_rendering_info.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+	m_rendering_info.pColorAttachmentFormats = &m_color_format;
+	m_rendering_info.depthAttachmentFormat = m_depth_format;
 	m_rendering_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 }
 

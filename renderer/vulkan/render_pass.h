@@ -23,10 +23,11 @@ public:
 	render_pass operator=(const render_pass &) = delete;
 
 	void use_dynamic_rendering();
-	void build(device &device, VkFormat format);
+	void build(device &device, VkFormat color_format, VkFormat depth_format);
 
 	VkRenderPass m_handle = {};
-	VkFormat m_format = VK_FORMAT_UNDEFINED;
+	VkFormat m_color_format = VK_FORMAT_UNDEFINED;
+	VkFormat m_depth_format = VK_FORMAT_UNDEFINED;
 	VkPipelineRenderingCreateInfo m_rendering_info = {};
 
 private:

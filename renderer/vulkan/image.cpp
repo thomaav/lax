@@ -3,9 +3,53 @@
 #include <renderer/vulkan/context.h>
 #include <renderer/vulkan/image.h>
 #include <renderer/vulkan/util.h>
+#include <utils/util.h>
 
 namespace vulkan
 {
+
+static VkImageAspectFlags get_aspect_from_format(VkFormat format)
+{
+	switch (format)
+	{
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D32_SFLOAT:
+		return VK_IMAGE_ASPECT_DEPTH_BIT;
+	case VK_FORMAT_S8_UINT:
+		return VK_IMAGE_ASPECT_STENCIL_BIT;
+	case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		terminate("Only split depth/stencil supported");
+		break;
+	default:
+		return VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
+	return VK_IMAGE_ASPECT_NONE;
+}
+
+static VkImageTiling get_tiling_from_format(VkFormat format)
+{
+	switch (format)
+	{
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_S8_UINT:
+		return VK_IMAGE_TILING_OPTIMAL;
+	case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		terminate("Only split depth/stencil supported");
+		break;
+	default:
+		return VK_IMAGE_TILING_LINEAR;
+	}
+
+	return VK_IMAGE_TILING_MAX_ENUM;
+}
 
 image::~image()
 {
@@ -49,7 +93,7 @@ void image::build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usa
 		.mipLevels = 1,                               //
 		.arrayLayers = 1,                             //
 		.samples = VK_SAMPLE_COUNT_1_BIT,             //
-		.tiling = VK_IMAGE_TILING_LINEAR,             //
+		.tiling = get_tiling_from_format(format),     //
 		.usage = usage,                               //
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
 		.queueFamilyIndexCount = 0,                   //
@@ -76,7 +120,7 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = m_handle;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_format);
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
@@ -153,7 +197,7 @@ void image_view::build(device &device, image &image)
 	create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 	create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-	create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	create_info.subresourceRange.aspectMask = get_aspect_from_format(m_image->m_format);
 	create_info.subresourceRange.baseMipLevel = 0;
 	create_info.subresourceRange.levelCount = 1;
 	create_info.subresourceRange.baseArrayLayer = 0;
