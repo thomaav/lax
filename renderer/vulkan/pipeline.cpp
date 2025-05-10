@@ -81,9 +81,9 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.y = (float)extent.height;
 	viewport.width = (float)extent.width;
-	viewport.height = (float)extent.height;
+	viewport.height = -(float)extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 

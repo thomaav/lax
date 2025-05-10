@@ -97,7 +97,6 @@ void context::backend_test()
 	uniforms.model = model.m_meshes[0].m_transform;
 	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	uniforms.projection = glm::perspectiveRH_ZO(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 256.0f);
-	uniforms.projection[1][1] *= -1.0f; /* (TODO, thoave01): Should flip viewport instead. KHR_maintenance1. */
 	buffer uniform_buffer = {};
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
