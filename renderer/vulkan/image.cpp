@@ -45,7 +45,7 @@ static VkImageTiling get_tiling_from_format(VkFormat format)
 		terminate("Only split depth/stencil supported");
 		break;
 	default:
-		return VK_IMAGE_TILING_LINEAR;
+		return VK_IMAGE_TILING_OPTIMAL;
 	}
 
 	return VK_IMAGE_TILING_MAX_ENUM;
@@ -59,29 +59,31 @@ image::~image()
 	}
 }
 
-void image::build_external_image(VkImage handle, VkFormat format, u32 width, u32 height)
+void image::build_external(VkImage handle, VkFormat format, u32 width, u32 height)
 {
 	m_external_image = true;
 	m_handle = handle;
 	m_format = format;
 	m_width = width;
 	m_height = height;
+	m_layers = 1;
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-void image::build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
+void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
 {
 	m_allocator = allocator;
 	m_external_image = false;
 	m_format = format;
 	m_width = width;
 	m_height = height;
+	m_layers = 1;
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	const VkExtent3D extent = {
-		.width = width,   //
-		.height = height, //
-		.depth = 1        //
+		.width = m_width,   //
+		.height = m_height, //
+		.depth = 1          //
 	};
 	const VkImageCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //
@@ -91,7 +93,47 @@ void image::build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usa
 		.format = format,                             //
 		.extent = extent,                             //
 		.mipLevels = 1,                               //
-		.arrayLayers = 1,                             //
+		.arrayLayers = m_layers,                      //
+		.samples = VK_SAMPLE_COUNT_1_BIT,             //
+		.tiling = get_tiling_from_format(format),     //
+		.usage = usage,                               //
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
+		.queueFamilyIndexCount = 0,                   //
+		.pQueueFamilyIndices = nullptr,               //
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,   //
+	};
+
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
+
+	VULKAN_ASSERT_SUCCESS(vmaCreateImage(allocator, &create_info, &alloc_info, &m_handle, &m_allocation, nullptr));
+}
+
+void image::build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+                          u32 layers)
+{
+	m_allocator = allocator;
+	m_external_image = false;
+	m_format = format;
+	m_width = width;
+	m_height = height;
+	m_layers = layers;
+	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	const VkExtent3D extent = {
+		.width = m_width,   //
+		.height = m_height, //
+		.depth = 1          //
+	};
+	const VkImageCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //
+		.pNext = nullptr,                             //
+		.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, //
+		.imageType = VK_IMAGE_TYPE_2D,                //
+		.format = format,                             //
+		.extent = extent,                             //
+		.mipLevels = 1,                               //
+		.arrayLayers = m_layers,                      //
 		.samples = VK_SAMPLE_COUNT_1_BIT,             //
 		.tiling = get_tiling_from_format(format),     //
 		.usage = usage,                               //
@@ -124,7 +166,7 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = m_layers;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = 0;
 		vkCmdPipelineBarrier(command_buffer.m_handle, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -137,6 +179,12 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 /* (TODO, thoave01): There are multiple submissions in here. Could use VK_EXT_host_image_copy? */
 void image::fill(context &context, const void *data, size_t size)
 {
+	fill_layer(context, data, size, 0);
+}
+
+void image::fill_layer(context &context, const void *data, size_t size, u32 layer)
+{
+	/* (TODO, thoave01): We don't need to transition all layers. */
 	VkImageLayout old_layout = m_layout;
 	if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL != m_layout)
 	{
@@ -157,7 +205,7 @@ void image::fill(context &context, const void *data, size_t size)
 		region.bufferImageHeight = 0;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.baseArrayLayer = layer;
 		region.imageSubresource.layerCount = 1;
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { m_width, m_height, 1 };
@@ -189,7 +237,7 @@ void image_view::build(device &device, image &image)
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	create_info.image = m_image->m_handle;
 
-	create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	create_info.viewType = image.m_layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE;
 	create_info.format = m_image->m_format;
 
 	create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -201,7 +249,7 @@ void image_view::build(device &device, image &image)
 	create_info.subresourceRange.baseMipLevel = 0;
 	create_info.subresourceRange.levelCount = 1;
 	create_info.subresourceRange.baseArrayLayer = 0;
-	create_info.subresourceRange.layerCount = 1;
+	create_info.subresourceRange.layerCount = image.m_layers;
 
 	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
@@ -221,25 +269,27 @@ void texture::build(device &device, image &image)
 	m_device_handle = device.m_logical.m_handle;
 
 	m_image_view.build(device, image);
-	VkSamplerCreateInfo sampler_info = {};
-	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler_info.pNext = nullptr;
-	sampler_info.flags = 0;
-	sampler_info.magFilter = VK_FILTER_LINEAR;
-	sampler_info.minFilter = VK_FILTER_LINEAR;
-	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler_info.mipLodBias = 0.0f;
-	sampler_info.anisotropyEnable = VK_FALSE; /* (TODO, thoave01): Anisotropy. */
-	sampler_info.maxAnisotropy = 0.0f;
-	sampler_info.compareEnable = VK_FALSE;
-	sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-	sampler_info.minLod = 0.0f;
-	sampler_info.maxLod = 0.0f;
-	sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	sampler_info.unnormalizedCoordinates = VK_FALSE;
+	VkSamplerCreateInfo sampler_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,    //
+		.pNext = nullptr,                                  //
+		.flags = 0,                                        //
+		.magFilter = VK_FILTER_LINEAR,                     //
+		.minFilter = VK_FILTER_LINEAR,                     //
+		.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,       //
+		/* (TODO, thoave01): CLAMP_TO_EDGE for cubemap. */ //
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,    //
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,    //
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,    //
+		.mipLodBias = 0.0f,                                //
+		.anisotropyEnable = VK_FALSE,                      // /* (TODO, thoave01): Anisotropy. */
+		.maxAnisotropy = 0.0f,                             //
+		.compareEnable = VK_FALSE,                         //
+		.compareOp = VK_COMPARE_OP_ALWAYS,                 //
+		.minLod = 0.0f,                                    //
+		.maxLod = 0.0f,                                    //
+		.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,   //
+		.unnormalizedCoordinates = VK_FALSE,               //
+	};
 	VULKAN_ASSERT_SUCCESS(vkCreateSampler(m_device_handle, &sampler_info, nullptr, &m_sampler));
 }
 

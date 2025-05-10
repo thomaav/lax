@@ -42,9 +42,16 @@ void resource_allocator::allocate_buffer(buffer &buffer, VkBufferUsageFlags usag
 	buffer.build(m_allocator, usage, size);
 }
 
-void resource_allocator::allocate_image(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
+void resource_allocator::allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,
+                                           u32 height)
 {
-	image.build(m_allocator, format, usage, width, height);
+	image.build_2d(m_allocator, format, usage, width, height);
+}
+
+void resource_allocator::allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,
+                                                u32 height, u32 layers)
+{
+	image.build_layered(m_allocator, format, usage, width, height, layers);
 }
 
 } /* namespace vulkan */

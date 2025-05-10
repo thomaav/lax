@@ -25,7 +25,9 @@ public:
 
 	void build(instance &instance, device &device);
 	void allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size);
-	void allocate_image(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	void allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	void allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+	                            u32 layers);
 
 private:
 	instance *m_instance = nullptr;

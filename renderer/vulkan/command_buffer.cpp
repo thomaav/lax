@@ -6,7 +6,7 @@ namespace vulkan
 
 command_pool::~command_pool()
 {
-	if (m_handle != VK_NULL_HANDLE)
+	if (VK_NULL_HANDLE != m_handle)
 	{
 		vkDestroyCommandPool(m_device_handle, m_handle, nullptr);
 	}
@@ -17,11 +17,27 @@ void command_pool::build(device &device)
 	VkCommandPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	pool_info.queueFamilyIndex = *device.m_physical.m_queue_family.m_all;
-	pool_info.flags = 0;
+	pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	VULKAN_ASSERT_SUCCESS(vkCreateCommandPool(device.m_logical.m_handle, &pool_info, nullptr, &m_handle));
 
 	m_device_handle = device.m_logical.m_handle;
+}
+
+void command_pool::reset()
+{
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkResetCommandPool(m_device_handle, m_handle, 0);
+	}
+}
+
+command_buffer::~command_buffer()
+{
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkFreeCommandBuffers(m_device_handle, m_command_pool_handle, 1, &m_handle);
+	}
 }
 
 void command_buffer::build(device &device, command_pool &command_pool)
@@ -36,6 +52,14 @@ void command_buffer::build(device &device, command_pool &command_pool)
 
 	m_device_handle = device.m_logical.m_handle;
 	m_command_pool_handle = command_pool.m_handle;
+}
+
+void command_buffer::reset()
+{
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkResetCommandBuffer(m_handle, 0);
+	}
 }
 
 void command_buffer::begin()

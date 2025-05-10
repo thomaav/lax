@@ -22,6 +22,7 @@ public:
 	command_pool operator=(const command_pool &) = delete;
 
 	void build(device &device);
+	void reset();
 
 	VkCommandPool m_handle = {};
 
@@ -33,12 +34,13 @@ class command_buffer
 {
 public:
 	command_buffer() = default;
-	~command_buffer() = default;
+	~command_buffer();
 
 	command_buffer(const command_buffer &) = delete;
 	command_buffer operator=(const command_buffer &) = delete;
 
 	void build(device &device, command_pool &command_pool);
+	void reset();
 	void begin();
 	void end();
 	void bind_pipeline(pipeline &pipeline, VkPipelineBindPoint bind_point);

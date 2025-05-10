@@ -7,7 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <model/model.h>
+#include <assets/image.h>
+#include <assets/model.h>
 #include <platform/window.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
@@ -76,7 +77,7 @@ void context::build()
 
 void context::backend_test()
 {
-	model model = {};
+	assets::model model = {};
 	model.load("bin/assets/models/DamagedHelmet.glb");
 
 	/* Vertex input. */
@@ -93,21 +94,20 @@ void context::backend_test()
 
 	/* Uniform buffer. */
 	uniforms uniforms = {};
-	uniforms.model = glm::mat4(1.0f);
-	uniforms.view = glm::lookAt(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	uniforms.projection = glm::perspective(glm::radians(45.0f), 800 / (float)600, 0.1f, 10.0f);
-#if defined(__APPLE__)
-	uniforms.projection[1][1] *= -1.0f;
-#endif
+	uniforms.model = model.m_meshes[0].m_transform;
+	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	uniforms.projection = glm::perspectiveRH_ZO(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 256.0f);
+	uniforms.projection[1][1] *= -1.0f; /* (TODO, thoave01): Should flip viewport instead. KHR_maintenance1. */
 	buffer uniform_buffer = {};
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
+	/* (TODO, thoave01): Move image inside texture and allocator. */
 	/* Texture. */
 	image texture_image = {};
-	m_resource_allocator.allocate_image(texture_image, VK_FORMAT_R8G8B8A8_SRGB,
-	                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-	                                    model.m_meshes[0].m_width, model.m_meshes[0].m_height);
+	m_resource_allocator.allocate_image_2d(texture_image, VK_FORMAT_R8G8B8A8_SRGB,
+	                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+	                                       model.m_meshes[0].m_width, model.m_meshes[0].m_height);
 	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_texture.size());
 	texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	texture color_texture = {};
@@ -115,30 +115,57 @@ void context::backend_test()
 
 	/* Depth texture. */
 	image depth_texture_image = {};
-	m_resource_allocator.allocate_image(depth_texture_image, VK_FORMAT_D32_SFLOAT,
-	                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, m_wsi.m_swapchain.m_extent.width,
-	                                    m_wsi.m_swapchain.m_extent.height);
+	m_resource_allocator.allocate_image_2d(depth_texture_image, VK_FORMAT_D32_SFLOAT,
+	                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
 	depth_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	texture depth_texture = {};
 	depth_texture.build(m_device, depth_texture_image);
 
-	shader_module vertex_shader_module = {};
-	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
-
-	shader_module fragment_shader_module = {};
-	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/basic.frag.spv");
-
-	pipeline_layout pipeline_layout = {};
-	pipeline_layout.build(m_device);
+	/* Skybox. */
+	assets::image skybox_asset_image = {};
+	skybox_asset_image.load("bin/assets/images/skybox/right.jpg");
+	image skybox_image = {};
+	m_resource_allocator.allocate_image_layered(skybox_image, VK_FORMAT_R8G8B8A8_SRGB,
+	                                            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+	                                            skybox_asset_image.m_width, skybox_asset_image.m_height, 6);
+	skybox_asset_image.load("bin/assets/images/skybox/right.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 0);
+	skybox_asset_image.load("bin/assets/images/skybox/left.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 1);
+	skybox_asset_image.load("bin/assets/images/skybox/top.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 2);
+	skybox_asset_image.load("bin/assets/images/skybox/bottom.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 3);
+	skybox_asset_image.load("bin/assets/images/skybox/front.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 4);
+	skybox_asset_image.load("bin/assets/images/skybox/back.jpg");
+	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 5);
+	skybox_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	texture skybox_texture = {};
+	skybox_texture.build(m_device, skybox_image);
 
 	render_pass render_pass = {};
 	render_pass.use_dynamic_rendering();
 	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format, VK_FORMAT_D32_SFLOAT);
 
-	pipeline pipeline = {};
-	pipeline.add_shader(vertex_shader_module);
-	pipeline.add_shader(fragment_shader_module);
-	pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
+	shader_module vertex_shader_module = {};
+	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
+	shader_module fragment_shader_module = {};
+	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/basic.frag.spv");
+	pipeline basic_pipeline = {};
+	basic_pipeline.add_shader(vertex_shader_module);
+	basic_pipeline.add_shader(fragment_shader_module);
+	basic_pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
+
+	shader_module vertex_skybox_shader_module = {};
+	vertex_skybox_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/skybox.vert.spv");
+	shader_module fragment_skybox_shader_module = {};
+	fragment_skybox_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/skybox.frag.spv");
+	pipeline skybox_pipeline = {};
+	skybox_pipeline.add_shader(vertex_skybox_shader_module);
+	skybox_pipeline.add_shader(fragment_skybox_shader_module);
+	skybox_pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
 
 	for (std::unique_ptr<image> &image : m_wsi.m_swapchain.m_images)
 	{
@@ -150,19 +177,22 @@ void context::backend_test()
 	semaphore render_finished_semaphore = {};
 	render_finished_semaphore.build(m_device);
 
+	command_buffer command_buffer = {};
+	command_buffer.build(m_device, m_command_pool);
+
 	while (m_window.step())
 	{
 		static auto start_time = std::chrono::high_resolution_clock::now();
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-		uniforms.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		uniforms.model = time_rotation * model.m_meshes[0].m_transform;
 		uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 		u32 image_idx = 0;
 		m_wsi.acquire_image(image_available_semaphore, &image_idx);
 
-		command_buffer command_buffer = {};
-		command_buffer.build(m_device, m_command_pool);
+		m_command_pool.reset();
 		command_buffer.begin();
 		{
 			/* Transition image for rendering. */
@@ -245,17 +275,20 @@ void context::backend_test()
 			/* Render. */
 			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 			{
-				command_buffer.bind_pipeline(pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.bind_pipeline(basic_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				constexpr VkDeviceSize offset = 0;
 				vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
 				vkCmdBindIndexBuffer(command_buffer.m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
-
 				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				command_buffer.set_texture(1, color_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
-
 				vkCmdDrawIndexed(command_buffer.m_handle, model.m_meshes[0].m_indices.size(),
 				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
 				                 /* firstInstance = */ 0);
+
+				command_buffer.bind_pipeline(skybox_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				command_buffer.set_texture(1, skybox_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 

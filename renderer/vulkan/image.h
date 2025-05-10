@@ -22,16 +22,21 @@ public:
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
-	void build(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	void build_external_image(VkImage handle, VkFormat format, u32 width, u32 height);
+	void build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	void build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+	                   u32 layers);
+	void build_external(VkImage handle, VkFormat format, u32 width, u32 height);
+
 	void transition_layout(context &context, VkImageLayout new_layout);
 	void fill(context &context, const void *data, size_t size);
+	void fill_layer(context &context, const void *data, size_t size, u32 layer);
 
 	bool m_external_image = false;
 	VkImage m_handle = {};
 	VkFormat m_format = {};
-	u32 m_width = {};
-	u32 m_height = {};
+	u32 m_width = 0;
+	u32 m_height = 0;
+	u32 m_layers = 0;
 	VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 private:

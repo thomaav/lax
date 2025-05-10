@@ -30,7 +30,8 @@ set(VMA_BUILD_SAMPLE OFF)
 set(VMA_IMPLEMENTATION_BUILD ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator" vma)
 
-file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/model/*.cpp")
+# (TODO, thoave01): Remove assets from backend.
+file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/assets/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
 target_link_libraries(vulkan_backend PRIVATE
   volk
@@ -101,6 +102,7 @@ endif()
 # Add shaders to applications.
 add_custom_target(copy_shaders
   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/assets/shaders ${BASH_EXECUTABLE} ./compile.sh
+  # (TODO, thoave01): This overwrites assets if you're in ${CMAKE_SOURCE_DIR}.
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/bin/assets
 )
 add_dependencies(basic copy_shaders)

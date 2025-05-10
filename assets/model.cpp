@@ -3,16 +3,43 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <glm/gtc/type_ptr.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include <model/model.h>
+#include <assets/model.h>
+#include <utils/type.h>
 #include <utils/util.h>
+
+const aiNode *find_mesh_node(const aiScene *scene, const aiNode *node, const aiMesh *mesh)
+{
+	for (u32 i = 0; i < node->mNumMeshes; ++i)
+	{
+		if (scene->mMeshes[node->mMeshes[i]] == mesh)
+		{
+			return node;
+		}
+	}
+
+	for (u32 i = 0; i < node->mNumChildren; ++i)
+	{
+		const aiNode *found = find_mesh_node(scene, node->mChildren[i], mesh);
+		if (found)
+		{
+			return found;
+		}
+	}
+
+	return nullptr;
+}
+
+namespace assets
+{
 
 void model::load(const char *path)
 {
 	Assimp::Importer importer = {};
-	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene *scene = importer.ReadFile(path, aiProcess_FlipUVs);
 	if (nullptr == scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || nullptr == scene->mRootNode)
 	{
 		terminate("Assimp could not load %s", path);
@@ -96,11 +123,33 @@ void model::load(const char *path)
 			int channels;
 			stbi_uc *texture_data = stbi_load_from_memory((u8 *)texture->pcData, /* len = */ texture->mWidth,
 			                                              &mesh.m_width, &mesh.m_height, &channels, STBI_rgb_alpha);
+			if (nullptr == texture_data)
+			{
+				terminate("stbi_load_from_memory could not load texture for model %s", path);
+			}
 			mesh.m_texture.assign(texture_data, texture_data + mesh.m_width * mesh.m_height * 4);
+			stbi_image_free(texture_data);
 		}
 		else
 		{
 			terminate("Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
 		}
+
+		/* Add transform. */
+		const aiNode *mesh_node = find_mesh_node(scene, scene->mRootNode, assimp_mesh);
+		if (nullptr == mesh_node)
+		{
+			terminate("Could not find mesh %u scene node in model %s", mesh_idx, path);
+		}
+		aiMatrix4x4 transform = mesh_node->mTransformation;
+		const aiNode *node = mesh_node->mParent;
+		while (nullptr != node)
+		{
+			transform = node->mTransformation * transform;
+			node = node->mParent;
+		}
+		mesh.m_transform = glm::transpose(glm::make_mat4(&transform.a1));
 	}
 }
+
+} /* namespace assets */

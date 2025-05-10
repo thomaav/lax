@@ -16,6 +16,9 @@ struct vertex
 };
 static_assert(sizeof(vertex) == 48, "Unexpected struct vertex size");
 
+namespace assets
+{
+
 class mesh
 {
 public:
@@ -28,8 +31,10 @@ public:
 	std::vector<vertex> m_vertices = {};
 	std::vector<u32> m_indices = {};
 
-	std::vector<unsigned char> m_texture = {};
-	int m_width, m_height;
+	std::vector<u8> m_texture = {};
+	int m_width = -1;
+	int m_height = -1;
+	glm::mat4 m_transform = {};
 
 private:
 };
@@ -49,3 +54,5 @@ public:
 
 private:
 };
+
+} /* namespace assets */

@@ -15,7 +15,7 @@ layout(std140, set = 0, binding = 0) uniform uniforms_block
 } uniforms;
 
 void main() {
+	uv_out = uv_in;
     gl_Position =
 		uniforms.projection * uniforms.view * uniforms.model * vec4(position, 1.0f);
-	uv_out = uv_in;
 }
