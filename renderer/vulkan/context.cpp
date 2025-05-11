@@ -30,6 +30,9 @@ struct uniforms
 };
 static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3, "Unexpected struct uniform size");
 
+constexpr u32 WINDOW_WIDTH = 1280;
+constexpr u32 WINDOW_HEIGHT = 900;
+
 namespace vulkan
 {
 
@@ -59,7 +62,7 @@ void context::build()
 	};
 
 	/* Instance initialization. */
-	m_window.init(800, 600);
+	m_window.init(WINDOW_WIDTH, WINDOW_HEIGHT);
 	m_instance.build(m_window, profile_properties);
 	volkLoadInstance(m_instance.m_handle);
 	m_wsi.build_surface(m_window, m_instance);
@@ -96,7 +99,8 @@ void context::backend_test()
 	uniforms uniforms = {};
 	uniforms.model = model.m_meshes[0].m_transform;
 	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	uniforms.projection = glm::perspectiveRH_ZO(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 256.0f);
+	uniforms.projection =
+	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
 	buffer uniform_buffer = {};
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
