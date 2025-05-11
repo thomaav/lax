@@ -4,8 +4,17 @@
 #include <optional>
 #include <string_view>
 
+// clang-format off
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <third_party/volk/volk.h>
+#include <third_party/imgui/imgui.h>
+#include <third_party/imgui/imgui_impl_glfw.h>
+#include <third_party/imgui/imgui_impl_vulkan.h>
+#pragma clang diagnostic pop
+// clang-format on
 
 #include <assets/image.h>
 #include <assets/model.h>
@@ -38,6 +47,9 @@ namespace vulkan
 
 context::~context()
 {
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }
 
 void context::add_instance_extension(const char *extension)
@@ -76,6 +88,39 @@ void context::build()
 	/* Resource management initialization. */
 	m_resource_allocator.build(m_instance, m_device);
 	m_command_pool.build(m_device);
+
+	/* Dear ImGui. */
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	UNUSED(io);
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForVulkan(m_window.m_window, true);
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = m_instance.m_handle;
+	init_info.PhysicalDevice = m_device.m_physical.m_handle;
+	init_info.Device = m_device.m_logical.m_handle;
+	init_info.QueueFamily = *m_device.m_physical.m_queue_family.m_all;
+	init_info.Queue = m_queue.m_handle;
+	init_info.PipelineCache = VK_NULL_HANDLE;
+	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
+	init_info.UseDynamicRendering = VK_TRUE;
+	init_info.PipelineRenderingCreateInfo = {}; /* (TODO) */
+	init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
+	init_info.PipelineRenderingCreateInfo.viewMask = 0;
+	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_wsi.m_swapchain.m_images[0]->m_format;
+	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
+	init_info.ImageCount = m_wsi.m_swapchain.m_images.size();
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.Allocator = nullptr;
+	init_info.CheckVkResultFn = nullptr;
+	ImGui_ImplVulkan_Init(&init_info);
 }
 
 void context::backend_test()
@@ -185,6 +230,15 @@ void context::backend_test()
 
 	while (m_window.step())
 	{
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::Begin("Hello, world!");
+		ImGui::Text("This is ImGui running with Vulkan.");
+		ImGui::End();
+		ImGui::Render();
+
 		static auto start_time = std::chrono::high_resolution_clock::now();
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
@@ -292,6 +346,8 @@ void context::backend_test()
 				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				command_buffer.set_texture(1, skybox_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
+
+				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 

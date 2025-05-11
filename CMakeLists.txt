@@ -29,6 +29,16 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross" spirv_cross)
 set(VMA_BUILD_SAMPLE OFF)
 set(VMA_IMPLEMENTATION_BUILD ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator" vma)
+set(imgui_SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/imgui/)
+add_library(imgui
+  ${imgui_SOURCE_DIR}/imgui.cpp
+  ${imgui_SOURCE_DIR}/imgui_draw.cpp
+  ${imgui_SOURCE_DIR}/imgui_tables.cpp
+  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+  ${imgui_SOURCE_DIR}/imgui_demo.cpp
+  ${imgui_SOURCE_DIR}/imgui_impl_glfw.cpp
+  ${imgui_SOURCE_DIR}/imgui_impl_vulkan.cpp
+)
 
 # (TODO, thoave01): Remove assets from backend.
 file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/assets/*.cpp")
@@ -38,6 +48,7 @@ target_link_libraries(vulkan_backend PRIVATE
   assimp
   spirv-cross-core
   GPUOpen::VulkanMemoryAllocator
+  imgui
 )
 
 file(GLOB PLATFORM_SOURCES "${PROJECT_SOURCE_DIR}/platform/*.cpp")
@@ -68,6 +79,7 @@ target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/thi
 target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/stb")
 target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross")
 target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator")
+target_include_directories(vulkan_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/") # (TODO, thoave01): imgui as <imgui/>.
 if(APPLE)
   target_include_directories(metal_backend PUBLIC ${CMAKE_SOURCE_DIR})
   target_include_directories(metal_backend SYSTEM PUBLIC "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp" "${CMAKE_SOURCE_DIR}/third_party/metal-cpp-cmake/metal-cmake/metal-cpp-extensions")

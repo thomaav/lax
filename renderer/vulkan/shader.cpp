@@ -2,8 +2,8 @@
 #include <fstream>
 #include <sstream>
 
-#include <spirv_cross/spirv_cross.hpp>
-#include <spirv_cross/spirv_glsl.hpp>
+#include <third_party/SPIRV-Cross/spirv_cross.hpp>
+#include <third_party/SPIRV-Cross/spirv_glsl.hpp>
 
 #include <renderer/vulkan/shader.h>
 #include <renderer/vulkan/util.h>
