@@ -113,7 +113,7 @@ void context::build()
 	init_info.PipelineRenderingCreateInfo.viewMask = 0;
 	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_wsi.m_swapchain.m_images[0]->m_format;
-	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
 	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
 	init_info.ImageCount = m_wsi.m_swapchain.m_images.size();
