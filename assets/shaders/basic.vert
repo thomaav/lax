@@ -12,6 +12,7 @@ layout(std140, set = 0, binding = 0) uniform uniforms_block
 	mat4 model;
 	mat4 view;
 	mat4 projection;
+	uint use_mipmap;
 } uniforms;
 
 void main() {

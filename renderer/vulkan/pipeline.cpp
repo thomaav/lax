@@ -17,6 +17,12 @@ void pipeline_layout::add_resource_bindings(shader_resource_binding *bindings, u
 {
 	for (u32 i = 0; i < binding_count; ++i)
 	{
+		if (std::any_of(m_resource_bindings.begin(), m_resource_bindings.end(),
+		                [bindings, i](const shader_resource_binding &b) { return b.binding == bindings[i].binding; }))
+		{
+			/* Don't allow duplicate bindings. */
+			continue;
+		}
 		m_resource_bindings.push_back(bindings[i]);
 	}
 }

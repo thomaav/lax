@@ -40,8 +40,8 @@ add_library(imgui
   ${imgui_SOURCE_DIR}/imgui_impl_vulkan.cpp
 )
 
-# (TODO, thoave01): Remove assets from backend.
-file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/assets/*.cpp")
+# (TODO, thoave01): Remove assets and renderer from backend.
+file(GLOB VULKAN_BACKEND_SOURCES "${PROJECT_SOURCE_DIR}/renderer/vulkan/*.cpp" "${PROJECT_SOURCE_DIR}/assets/*.cpp" "${PROJECT_SOURCE_DIR}/renderer/*.cpp")
 add_library(vulkan_backend STATIC ${VULKAN_BACKEND_SOURCES})
 target_link_libraries(vulkan_backend PRIVATE
   volk

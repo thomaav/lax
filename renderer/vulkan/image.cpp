@@ -70,6 +70,11 @@ void image::build_external(VkImage handle, VkFormat format, u32 width, u32 heigh
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
+void image::enable_mipmaps()
+{
+	m_mipmapped = true;
+}
+
 void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
 {
 	m_allocator = allocator;
@@ -79,6 +84,11 @@ void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags 
 	m_height = height;
 	m_layers = 1;
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	if (m_mipmapped)
+	{
+		m_mip_levels = (u32)(std::floor(std::log2(std::max(width, height)))) + 1;
+	}
 
 	const VkExtent3D extent = {
 		.width = m_width,   //
@@ -92,7 +102,7 @@ void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags 
 		.imageType = VK_IMAGE_TYPE_2D,                //
 		.format = format,                             //
 		.extent = extent,                             //
-		.mipLevels = 1,                               //
+		.mipLevels = m_mip_levels,                    //
 		.arrayLayers = m_layers,                      //
 		.samples = VK_SAMPLE_COUNT_1_BIT,             //
 		.tiling = get_tiling_from_format(format),     //
@@ -132,7 +142,7 @@ void image::build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageF
 		.imageType = VK_IMAGE_TYPE_2D,                //
 		.format = format,                             //
 		.extent = extent,                             //
-		.mipLevels = 1,                               //
+		.mipLevels = m_mip_levels,                    //
 		.arrayLayers = m_layers,                      //
 		.samples = VK_SAMPLE_COUNT_1_BIT,             //
 		.tiling = get_tiling_from_format(format),     //
@@ -164,7 +174,7 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 		barrier.image = m_handle;
 		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_format);
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = m_mip_levels;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = m_layers;
 		barrier.srcAccessMask = 0;
@@ -221,6 +231,78 @@ void image::fill_layer(context &context, const void *data, size_t size, u32 laye
 	}
 }
 
+void image::generate_mipmaps(context &context)
+{
+	if (!m_mipmapped)
+	{
+		return;
+	}
+
+	if (m_layers != 1)
+	{
+		terminate("No mipmap generation supported for layered images");
+	}
+
+	VkImageLayout old_layout = m_layout;
+	if (VK_IMAGE_LAYOUT_GENERAL != m_layout)
+	{
+		/* (TODO, thoave01): Transition each level independently to avoid GENERAL. */
+		transition_layout(context, VK_IMAGE_LAYOUT_GENERAL);
+	}
+
+	int width = m_width;
+	int height = m_height;
+	command_buffer command_buffer = {};
+	command_buffer.build(context.m_device, context.m_command_pool);
+	command_buffer.begin();
+	for (u32 i = 1; i < m_mip_levels; ++i)
+	{
+		VkImageMemoryBarrier barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = m_layout;
+		barrier.newLayout = m_layout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_handle;
+		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_format);
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = m_layers;
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = 0;
+		vkCmdPipelineBarrier(command_buffer.m_handle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+		                     0, nullptr, 0, nullptr, 1, &barrier);
+
+		VkImageBlit blit = {};
+		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 1;
+		blit.srcOffsets[0] = { 0, 0, 0 };
+		blit.srcOffsets[1] = { width, height, 1 };
+		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 1;
+		blit.dstOffsets[0] = { 0, 0, 0 };
+		blit.dstOffsets[1] = { std::max(width / 2, 1), std::max(height / 2, 1), 1 };
+
+		vkCmdBlitImage(command_buffer.m_handle, m_handle, VK_IMAGE_LAYOUT_GENERAL, m_handle, VK_IMAGE_LAYOUT_GENERAL, 1,
+		               &blit, VK_FILTER_LINEAR);
+
+		width = std::max(width / 2, 1);
+		height = std::max(height / 2, 1);
+	}
+	command_buffer.end();
+	context.m_queue.submit_and_wait(command_buffer);
+
+	if (m_layout != old_layout && old_layout != VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		transition_layout(context, old_layout);
+	}
+}
+
 image_view::~image_view()
 {
 	if (VK_NULL_HANDLE != m_handle)
@@ -247,7 +329,7 @@ void image_view::build(device &device, image &image)
 
 	create_info.subresourceRange.aspectMask = get_aspect_from_format(m_image->m_format);
 	create_info.subresourceRange.baseMipLevel = 0;
-	create_info.subresourceRange.levelCount = 1;
+	create_info.subresourceRange.levelCount = image.m_mip_levels;
 	create_info.subresourceRange.baseArrayLayer = 0;
 	create_info.subresourceRange.layerCount = image.m_layers;
 
@@ -286,7 +368,7 @@ void texture::build(device &device, image &image)
 		.compareEnable = VK_FALSE,                         //
 		.compareOp = VK_COMPARE_OP_ALWAYS,                 //
 		.minLod = 0.0f,                                    //
-		.maxLod = 0.0f,                                    //
+		.maxLod = (float)image.m_mip_levels - 1.0f,        //
 		.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,   //
 		.unnormalizedCoordinates = VK_FALSE,               //
 	};

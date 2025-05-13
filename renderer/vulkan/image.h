@@ -22,6 +22,8 @@ public:
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
+	void enable_mipmaps();
+
 	void build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	void build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
 	                   u32 layers);
@@ -30,6 +32,7 @@ public:
 	void transition_layout(context &context, VkImageLayout new_layout);
 	void fill(context &context, const void *data, size_t size);
 	void fill_layer(context &context, const void *data, size_t size, u32 layer);
+	void generate_mipmaps(context &context);
 
 	bool m_external_image = false;
 	VkImage m_handle = {};
@@ -37,6 +40,8 @@ public:
 	u32 m_width = 0;
 	u32 m_height = 0;
 	u32 m_layers = 0;
+	bool m_mipmapped = false;
+	u32 m_mip_levels = 1;
 	VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 private:

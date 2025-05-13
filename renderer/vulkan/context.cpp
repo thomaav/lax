@@ -19,6 +19,7 @@
 #include <assets/image.h>
 #include <assets/model.h>
 #include <platform/window.h>
+#include <renderer/scene.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/context.h>
@@ -36,8 +37,9 @@ struct uniforms
 	glm::mat4 model;
 	glm::mat4 view;
 	glm::mat4 projection;
+	u32 enable_mipmapping;
 };
-static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3, "Unexpected struct uniform size");
+static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3 + sizeof(u32), "Unexpected struct uniform size");
 
 constexpr u32 WINDOW_WIDTH = 1280;
 constexpr u32 WINDOW_HEIGHT = 900;
@@ -125,41 +127,18 @@ void context::build()
 
 void context::backend_test()
 {
-	assets::model model = {};
-	model.load("bin/assets/models/DamagedHelmet.glb");
-
-	/* Vertex input. */
-	buffer vertex_buffer = {};
-	m_resource_allocator.allocate_buffer(vertex_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	                                     sizeof(model.m_meshes[0].m_vertices[0]) * model.m_meshes[0].m_vertices.size());
-	vertex_buffer.fill(model.m_meshes[0].m_vertices.data(),
-	                   sizeof(model.m_meshes[0].m_vertices[0]) * model.m_meshes[0].m_vertices.size());
-	buffer index_buffer = {};
-	m_resource_allocator.allocate_buffer(index_buffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	                                     sizeof(model.m_meshes[0].m_indices[0]) * model.m_meshes[0].m_indices.size());
-	index_buffer.fill(model.m_meshes[0].m_indices.data(),
-	                  sizeof(model.m_meshes[0].m_indices[0]) * model.m_meshes[0].m_indices.size());
+	ref<assets::model> model = make_ref<assets::model>();
+	model->load("bin/assets/models/DamagedHelmet.glb");
 
 	/* Uniform buffer. */
 	uniforms uniforms = {};
-	uniforms.model = model.m_meshes[0].m_transform;
+	uniforms.model = model->m_meshes[0].m_transform;
 	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	uniforms.projection =
 	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
 	buffer uniform_buffer = {};
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
-
-	/* (TODO, thoave01): Move image inside texture and allocator. */
-	/* Texture. */
-	image texture_image = {};
-	m_resource_allocator.allocate_image_2d(texture_image, VK_FORMAT_R8G8B8A8_SRGB,
-	                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-	                                       model.m_meshes[0].m_width, model.m_meshes[0].m_height);
-	texture_image.fill(*this, model.m_meshes[0].m_texture.data(), model.m_meshes[0].m_texture.size());
-	texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	texture color_texture = {};
-	color_texture.build(m_device, texture_image);
 
 	/* Depth texture. */
 	image depth_texture_image = {};
@@ -169,29 +148,6 @@ void context::backend_test()
 	depth_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	texture depth_texture = {};
 	depth_texture.build(m_device, depth_texture_image);
-
-	/* Skybox. */
-	assets::image skybox_asset_image = {};
-	skybox_asset_image.load("bin/assets/images/skybox/right.jpg");
-	image skybox_image = {};
-	m_resource_allocator.allocate_image_layered(skybox_image, VK_FORMAT_R8G8B8A8_SRGB,
-	                                            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-	                                            skybox_asset_image.m_width, skybox_asset_image.m_height, 6);
-	skybox_asset_image.load("bin/assets/images/skybox/right.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 0);
-	skybox_asset_image.load("bin/assets/images/skybox/left.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 1);
-	skybox_asset_image.load("bin/assets/images/skybox/top.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 2);
-	skybox_asset_image.load("bin/assets/images/skybox/bottom.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 3);
-	skybox_asset_image.load("bin/assets/images/skybox/front.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 4);
-	skybox_asset_image.load("bin/assets/images/skybox/back.jpg");
-	skybox_image.fill_layer(*this, skybox_asset_image.m_data.data(), skybox_asset_image.m_data.size(), 5);
-	skybox_image.transition_layout(*this, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	texture skybox_texture = {};
-	skybox_texture.build(m_device, skybox_image);
 
 	render_pass render_pass = {};
 	render_pass.use_dynamic_rendering();
@@ -228,22 +184,58 @@ void context::backend_test()
 	command_buffer command_buffer = {};
 	command_buffer.build(m_device, m_command_pool);
 
+	/* Settings. */
+	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA", "8xMSAA" };
+	int sample_count_selection = 0;
+
+	settings settings = {
+		.enable_mipmapping = true,            //
+		.enable_skybox = true,                //
+		.sample_count = VK_SAMPLE_COUNT_1_BIT //
+	};
+
+	scene main_scene = {};
+	static_mesh static_mesh = {};
+	static_mesh.build(*this, model);
+	skybox skybox = {};
+	skybox.build(*this);
+
 	while (m_window.step())
 	{
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Begin("Hello, world!");
-		ImGui::Text("This is ImGui running with Vulkan.");
+		ImGui::Begin("Lax", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		{
+			ImGui::Checkbox("Skybox", &settings.enable_skybox);
+			ImGui::Checkbox("Mipmapping", &settings.enable_mipmapping);
+			if (ImGui::Combo("##MSAA", &sample_count_selection, sample_counts.data(), sample_counts.size()))
+			{
+				switch (sample_count_selection)
+				{
+				case 0:
+					settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
+					break;
+				case 1:
+					settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
+					break;
+				case 2:
+					settings.sample_count = VK_SAMPLE_COUNT_8_BIT;
+					break;
+				}
+			}
+		}
 		ImGui::End();
 		ImGui::Render();
 
+		/* Update uniforms. */
 		static auto start_time = std::chrono::high_resolution_clock::now();
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 		glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		uniforms.model = time_rotation * model.m_meshes[0].m_transform;
+		uniforms.model = time_rotation * model->m_meshes[0].m_transform;
+		uniforms.enable_mipmapping = settings.enable_mipmapping;
 		uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 		u32 image_idx = 0;
@@ -334,18 +326,22 @@ void context::backend_test()
 			{
 				command_buffer.bind_pipeline(basic_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 				constexpr VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &vertex_buffer.m_handle, &offset);
-				vkCmdBindIndexBuffer(command_buffer.m_handle, index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &static_mesh.m_vertex_buffer.m_handle, &offset);
+				vkCmdBindIndexBuffer(command_buffer.m_handle, static_mesh.m_index_buffer.m_handle, 0,
+				                     VK_INDEX_TYPE_UINT32);
 				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffer.set_texture(1, color_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				vkCmdDrawIndexed(command_buffer.m_handle, model.m_meshes[0].m_indices.size(),
+				command_buffer.set_texture(1, static_mesh.m_diffuse_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
+				vkCmdDrawIndexed(command_buffer.m_handle, model->m_meshes[0].m_indices.size(),
 				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
 				                 /* firstInstance = */ 0);
 
-				command_buffer.bind_pipeline(skybox_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffer.set_texture(1, skybox_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
+				if (settings.enable_skybox)
+				{
+					command_buffer.bind_pipeline(skybox_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+					command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+					command_buffer.set_texture(1, skybox.m_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
+					vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
+				}
 
 				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}
