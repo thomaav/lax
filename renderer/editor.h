@@ -12,6 +12,9 @@ struct settings
 	/* Static. */
 	VkFormat color_format;
 	VkFormat depth_format;
+
+	/* (TODO): */
+	/* - resolution, which needs swapchain recreation */
 };
 
 class editor

@@ -287,7 +287,6 @@ void image::generate_mipmaps(context &context)
 		blit.dstSubresource.layerCount = 1;
 		blit.dstOffsets[0] = { 0, 0, 0 };
 		blit.dstOffsets[1] = { std::max(width / 2, 1), std::max(height / 2, 1), 1 };
-
 		vkCmdBlitImage(command_buffer.m_handle, m_handle, VK_IMAGE_LAYOUT_GENERAL, m_handle, VK_IMAGE_LAYOUT_GENERAL, 1,
 		               &blit, VK_FILTER_LINEAR);
 
@@ -349,6 +348,7 @@ texture::~texture()
 void texture::build(device &device, image &image)
 {
 	m_device_handle = device.m_logical.m_handle;
+	m_image = &image;
 
 	m_image_view.build(device, image);
 	VkSamplerCreateInfo sampler_info = {

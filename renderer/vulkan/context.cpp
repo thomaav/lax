@@ -147,6 +147,15 @@ void context::backend_test()
 	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
+	/* Color texture. */
+	image color_texture_image = {};
+	m_resource_allocator.allocate_image_2d(color_texture_image, editor.m_settings.color_format,
+	                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
+	color_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+	texture color_texture = {};
+	color_texture.build(m_device, color_texture_image);
+
 	/* Depth texture. */
 	image depth_texture_image = {};
 	m_resource_allocator.allocate_image_2d(depth_texture_image, VK_FORMAT_D32_SFLOAT,
@@ -263,16 +272,16 @@ void context::backend_test()
 			VkClearValue clear_color = {};
 			clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 			const VkRenderingAttachmentInfo color_attachment = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,              //
-				.pNext = nullptr,                                                  //
-				.imageView = m_wsi.m_swapchain.m_image_views[image_idx]->m_handle, //
-				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,           //
-				.resolveMode = VK_RESOLVE_MODE_NONE,                               //
-				.resolveImageView = VK_NULL_HANDLE,                                //
-				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                   //
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                             //
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                           //
-				.clearValue = clear_color,                                         //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+				.pNext = nullptr,                                        //
+				.imageView = color_texture.m_image_view.m_handle,        //
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
+				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+				.resolveImageView = VK_NULL_HANDLE,                      //
+				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                 //
+				.clearValue = clear_color,                               //
 			};
 			VkClearValue clear_depth = {};
 			clear_depth.depthStencil = { 1.0f, 0 };
@@ -289,16 +298,16 @@ void context::backend_test()
 				.clearValue = clear_depth,                               //
 			};
 			const VkRenderingInfo rendering_info = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,              //
-				.pNext = nullptr,                                       //
-				.flags = 0,                                             //
-				.renderArea = { { 0, 0 }, m_wsi.m_swapchain.m_extent }, //
-				.layerCount = 1,                                        //
-				.viewMask = 0,                                          //
-				.colorAttachmentCount = 1,                              //
-				.pColorAttachments = &color_attachment,                 //
-				.pDepthAttachment = &depth_attachment,                  //
-				.pStencilAttachment = nullptr,                          //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,                                                       //
+				.pNext = nullptr,                                                                                //
+				.flags = 0,                                                                                      //
+				.renderArea = { { 0, 0 }, { color_texture.m_image->m_width, color_texture.m_image->m_height } }, //
+				.layerCount = 1,                                                                                 //
+				.viewMask = 0,                                                                                   //
+				.colorAttachmentCount = 1,                                                                       //
+				.pColorAttachments = &color_attachment,                                                          //
+				.pDepthAttachment = &depth_attachment,                                                           //
+				.pStencilAttachment = nullptr,                                                                   //
 			};
 
 			/* Render. */
@@ -306,6 +315,7 @@ void context::backend_test()
 			{
 				VkViewport viewport = {};
 				viewport.x = 0.0f;
+				/* (TODO, thoave01): Not WSI, but color image. */
 				viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
 				viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
 				viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
@@ -326,6 +336,40 @@ void context::backend_test()
 				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
+
+			VkImageMemoryBarrier barrier = {};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = color_texture.m_image->m_handle;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+			/* (TODO, thoave01): Use new sync model. everywhere, so we can use the blit stage, for example. */
+			vkCmdPipelineBarrier(command_buffer.m_handle, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			                     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+			VkImageCopy copy_info = {};
+			copy_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copy_info.srcSubresource.mipLevel = 0;
+			copy_info.srcSubresource.baseArrayLayer = 0;
+			copy_info.srcSubresource.layerCount = 1;
+			copy_info.srcOffset = { 0, 0, 0 };
+			copy_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copy_info.dstSubresource.mipLevel = 0;
+			copy_info.dstSubresource.baseArrayLayer = 0;
+			copy_info.dstSubresource.layerCount = 1;
+			copy_info.dstOffset = { 0, 0, 0 };
+			copy_info.extent = { color_texture.m_image->m_width, color_texture.m_image->m_height, 1 };
+			vkCmdCopyImage(command_buffer.m_handle, color_texture.m_image->m_handle,
+			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_wsi.m_swapchain.m_images[image_idx]->m_handle,
+			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
 
 			/* Transition image for presentation. */
 			VkImageMemoryBarrier2 end_rendering_barrier = {
