@@ -48,14 +48,17 @@ public:
 
 	void add_shader(device &device, VkShaderStageFlagBits stage, const char *path);
 	void add_shader(const ref<shader_module> &shader);
+	void set_sample_count(VkSampleCountFlagBits sample_count);
 	void build(device &device, const render_pass &render_pass);
+	void rebuild(device &device, const render_pass &render_pass);
 
 	VkPipeline m_handle = {};
-	pipeline_layout m_pipeline_layout = {};
+	ref<pipeline_layout> m_pipeline_layout = nullptr;
 
 private:
 	VkDevice m_device_handle = {};
 	std::unordered_map<VkShaderStageFlagBits, ref<shader_module>> m_shader_modules = {};
+	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
 };
 
 } /* namespace vulkan */

@@ -91,6 +91,17 @@ void context::build()
 	/* Resource management initialization. */
 	m_resource_allocator.build(m_instance, m_device);
 	m_command_pool.build(m_device);
+}
+
+void context::backend_test()
+{
+	editor editor = {};
+	editor.m_settings.enable_mipmapping = true;
+	editor.m_settings.enable_skybox = true;
+	editor.m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
+	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_format;
+	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
+	editor.build_default(*this);
 
 	/* Dear ImGui. */
 	IMGUI_CHECKVERSION();
@@ -124,25 +135,11 @@ void context::build()
 	init_info.Allocator = nullptr;
 	init_info.CheckVkResultFn = nullptr;
 	ImGui_ImplVulkan_Init(&init_info);
-}
 
-void context::backend_test()
-{
-	render_pass render_pass = {};
-	render_pass.set_dynamic_rendering(true);
-	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format, VK_FORMAT_D32_SFLOAT);
-
-	editor editor = {};
-	editor.m_scene.build_default_scene(*this, render_pass);
-
-	/* (TODO, thoave01): Should be in build_default_scene, but I need the transform. */
-	/* (TODO, thoave01): So TODO is to fix uniforms for the pipeline. */
-	ref<assets::model> model = make_ref<assets::model>();
-	model->load("bin/assets/models/DamagedHelmet.glb");
-
+	/* (TODO, thoave01): So TODO is to fix uniforms for pipelines. */
 	/* Uniform buffer. */
 	uniforms uniforms = {};
-	uniforms.model = model->m_meshes[0].m_transform;
+	uniforms.model = editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
 	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	uniforms.projection =
 	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
@@ -176,18 +173,6 @@ void context::backend_test()
 	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA", "8xMSAA" };
 	int sample_count_selection = 0;
 
-	settings settings = {
-		.enable_mipmapping = true,            //
-		.enable_skybox = true,                //
-		.sample_count = VK_SAMPLE_COUNT_1_BIT //
-	};
-
-	scene main_scene = {};
-	static_mesh static_mesh = {};
-	static_mesh.build(*this, render_pass, model);
-	skybox skybox = {};
-	skybox.build(*this, render_pass);
-
 	while (m_window.step())
 	{
 		ImGui_ImplVulkan_NewFrame();
@@ -196,20 +181,20 @@ void context::backend_test()
 
 		ImGui::Begin("Lax", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 		{
-			ImGui::Checkbox("Skybox", &settings.enable_skybox);
-			ImGui::Checkbox("Mipmapping", &settings.enable_mipmapping);
+			ImGui::Checkbox("Skybox", &editor.m_settings.enable_skybox);
+			ImGui::Checkbox("Mipmapping", &editor.m_settings.enable_mipmapping);
 			if (ImGui::Combo("##MSAA", &sample_count_selection, sample_counts.data(), sample_counts.size()))
 			{
 				switch (sample_count_selection)
 				{
 				case 0:
-					settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
+					editor.m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
 					break;
 				case 1:
-					settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
+					editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 					break;
 				case 2:
-					settings.sample_count = VK_SAMPLE_COUNT_8_BIT;
+					editor.m_settings.sample_count = VK_SAMPLE_COUNT_8_BIT;
 					break;
 				}
 			}
@@ -222,9 +207,16 @@ void context::backend_test()
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 		glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		uniforms.model = time_rotation * model->m_meshes[0].m_transform;
-		uniforms.enable_mipmapping = settings.enable_mipmapping;
+		uniforms.model = time_rotation * editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
+		uniforms.enable_mipmapping = editor.m_settings.enable_mipmapping;
 		uniform_buffer.fill(&uniforms, sizeof(uniforms));
+
+		render_pass render_pass = {};
+		render_pass.set_dynamic_rendering(true);
+		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
+
+		editor.m_scene.m_skybox->update_material(*this, render_pass, editor.m_settings.sample_count);
+		editor.m_scene.m_static_mesh->update_material(*this, render_pass, editor.m_settings.sample_count);
 
 		u32 image_idx = 0;
 		m_wsi.acquire_image(image_available_semaphore, &image_idx);
@@ -325,14 +317,11 @@ void context::backend_test()
 				scissor.extent = m_wsi.m_swapchain.m_extent;
 				vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
 
-				static_mesh.draw(command_buffer, uniform_buffer);
-				if (settings.enable_skybox)
-				{
-					skybox.draw(command_buffer, uniform_buffer);
-				}
-
 				editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
-				editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
+				if (editor.m_settings.enable_skybox)
+				{
+					editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
+				}
 
 				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}

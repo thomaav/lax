@@ -10,13 +10,6 @@
 #include <renderer/vulkan/image.h>
 #include <utils/util.h>
 
-struct settings
-{
-	bool enable_mipmapping = false;
-	bool enable_skybox = false;
-	VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT;
-};
-
 class object
 {
 public:
@@ -39,6 +32,8 @@ public:
 
 	void build(vulkan::context &context, const vulkan::render_pass &render_pass);
 	void draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const override;
+	void update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
+	                     VkSampleCountFlagBits sample_count);
 
 	assets::image m_asset_image = {};
 	vulkan::image m_image = {};
@@ -59,6 +54,8 @@ public:
 
 	void build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model);
 	void draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const override;
+	void update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
+	                     VkSampleCountFlagBits sample_count);
 
 	ref<assets::model> m_model;
 	vulkan::buffer m_vertex_buffer = {};
@@ -100,6 +97,10 @@ public:
 	void build_default_scene(vulkan::context &context, const vulkan::render_pass &render_pass);
 
 	node m_root = {};
+
+	/* (TODO, thoave01): Should go away. */
+	ref<static_mesh> m_static_mesh = nullptr;
+	ref<skybox> m_skybox = nullptr;
 
 private:
 };

@@ -74,6 +74,11 @@ void pipeline::add_shader(const ref<shader_module> &shader)
 	m_shader_modules[shader->m_stage] = shader;
 }
 
+void pipeline::set_sample_count(VkSampleCountFlagBits sample_count)
+{
+	m_sample_count = sample_count;
+}
+
 void pipeline::build(device &device, const render_pass &render_pass)
 {
 	if (!m_shader_modules.contains(VK_SHADER_STAGE_VERTEX_BIT))
@@ -117,7 +122,7 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	VkPipelineMultisampleStateCreateInfo multisampling_info = {};
 	multisampling_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling_info.sampleShadingEnable = VK_FALSE;
-	multisampling_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling_info.rasterizationSamples = m_sample_count;
 	multisampling_info.minSampleShading = 1.0f;
 	multisampling_info.pSampleMask = nullptr;
 	multisampling_info.alphaToCoverageEnable = VK_FALSE;
@@ -189,13 +194,15 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	pipeline_info.pColorBlendState = &blending_info;
 	pipeline_info.pDynamicState = &dynamic_state_info;
 
+	m_pipeline_layout = make_ref<pipeline_layout>();
 	for (const auto &sm : m_shader_modules)
 	{
 		ref<shader_module> sm_ptr = sm.second;
-		m_pipeline_layout.add_resource_bindings(sm_ptr->m_resource_bindings.data(), sm_ptr->m_resource_bindings.size());
+		m_pipeline_layout->add_resource_bindings(sm_ptr->m_resource_bindings.data(),
+		                                         sm_ptr->m_resource_bindings.size());
 	}
-	m_pipeline_layout.build(device);
-	pipeline_info.layout = m_pipeline_layout.m_handle;
+	m_pipeline_layout->build(device);
+	pipeline_info.layout = m_pipeline_layout->m_handle;
 
 	pipeline_info.renderPass = render_pass.m_handle;
 	pipeline_info.subpass = 0;
@@ -208,6 +215,15 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	vkCreateGraphicsPipelines(device.m_logical.m_handle, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &m_handle);
 
 	m_device_handle = device.m_logical.m_handle;
+}
+
+void pipeline::rebuild(device &device, const render_pass &render_pass)
+{
+	if (VK_NULL_HANDLE != m_handle)
+	{
+		vkDestroyPipeline(m_device_handle, m_handle, nullptr);
+	}
+	build(device, render_pass);
 }
 
 } /* namespace vulkan */

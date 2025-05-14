@@ -99,7 +99,7 @@ void command_buffer::set_uniform_buffer(u32 binding, const buffer &buffer, VkPip
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	write.pBufferInfo = &buffer_info;
-	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout.m_handle, 0, 1, &write);
+	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout->m_handle, 0, 1, &write);
 }
 
 void command_buffer::set_texture(u32 binding, const texture &texture, VkPipelineBindPoint bind_point)
@@ -118,7 +118,7 @@ void command_buffer::set_texture(u32 binding, const texture &texture, VkPipeline
 	write.descriptorCount = 1;
 	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	write.pImageInfo = &image_info;
-	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout.m_handle, 0, 1, &write);
+	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout->m_handle, 0, 1, &write);
 }
 
 } /* namespace vulkan */

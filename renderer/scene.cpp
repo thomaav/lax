@@ -38,6 +38,13 @@ void skybox::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &unifor
 	vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
 }
 
+void skybox::update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
+                             VkSampleCountFlagBits sample_count)
+{
+	m_pipeline.set_sample_count(sample_count);
+	m_pipeline.rebuild(context.m_device, render_pass);
+}
+
 void static_mesh::build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model)
 {
 	m_model = model;
@@ -87,6 +94,13 @@ void static_mesh::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &u
 	                 /* firstInstance = */ 0);
 }
 
+void static_mesh::update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
+                                  VkSampleCountFlagBits sample_count)
+{
+	m_pipeline.set_sample_count(sample_count);
+	m_pipeline.rebuild(context.m_device, render_pass);
+}
+
 void node::add_child(const ref<object> &child)
 {
 	node child_node = {};
@@ -105,4 +119,7 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 	ref<skybox> skybox_ = make_ref<skybox>();
 	skybox_->build(context, render_pass);
 	m_root.add_child(std::static_pointer_cast<object>(skybox_));
+
+	m_skybox = skybox_;
+	m_static_mesh = static_mesh_;
 }
