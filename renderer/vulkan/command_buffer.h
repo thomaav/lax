@@ -43,16 +43,16 @@ public:
 	void reset();
 	void begin();
 	void end();
-	void bind_pipeline(pipeline &pipeline, VkPipelineBindPoint bind_point);
-	void set_uniform_buffer(u32 binding, buffer &buffer, VkPipelineBindPoint bind_point);
-	void set_texture(u32 binding, texture &texture, VkPipelineBindPoint bind_point);
+	void bind_pipeline(const pipeline &pipeline, VkPipelineBindPoint bind_point);
+	void set_uniform_buffer(u32 binding, const buffer &buffer, VkPipelineBindPoint bind_point);
+	void set_texture(u32 binding, const texture &texture, VkPipelineBindPoint bind_point);
 
 	VkCommandBuffer m_handle = {};
 
 private:
 	VkDevice m_device_handle = {};
 	VkCommandPool m_command_pool_handle = {};
-	pipeline *m_pipeline = nullptr;
+	const pipeline *m_pipeline = nullptr;
 };
 
 } /* namespace vulkan */

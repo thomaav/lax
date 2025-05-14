@@ -59,13 +59,22 @@ pipeline::~pipeline()
 	}
 }
 
-void pipeline::add_shader(shader_module &shader)
+void pipeline::add_shader(device &device, VkShaderStageFlagBits stage, const char *path)
 {
-	assert(shader.m_handle != VK_NULL_HANDLE);
-	m_shader_modules[shader.m_stage] = &shader;
+	terminate_if(m_shader_modules.contains(stage), "Pipeline already contains stage %u", stage);
+	ref<shader_module> sm = make_ref<shader_module>();
+	sm->build(device, stage, path);
+	m_shader_modules[stage] = sm;
 }
 
-void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent)
+void pipeline::add_shader(const ref<shader_module> &shader)
+{
+	terminate_if(shader->m_handle == VK_NULL_HANDLE, "Shader has not been built");
+	terminate_if(m_shader_modules.contains(shader->m_stage), "Pipeline already contains stage %u", shader->m_stage);
+	m_shader_modules[shader->m_stage] = shader;
+}
+
+void pipeline::build(device &device, const render_pass &render_pass)
 {
 	if (!m_shader_modules.contains(VK_SHADER_STAGE_VERTEX_BIT))
 	{
@@ -74,7 +83,7 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	shader_module *vertex_shader = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT];
+	ref<shader_module> vertex_shader = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT];
 	vertex_input_info.vertexBindingDescriptionCount = 1;
 	vertex_input_info.pVertexBindingDescriptions = &vertex_shader->m_vbd;
 	vertex_input_info.vertexAttributeDescriptionCount = vertex_shader->m_vads.size();
@@ -85,24 +94,12 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	input_assembly.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = (float)extent.height;
-	viewport.width = (float)extent.width;
-	viewport.height = -(float)extent.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = extent;
-
 	VkPipelineViewportStateCreateInfo viewport_info = {};
 	viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewport_info.viewportCount = 1;
-	viewport_info.pViewports = &viewport;
+	viewport_info.pViewports = nullptr;
 	viewport_info.scissorCount = 1;
-	viewport_info.pScissors = &scissor;
+	viewport_info.pScissors = nullptr;
 
 	VkPipelineRasterizationStateCreateInfo rasterizer_info = {};
 	rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -164,6 +161,15 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	blending_info.blendConstants[2] = 0.0f;
 	blending_info.blendConstants[3] = 0.0f;
 
+	const VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	VkPipelineDynamicStateCreateInfo dynamic_state_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, //
+		.pNext = nullptr,                                              //
+		.flags = 0,                                                    //
+		.dynamicStateCount = 2,                                        //
+		.pDynamicStates = dynamic_states,                              //
+	};
+
 	std::vector<VkPipelineShaderStageCreateInfo> stage_create_infos = {};
 	for (const auto &sm : m_shader_modules)
 	{
@@ -181,11 +187,11 @@ void pipeline::build(device &device, render_pass &render_pass, VkExtent2D extent
 	pipeline_info.pMultisampleState = &multisampling_info;
 	pipeline_info.pDepthStencilState = &depth_stencil_info;
 	pipeline_info.pColorBlendState = &blending_info;
-	pipeline_info.pDynamicState = nullptr;
+	pipeline_info.pDynamicState = &dynamic_state_info;
 
 	for (const auto &sm : m_shader_modules)
 	{
-		shader_module *sm_ptr = sm.second;
+		ref<shader_module> sm_ptr = sm.second;
 		m_pipeline_layout.add_resource_bindings(sm_ptr->m_resource_bindings.data(), sm_ptr->m_resource_bindings.size());
 	}
 	m_pipeline_layout.build(device);

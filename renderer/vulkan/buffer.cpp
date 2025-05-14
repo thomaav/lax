@@ -16,6 +16,7 @@ buffer::~buffer()
 void buffer::build(VmaAllocator allocator, VkBufferUsageFlags usage, VkDeviceSize size)
 {
 	m_allocator = allocator;
+	m_size = size;
 
 	VkBufferCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

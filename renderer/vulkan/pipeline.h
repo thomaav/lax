@@ -12,6 +12,7 @@
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/render_pass.h>
 #include <renderer/vulkan/shader.h>
+#include <utils/util.h>
 
 namespace vulkan
 {
@@ -45,17 +46,16 @@ public:
 	pipeline(const pipeline &) = delete;
 	pipeline operator=(const pipeline &) = delete;
 
-	void add_shader(shader_module &shader);
-	void build(device &device, render_pass &render_pass, VkExtent2D extent);
+	void add_shader(device &device, VkShaderStageFlagBits stage, const char *path);
+	void add_shader(const ref<shader_module> &shader);
+	void build(device &device, const render_pass &render_pass);
 
 	VkPipeline m_handle = {};
-
-	/* (TODO, thoave01): Hide again? */
 	pipeline_layout m_pipeline_layout = {};
 
 private:
 	VkDevice m_device_handle = {};
-	std::unordered_map<VkShaderStageFlagBits, shader_module *> m_shader_modules = {};
+	std::unordered_map<VkShaderStageFlagBits, ref<shader_module>> m_shader_modules = {};
 };
 
 } /* namespace vulkan */

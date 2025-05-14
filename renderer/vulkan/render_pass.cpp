@@ -15,9 +15,9 @@ render_pass::~render_pass()
 	}
 }
 
-void render_pass::use_dynamic_rendering()
+void render_pass::set_dynamic_rendering(bool dr)
 {
-	m_dynamic_rendering = true;
+	m_dynamic_rendering = dr;
 }
 
 void render_pass::build(device &device, VkFormat color_format, VkFormat depth_format)

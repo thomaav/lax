@@ -22,7 +22,7 @@ public:
 	render_pass(const render_pass &) = delete;
 	render_pass operator=(const render_pass &) = delete;
 
-	void use_dynamic_rendering();
+	void set_dynamic_rendering(bool dr);
 	void build(device &device, VkFormat color_format, VkFormat depth_format);
 
 	VkRenderPass m_handle = {};

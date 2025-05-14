@@ -24,6 +24,7 @@ public:
 	void fill(const void *data, size_t size);
 
 	VkBuffer m_handle = {};
+	VkDeviceSize m_size = 0;
 
 private:
 	VmaAllocator m_allocator = VK_NULL_HANDLE;

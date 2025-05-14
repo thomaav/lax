@@ -77,13 +77,13 @@ void command_buffer::end()
 	VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(m_handle));
 }
 
-void command_buffer::bind_pipeline(pipeline &pipeline, VkPipelineBindPoint bind_point)
+void command_buffer::bind_pipeline(const pipeline &pipeline, VkPipelineBindPoint bind_point)
 {
 	m_pipeline = &pipeline;
 	vkCmdBindPipeline(m_handle, bind_point, pipeline.m_handle);
 }
 
-void command_buffer::set_uniform_buffer(u32 binding, buffer &buffer, VkPipelineBindPoint bind_point)
+void command_buffer::set_uniform_buffer(u32 binding, const buffer &buffer, VkPipelineBindPoint bind_point)
 {
 	VkDescriptorBufferInfo buffer_info = {};
 	buffer_info.buffer = buffer.m_handle;
@@ -102,7 +102,7 @@ void command_buffer::set_uniform_buffer(u32 binding, buffer &buffer, VkPipelineB
 	vkCmdPushDescriptorSetKHR(m_handle, bind_point, m_pipeline->m_pipeline_layout.m_handle, 0, 1, &write);
 }
 
-void command_buffer::set_texture(u32 binding, texture &texture, VkPipelineBindPoint bind_point)
+void command_buffer::set_texture(u32 binding, const texture &texture, VkPipelineBindPoint bind_point)
 {
 	VkDescriptorImageInfo image_info = {};
 	image_info.sampler = texture.m_sampler;

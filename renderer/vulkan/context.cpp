@@ -19,6 +19,7 @@
 #include <assets/image.h>
 #include <assets/model.h>
 #include <platform/window.h>
+#include <renderer/editor.h>
 #include <renderer/scene.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
@@ -127,6 +128,15 @@ void context::build()
 
 void context::backend_test()
 {
+	render_pass render_pass = {};
+	render_pass.set_dynamic_rendering(true);
+	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format, VK_FORMAT_D32_SFLOAT);
+
+	editor editor = {};
+	editor.m_scene.build_default_scene(*this, render_pass);
+
+	/* (TODO, thoave01): Should be in build_default_scene, but I need the transform. */
+	/* (TODO, thoave01): So TODO is to fix uniforms for the pipeline. */
 	ref<assets::model> model = make_ref<assets::model>();
 	model->load("bin/assets/models/DamagedHelmet.glb");
 
@@ -148,28 +158,6 @@ void context::backend_test()
 	depth_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	texture depth_texture = {};
 	depth_texture.build(m_device, depth_texture_image);
-
-	render_pass render_pass = {};
-	render_pass.use_dynamic_rendering();
-	render_pass.build(m_device, m_wsi.m_swapchain.m_images[0]->m_format, VK_FORMAT_D32_SFLOAT);
-
-	shader_module vertex_shader_module = {};
-	vertex_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
-	shader_module fragment_shader_module = {};
-	fragment_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/basic.frag.spv");
-	pipeline basic_pipeline = {};
-	basic_pipeline.add_shader(vertex_shader_module);
-	basic_pipeline.add_shader(fragment_shader_module);
-	basic_pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
-
-	shader_module vertex_skybox_shader_module = {};
-	vertex_skybox_shader_module.build(m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/skybox.vert.spv");
-	shader_module fragment_skybox_shader_module = {};
-	fragment_skybox_shader_module.build(m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/skybox.frag.spv");
-	pipeline skybox_pipeline = {};
-	skybox_pipeline.add_shader(vertex_skybox_shader_module);
-	skybox_pipeline.add_shader(fragment_skybox_shader_module);
-	skybox_pipeline.build(m_device, render_pass, m_wsi.m_swapchain.m_extent);
 
 	for (std::unique_ptr<image> &image : m_wsi.m_swapchain.m_images)
 	{
@@ -196,9 +184,9 @@ void context::backend_test()
 
 	scene main_scene = {};
 	static_mesh static_mesh = {};
-	static_mesh.build(*this, model);
+	static_mesh.build(*this, render_pass, model);
 	skybox skybox = {};
-	skybox.build(*this);
+	skybox.build(*this, render_pass);
 
 	while (m_window.step())
 	{
@@ -324,24 +312,27 @@ void context::backend_test()
 			/* Render. */
 			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 			{
-				command_buffer.bind_pipeline(basic_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				constexpr VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &static_mesh.m_vertex_buffer.m_handle, &offset);
-				vkCmdBindIndexBuffer(command_buffer.m_handle, static_mesh.m_index_buffer.m_handle, 0,
-				                     VK_INDEX_TYPE_UINT32);
-				command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				command_buffer.set_texture(1, static_mesh.m_diffuse_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
-				vkCmdDrawIndexed(command_buffer.m_handle, model->m_meshes[0].m_indices.size(),
-				                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
-				                 /* firstInstance = */ 0);
+				VkViewport viewport = {};
+				viewport.x = 0.0f;
+				viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
+				viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
+				viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+				vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
+				VkRect2D scissor = {};
+				scissor.offset = { 0, 0 };
+				scissor.extent = m_wsi.m_swapchain.m_extent;
+				vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
 
+				static_mesh.draw(command_buffer, uniform_buffer);
 				if (settings.enable_skybox)
 				{
-					command_buffer.bind_pipeline(skybox_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
-					command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-					command_buffer.set_texture(1, skybox.m_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
-					vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
+					skybox.draw(command_buffer, uniform_buffer);
 				}
+
+				editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
+				editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
 
 				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}

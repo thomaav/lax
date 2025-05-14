@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 #include <stdarg.h>
 #include <stdio.h>
@@ -9,6 +10,25 @@
 
 static inline void terminate(const char *e, ...)
 {
+	printf("[ERROR]: ");
+	va_list arglist;
+	{
+		va_start(arglist, e);
+		vprintf(e, arglist);
+		va_end(arglist);
+	}
+	printf("\n");
+
+	exit(1);
+}
+
+static inline void terminate_if(bool st, const char *e, ...)
+{
+	if (!st)
+	{
+		return;
+	}
+
 	printf("[ERROR]: ");
 	va_list arglist;
 	{
@@ -40,4 +60,15 @@ static inline float random_float()
 	static std::mt19937 gen(rd());
 	static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 	return dist(gen);
+}
+
+template <typename T> using uref = std::unique_ptr<T>;
+template <typename T, typename... Args> std::unique_ptr<T> make_uref(Args &&...args)
+{
+	return std::make_unique<T>(std::forward<Args>(args)...);
+}
+template <typename T> using ref = std::shared_ptr<T>;
+template <typename T, typename... Args> std::shared_ptr<T> make_ref(Args &&...args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
 }
