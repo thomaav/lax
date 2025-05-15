@@ -77,6 +77,45 @@ void command_buffer::end()
 	VULKAN_ASSERT_SUCCESS(vkEndCommandBuffer(m_handle));
 }
 
+void command_buffer::transition_image_layout(image &image, VkImageLayout new_layout, VkPipelineStageFlagBits2 src_stage,
+                                             VkAccessFlags2 src_access, VkPipelineStageFlagBits2 dst_stage,
+                                             VkAccessFlags2 dst_access)
+{
+	const VkImageMemoryBarrier2 image_barrier = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+		.pNext = nullptr,
+		.srcStageMask = src_stage,
+		.srcAccessMask = src_access,
+		.dstStageMask = dst_stage,
+		.dstAccessMask = dst_access,
+		.oldLayout = image.m_layout,
+		.newLayout = new_layout,
+		.srcQueueFamilyIndex = 0,
+		.dstQueueFamilyIndex = 0,
+		.image = image.m_handle,
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+	};
+	const VkDependencyInfo dependency_info = {
+		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+		.pNext = nullptr,
+		.dependencyFlags = 0,
+		.memoryBarrierCount = 0,
+		.pMemoryBarriers = nullptr,
+		.bufferMemoryBarrierCount = 0,
+		.pBufferMemoryBarriers = nullptr,
+		.imageMemoryBarrierCount = 1,
+		.pImageMemoryBarriers = &image_barrier,
+	};
+	vkCmdPipelineBarrier2(m_handle, &dependency_info);
+	image.m_layout = new_layout;
+}
+
 void command_buffer::bind_pipeline(const pipeline &pipeline, VkPipelineBindPoint bind_point)
 {
 	m_pipeline = &pipeline;

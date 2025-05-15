@@ -43,6 +43,9 @@ public:
 	void reset();
 	void begin();
 	void end();
+	void transition_image_layout(image &image, VkImageLayout new_layout, VkPipelineStageFlagBits2 src_stage,
+	                             VkAccessFlags2 src_access, VkPipelineStageFlagBits2 dst_stage,
+	                             VkAccessFlags2 dst_access);
 	void bind_pipeline(const pipeline &pipeline, VkPipelineBindPoint bind_point);
 	void set_uniform_buffer(u32 binding, const buffer &buffer, VkPipelineBindPoint bind_point);
 	void set_texture(u32 binding, const texture &texture, VkPipelineBindPoint bind_point);

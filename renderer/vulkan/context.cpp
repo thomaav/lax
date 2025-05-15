@@ -233,40 +233,9 @@ void context::backend_test()
 		m_command_pool.reset();
 		command_buffer.begin();
 		{
-			/* Transition image for rendering. */
-			const VkImageSubresourceRange img_range = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, //
-				.baseMipLevel = 0,                       //
-				.levelCount = 1,                         //
-				.baseArrayLayer = 0,                     //
-				.layerCount = 1,                         //
-			};
-			const VkImageMemoryBarrier2 begin_rendering_barrier = {
-				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,               //
-				.pNext = nullptr,                                                //
-				.srcStageMask = VK_PIPELINE_STAGE_2_NONE,                        //
-				.srcAccessMask = 0,                                              //
-				.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, //
-				.dstAccessMask = 0,                                              //
-				.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                    //
-				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,                 //
-				.srcQueueFamilyIndex = 0,                                        //
-				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_vulkan_images[image_idx],           //
-				.subresourceRange = img_range,                                   //
-			};
-			const VkDependencyInfo begin_rendering_dependency_info = {
-				.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,       //
-				.pNext = nullptr,                                 //
-				.dependencyFlags = 0,                             //
-				.memoryBarrierCount = 0,                          //
-				.pMemoryBarriers = nullptr,                       //
-				.bufferMemoryBarrierCount = 0,                    //
-				.pBufferMemoryBarriers = nullptr,                 //
-				.imageMemoryBarrierCount = 1,                     //
-				.pImageMemoryBarriers = &begin_rendering_barrier, //
-			};
-			vkCmdPipelineBarrier2(command_buffer.m_handle, &begin_rendering_dependency_info);
+			command_buffer.transition_image_layout(*color_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+			                                       VK_PIPELINE_STAGE_2_NONE, 0,
+			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
 
 			/* Create render pass. */
 			VkClearValue clear_color = {};
@@ -337,23 +306,13 @@ void context::backend_test()
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = color_texture.m_image->m_handle;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-			/* (TODO, thoave01): Use new sync model. everywhere, so we can use the blit stage, for example. */
-			vkCmdPipelineBarrier(command_buffer.m_handle, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			                     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+			command_buffer.transition_image_layout(*color_texture.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, //
+			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			                                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+			command_buffer.transition_image_layout(*m_wsi.m_swapchain.m_images[image_idx],
+			                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
+			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
 			VkImageCopy copy_info = {};
 			copy_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -371,33 +330,9 @@ void context::backend_test()
 			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_wsi.m_swapchain.m_images[image_idx]->m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
 
-			/* Transition image for presentation. */
-			VkImageMemoryBarrier2 end_rendering_barrier = {
-				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,               //
-				.pNext = nullptr,                                                //
-				.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, //
-				.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,         //
-				.dstStageMask = VK_PIPELINE_STAGE_2_NONE,                        //
-				.dstAccessMask = 0,                                              //
-				.oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,                 //
-				.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,                    //
-				.srcQueueFamilyIndex = 0,                                        //
-				.dstQueueFamilyIndex = 0,                                        //
-				.image = m_wsi.m_swapchain.m_vulkan_images[image_idx],           //
-				.subresourceRange = img_range,                                   //
-			};
-			VkDependencyInfo end_rendering_dependency_info = {
-				.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,     //
-				.pNext = nullptr,                               //
-				.dependencyFlags = 0,                           //
-				.memoryBarrierCount = 0,                        //
-				.pMemoryBarriers = nullptr,                     //
-				.bufferMemoryBarrierCount = 0,                  //
-				.pBufferMemoryBarriers = nullptr,               //
-				.imageMemoryBarrierCount = 1,                   //
-				.pImageMemoryBarriers = &end_rendering_barrier, //
-			};
-			vkCmdPipelineBarrier2(command_buffer.m_handle, &end_rendering_dependency_info);
+			command_buffer.transition_image_layout(*m_wsi.m_swapchain.m_images[image_idx],
+			                                       VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+			                                       VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_NONE, 0);
 		}
 		command_buffer.end();
 

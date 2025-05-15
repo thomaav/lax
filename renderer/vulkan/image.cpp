@@ -165,6 +165,7 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 	command_buffer.build(context.m_device, context.m_command_pool);
 	command_buffer.begin();
 	{
+		/* (TODO, thoave01): vkCmdPipelinebarrier2. */
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.oldLayout = m_layout;
