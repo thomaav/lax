@@ -131,7 +131,7 @@ void context::backend_test()
 	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
 	init_info.ImageCount = m_wsi.m_swapchain.m_images.size();
-	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.MSAASamples = VK_SAMPLE_COUNT_4_BIT;
 	init_info.Allocator = nullptr;
 	init_info.CheckVkResultFn = nullptr;
 	ImGui_ImplVulkan_Init(&init_info);
