@@ -22,7 +22,8 @@ public:
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
-	void enable_mipmaps();
+	void set_mipmaps(bool mipmaps);
+	void set_sample_count(VkSampleCountFlagBits sample_count);
 
 	void build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	void build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
@@ -41,6 +42,7 @@ public:
 	u32 m_height = 0;
 	u32 m_layers = 0;
 	bool m_mipmapped = false;
+	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
 	u32 m_mip_levels = 1;
 	VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 

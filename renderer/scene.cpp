@@ -65,7 +65,7 @@ void static_mesh::build(vulkan::context &context, const vulkan::render_pass &ren
 	m_index_count = m_model->m_meshes[0].m_indices.size();
 
 	/* Diffuse texture. */
-	m_diffuse_image.enable_mipmaps();
+	m_diffuse_image.set_mipmaps(true);
 	context.m_resource_allocator.allocate_image_2d(m_diffuse_image, VK_FORMAT_R8G8B8A8_SRGB,
 	                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 	                                                   VK_IMAGE_USAGE_SAMPLED_BIT,

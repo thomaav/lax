@@ -70,9 +70,14 @@ void image::build_external(VkImage handle, VkFormat format, u32 width, u32 heigh
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-void image::enable_mipmaps()
+void image::set_mipmaps(bool mipmaps)
 {
-	m_mipmapped = true;
+	m_mipmapped = mipmaps;
+}
+
+void image::set_sample_count(VkSampleCountFlagBits sample_count)
+{
+	m_sample_count = sample_count;
 }
 
 void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
@@ -104,7 +109,7 @@ void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags 
 		.extent = extent,                             //
 		.mipLevels = m_mip_levels,                    //
 		.arrayLayers = m_layers,                      //
-		.samples = VK_SAMPLE_COUNT_1_BIT,             //
+		.samples = m_sample_count,                    //
 		.tiling = get_tiling_from_format(format),     //
 		.usage = usage,                               //
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
@@ -144,7 +149,7 @@ void image::build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageF
 		.extent = extent,                             //
 		.mipLevels = m_mip_levels,                    //
 		.arrayLayers = m_layers,                      //
-		.samples = VK_SAMPLE_COUNT_1_BIT,             //
+		.samples = m_sample_count,                    //
 		.tiling = get_tiling_from_format(format),     //
 		.usage = usage,                               //
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
