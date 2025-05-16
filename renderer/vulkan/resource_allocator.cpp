@@ -39,9 +39,14 @@ void resource_allocator::build(instance &instance, device &device)
 
 buffer resource_allocator::allocate_buffer(VkBufferUsageFlags usage, VkDeviceSize size)
 {
-	buffer b = {};
-	b.build(m_allocator, usage, size);
-	return b;
+	buffer buffer = {};
+	buffer.build(m_allocator, usage, size);
+	return buffer;
+}
+
+void resource_allocator::allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size)
+{
+	buffer.build(m_allocator, usage, size);
 }
 
 image resource_allocator::allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
@@ -70,5 +75,32 @@ void resource_allocator::allocate_image_layered(image &image, VkFormat format, V
 {
 	image.build_layered(m_allocator, format, usage, width, height, layers);
 }
+
+// texture resource_allocator::allocate_texture_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
+// {
+// 	texture texture = {};
+// 	texture.build_2d(m_allocator, format, usage, width, height);
+// 	return texture;
+// }
+
+// void resource_allocator::allocate_texture_2d(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width,
+//                                              u32 height)
+// {
+// 	texture.build_2d(m_allocator, format, usage, width, height);
+// }
+
+// texture resource_allocator::allocate_texture_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+//                                                      u32 layers)
+// {
+// 	texture texture = {};
+// 	texture.build_layered(m_allocator, format, usage, width, height, layers);
+// 	return texture;
+// }
+
+// void resource_allocator::allocate_texture_layered(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width,
+//                                                   u32 height, u32 layers)
+// {
+// 	texture.build_layered(m_allocator, format, usage, width, height, layers);
+// }
 
 } /* namespace vulkan */

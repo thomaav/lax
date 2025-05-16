@@ -6,6 +6,10 @@
 #include <vma/vk_mem_alloc.h>
 #pragma clang diagnostic pop
 
+#include <renderer/vulkan/device.h>
+#include <utils/type.h>
+#include <utils/util.h>
+
 namespace vulkan
 {
 
@@ -63,10 +67,13 @@ public:
 	image_view(const image_view &) = delete;
 	image_view operator=(const image_view &) = delete;
 
-	void build(device &device, image &image);
+	image_view(image_view &&o) noexcept;
+	image_view &operator=(image_view &&o) noexcept;
+
+	void build(device &device, const ref<image> &image);
 
 	VkImageView m_handle = {};
-	image *m_image = nullptr;
+	ref<image> m_image = nullptr;
 
 private:
 	VkDevice m_device_handle = {};
@@ -81,9 +88,12 @@ public:
 	texture(const texture &) = delete;
 	texture operator=(const texture &) = delete;
 
-	void build(device &device, image &image);
+	texture(texture &&o) noexcept;
+	texture &operator=(texture &&o) noexcept;
 
-	image *m_image = nullptr;
+	void build(device &device, const ref<image> &image);
+
+	ref<image> m_image = nullptr;
 	image_view m_image_view = {};
 	VkSampler m_sampler = VK_NULL_HANDLE;
 

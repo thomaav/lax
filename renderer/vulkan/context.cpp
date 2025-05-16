@@ -147,35 +147,35 @@ void context::backend_test()
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 	/* Color texture. */
-	image color_texture_image = {};
-	color_texture_image.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
-	m_resource_allocator.allocate_image_2d(color_texture_image, editor.m_settings.color_format,
+	ref<image> color_texture_image = make_ref<image>();
+	color_texture_image->set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_resource_allocator.allocate_image_2d(*color_texture_image, editor.m_settings.color_format,
 	                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 	                                           VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
-	color_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+	color_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 	texture color_texture = {};
 	color_texture.build(m_device, color_texture_image);
 
 	/* Depth texture. */
-	image depth_texture_image = {};
-	depth_texture_image.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
-	m_resource_allocator.allocate_image_2d(depth_texture_image, VK_FORMAT_D32_SFLOAT,
+	ref<image> depth_texture_image = make_ref<image>();
+	depth_texture_image->set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_resource_allocator.allocate_image_2d(*depth_texture_image, VK_FORMAT_D32_SFLOAT,
 	                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
-	depth_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	depth_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	texture depth_texture = {};
 	depth_texture.build(m_device, depth_texture_image);
 
 	/* Resolve texture. */
-	image resolve_texture_image = m_resource_allocator.allocate_image_2d(
+	ref<image> resolve_texture_image = make_ref<image>(m_resource_allocator.allocate_image_2d(
 	    editor.m_settings.color_format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-	    m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
-	resolve_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+	    m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height));
+	resolve_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 	texture resolve_texture = {};
 	resolve_texture.build(m_device, resolve_texture_image);
 
-	for (std::unique_ptr<image> &image : m_wsi.m_swapchain.m_images)
+	for (ref<image> &image : m_wsi.m_swapchain.m_images)
 	{
 		image->transition_layout(*this, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	}

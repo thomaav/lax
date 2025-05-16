@@ -24,12 +24,21 @@ public:
 	resource_allocator operator=(const resource_allocator &) = delete;
 
 	void build(instance &instance, device &device);
+
 	buffer allocate_buffer(VkBufferUsageFlags usage, VkDeviceSize size);
+	void allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+
 	image allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	void allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	image allocate_image_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height, u32 layers);
 	void allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
 	                            u32 layers);
+
+	texture allocate_texture_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	void allocate_texture_2d(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	texture allocate_texture_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height, u32 layers);
+	void allocate_texture_layered(texture &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+	                              u32 layers);
 
 private:
 	instance *m_instance = nullptr;

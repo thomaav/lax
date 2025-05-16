@@ -156,13 +156,13 @@ void wsi::build_swapchain(device &device)
 		/* Initalize image views. */
 		for (size_t i = 0; i < m_swapchain.m_vulkan_images.size(); i++)
 		{
-			std::unique_ptr<image> img = std::make_unique<image>();
+			ref<image> img = make_ref<image>();
 			img->build_external(m_swapchain.m_vulkan_images[i], m_swapchain.m_format, m_swapchain.m_extent.width,
 			                    m_swapchain.m_extent.height);
-			m_swapchain.m_images.emplace_back(std::move(img));
+			m_swapchain.m_images.push_back(img);
 
 			std::unique_ptr<image_view> img_view = std::make_unique<image_view>();
-			img_view->build(*m_swapchain.m_device, *m_swapchain.m_images[i]);
+			img_view->build(*m_swapchain.m_device, m_swapchain.m_images[i]);
 			m_swapchain.m_image_views.emplace_back(std::move(img_view));
 		}
 	}

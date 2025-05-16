@@ -4,22 +4,22 @@ void skybox::build(vulkan::context &context, const vulkan::render_pass &render_p
 {
 	/* Vulkan image. */
 	m_asset_image.load("bin/assets/images/skybox/right.jpg");
-	context.m_resource_allocator.allocate_image_layered(m_image, VK_FORMAT_R8G8B8A8_SRGB,
+	context.m_resource_allocator.allocate_image_layered(*m_image, VK_FORMAT_R8G8B8A8_SRGB,
 	                                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 	                                                    m_asset_image.m_width, m_asset_image.m_height, 6);
 	m_asset_image.load("bin/assets/images/skybox/right.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 0);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 0);
 	m_asset_image.load("bin/assets/images/skybox/left.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 1);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 1);
 	m_asset_image.load("bin/assets/images/skybox/top.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 2);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 2);
 	m_asset_image.load("bin/assets/images/skybox/bottom.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 3);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 3);
 	m_asset_image.load("bin/assets/images/skybox/front.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 4);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 4);
 	m_asset_image.load("bin/assets/images/skybox/back.jpg");
-	m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 5);
-	m_image.transition_layout(context, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	m_image->fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 5);
+	m_image->transition_layout(context, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	/* Texture. */
 	m_texture.build(context.m_device, m_image);
@@ -65,14 +65,14 @@ void static_mesh::build(vulkan::context &context, const vulkan::render_pass &ren
 	m_index_count = m_model->m_meshes[0].m_indices.size();
 
 	/* Diffuse texture. */
-	m_diffuse_image.set_mipmaps(true);
-	context.m_resource_allocator.allocate_image_2d(m_diffuse_image, VK_FORMAT_R8G8B8A8_SRGB,
+	m_diffuse_image->set_mipmaps(true);
+	context.m_resource_allocator.allocate_image_2d(*m_diffuse_image, VK_FORMAT_R8G8B8A8_SRGB,
 	                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 	                                                   VK_IMAGE_USAGE_SAMPLED_BIT,
 	                                               m_model->m_meshes[0].m_width, m_model->m_meshes[0].m_height);
-	m_diffuse_image.fill(context, m_model->m_meshes[0].m_texture.data(), m_model->m_meshes[0].m_texture.size());
-	m_diffuse_image.generate_mipmaps(context);
-	m_diffuse_image.transition_layout(context, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	m_diffuse_image->fill(context, m_model->m_meshes[0].m_texture.data(), m_model->m_meshes[0].m_texture.size());
+	m_diffuse_image->generate_mipmaps(context);
+	m_diffuse_image->transition_layout(context, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	m_diffuse_texture.build(context.m_device, m_diffuse_image);
 
 	/* Pipeline. */

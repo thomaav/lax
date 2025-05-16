@@ -376,15 +376,40 @@ image_view::~image_view()
 	}
 }
 
-void image_view::build(device &device, image &image)
+image_view::image_view(image_view &&o) noexcept
+    : m_handle(o.m_handle)
+    , m_image(o.m_image)
+    , m_device_handle(o.m_device_handle)
 {
-	m_image = &image;
+	o.m_handle = VK_NULL_HANDLE;
+	o.m_image = nullptr;
+	o.m_device_handle = VK_NULL_HANDLE;
+}
+
+image_view &image_view::operator=(image_view &&o) noexcept
+{
+	if (this != &o)
+	{
+		m_handle = o.m_handle;
+		m_image = o.m_image;
+		m_device_handle = o.m_device_handle;
+
+		o.m_handle = VK_NULL_HANDLE;
+		o.m_image = nullptr;
+		o.m_device_handle = VK_NULL_HANDLE;
+	}
+	return *this;
+}
+
+void image_view::build(device &device, const ref<image> &image)
+{
+	m_image = image;
 
 	VkImageViewCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	create_info.image = m_image->m_handle;
 
-	create_info.viewType = image.m_layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE;
+	create_info.viewType = image->m_layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE;
 	create_info.format = m_image->m_format;
 
 	create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -394,9 +419,9 @@ void image_view::build(device &device, image &image)
 
 	create_info.subresourceRange.aspectMask = get_aspect_from_format(m_image->m_format);
 	create_info.subresourceRange.baseMipLevel = 0;
-	create_info.subresourceRange.levelCount = image.m_mip_levels;
+	create_info.subresourceRange.levelCount = image->m_mip_levels;
 	create_info.subresourceRange.baseArrayLayer = 0;
-	create_info.subresourceRange.layerCount = image.m_layers;
+	create_info.subresourceRange.layerCount = image->m_layers;
 
 	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
@@ -411,10 +436,39 @@ texture::~texture()
 	}
 }
 
-void texture::build(device &device, image &image)
+texture::texture(texture &&o) noexcept
+    : m_image(o.m_image)
+    , m_image_view(std::move(o.m_image_view))
+    , m_sampler(o.m_sampler)
+    , m_device_handle(o.m_device_handle)
+{
+	o.m_image = nullptr;
+	o.m_image_view = {};
+	o.m_sampler = VK_NULL_HANDLE;
+	o.m_device_handle = VK_NULL_HANDLE;
+}
+
+texture &texture::operator=(texture &&o) noexcept
+{
+	if (this != &o)
+	{
+		m_image = o.m_image;
+		m_image_view = std::move(o.m_image_view);
+		m_sampler = o.m_sampler;
+		m_device_handle = o.m_device_handle;
+
+		o.m_image = nullptr;
+		o.m_image_view = {};
+		o.m_sampler = VK_NULL_HANDLE;
+		o.m_device_handle = VK_NULL_HANDLE;
+	}
+	return *this;
+}
+
+void texture::build(device &device, const ref<image> &image)
 {
 	m_device_handle = device.m_logical.m_handle;
-	m_image = &image;
+	m_image = image;
 
 	m_image_view.build(device, image);
 	VkSamplerCreateInfo sampler_info = {
@@ -434,7 +488,7 @@ void texture::build(device &device, image &image)
 		.compareEnable = VK_FALSE,                         //
 		.compareOp = VK_COMPARE_OP_ALWAYS,                 //
 		.minLod = 0.0f,                                    //
-		.maxLod = (float)image.m_mip_levels - 1.0f,        //
+		.maxLod = (float)image->m_mip_levels - 1.0f,       //
 		.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,   //
 		.unnormalizedCoordinates = VK_FALSE,               //
 	};

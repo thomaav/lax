@@ -12,6 +12,7 @@
 #include <renderer/vulkan/image.h>
 #include <renderer/vulkan/instance.h>
 #include <renderer/vulkan/semaphore.h>
+#include <utils/util.h>
 
 namespace vulkan
 {
@@ -45,8 +46,8 @@ public:
 		VkFormat m_format = {};
 		VkExtent2D m_extent = {};
 		std::vector<VkImage> m_vulkan_images = {};
-		std::vector<std::unique_ptr<image>> m_images = {};
-		std::vector<std::unique_ptr<image_view>> m_image_views = {};
+		std::vector<ref<image>> m_images = {};
+		std::vector<ref<image_view>> m_image_views = {};
 	} m_swapchain = {};
 
 private:
