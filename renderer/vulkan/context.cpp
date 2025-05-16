@@ -131,7 +131,7 @@ void context::backend_test()
 	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
 	init_info.ImageCount = m_wsi.m_swapchain.m_images.size();
-	init_info.MSAASamples = VK_SAMPLE_COUNT_4_BIT;
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = nullptr;
 	init_info.CheckVkResultFn = nullptr;
 	ImGui_ImplVulkan_Init(&init_info);
@@ -236,6 +236,8 @@ void context::backend_test()
 		render_pass.set_dynamic_rendering(true);
 		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 
+		/* (TODO, thoave01): Set pipeline sample count directly the first time we build it. */
+
 		editor.m_scene.m_skybox->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
 		editor.m_scene.m_static_mesh->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
 
@@ -316,7 +318,41 @@ void context::backend_test()
 				{
 					editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
 				}
+			}
+			vkCmdEndRendering(command_buffer.m_handle);
 
+			command_buffer.transition_image_layout(
+			    *resolve_texture.m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+			const VkRenderingAttachmentInfo resolve_attachment = {
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+				.pNext = nullptr,                                        //
+				.imageView = resolve_texture.m_image_view.m_handle,      //
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
+				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+				.resolveImageView = VK_NULL_HANDLE,                      //
+				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+				.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,                    //
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                 //
+				.clearValue = {},                                        //
+			};
+			const VkRenderingInfo rendering_info_2 = {
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,                                                       //
+				.pNext = nullptr,                                                                                //
+				.flags = 0,                                                                                      //
+				.renderArea = { { 0, 0 }, { color_texture.m_image->m_width, color_texture.m_image->m_height } }, //
+				.layerCount = 1,                                                                                 //
+				.viewMask = 0,                                                                                   //
+				.colorAttachmentCount = 1,                                                                       //
+				.pColorAttachments = &resolve_attachment,                                                        //
+				.pDepthAttachment = VK_NULL_HANDLE,                                                              //
+				.pStencilAttachment = nullptr,                                                                   //
+			};
+			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info_2);
+			{
 				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
