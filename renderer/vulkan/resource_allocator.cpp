@@ -37,15 +37,32 @@ void resource_allocator::build(instance &instance, device &device)
 	vmaCreateAllocator(&alloc_info, &m_allocator);
 }
 
-void resource_allocator::allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size)
+buffer resource_allocator::allocate_buffer(VkBufferUsageFlags usage, VkDeviceSize size)
 {
-	buffer.build(m_allocator, usage, size);
+	buffer b = {};
+	b.build(m_allocator, usage, size);
+	return b;
+}
+
+image resource_allocator::allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
+{
+	image image = {};
+	image.build_2d(m_allocator, format, usage, width, height);
+	return image;
 }
 
 void resource_allocator::allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,
                                            u32 height)
 {
 	image.build_2d(m_allocator, format, usage, width, height);
+}
+
+image resource_allocator::allocate_image_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
+                                                 u32 layers)
+{
+	image image = {};
+	image.build_layered(m_allocator, format, usage, width, height, layers);
+	return image;
 }
 
 void resource_allocator::allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,

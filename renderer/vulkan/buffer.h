@@ -20,6 +20,9 @@ public:
 	buffer(const buffer &) = delete;
 	buffer operator=(const buffer &) = delete;
 
+	buffer(buffer &&o) noexcept;
+	buffer &operator=(buffer &&o) noexcept;
+
 	void build(VmaAllocator allocator, VkBufferUsageFlags usage, VkDeviceSize size);
 	void fill(const void *data, size_t size);
 

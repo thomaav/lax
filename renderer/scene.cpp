@@ -50,16 +50,16 @@ void static_mesh::build(vulkan::context &context, const vulkan::render_pass &ren
 	m_model = model;
 
 	/* Vertex buffer. */
-	context.m_resource_allocator.allocate_buffer(m_vertex_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-	                                             sizeof(m_model->m_meshes[0].m_vertices[0]) *
-	                                                 m_model->m_meshes[0].m_vertices.size());
+	m_vertex_buffer = context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+	                                                               sizeof(m_model->m_meshes[0].m_vertices[0]) *
+	                                                                   m_model->m_meshes[0].m_vertices.size());
 	m_vertex_buffer.fill(m_model->m_meshes[0].m_vertices.data(),
 	                     sizeof(m_model->m_meshes[0].m_vertices[0]) * m_model->m_meshes[0].m_vertices.size());
 
 	/* Index buffer. */
-	context.m_resource_allocator.allocate_buffer(m_index_buffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	                                             sizeof(m_model->m_meshes[0].m_indices[0]) *
-	                                                 m_model->m_meshes[0].m_indices.size());
+	m_index_buffer = context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+	                                                              sizeof(m_model->m_meshes[0].m_indices[0]) *
+	                                                                  m_model->m_meshes[0].m_indices.size());
 	m_index_buffer.fill(m_model->m_meshes[0].m_indices.data(),
 	                    sizeof(m_model->m_meshes[0].m_indices[0]) * m_model->m_meshes[0].m_indices.size());
 	m_index_count = m_model->m_meshes[0].m_indices.size();

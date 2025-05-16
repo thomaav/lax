@@ -59,15 +59,65 @@ image::~image()
 	}
 }
 
-void image::build_external(VkImage handle, VkFormat format, u32 width, u32 height)
+image::image(image &&o) noexcept
+    : m_external_image(o.m_external_image)
+    , m_handle(o.m_handle)
+    , m_format(o.m_format)
+    , m_width(o.m_width)
+    , m_height(o.m_height)
+    , m_layers(o.m_layers)
+    , m_mipmapped(o.m_mipmapped)
+    , m_sample_count(o.m_sample_count)
+    , m_mip_levels(o.m_mip_levels)
+    , m_layout(o.m_layout)
+    , m_allocator(o.m_allocator)
+    , m_allocation(o.m_allocation)
 {
-	m_external_image = true;
-	m_handle = handle;
-	m_format = format;
-	m_width = width;
-	m_height = height;
-	m_layers = 1;
-	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	o.m_external_image = false;
+	o.m_handle = VK_NULL_HANDLE;
+	o.m_format = VK_FORMAT_UNDEFINED;
+	o.m_width = 0;
+	o.m_height = 0;
+	o.m_layers = 0;
+	o.m_mipmapped = false;
+	o.m_sample_count = VK_SAMPLE_COUNT_1_BIT;
+	o.m_mip_levels = 1;
+	o.m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	o.m_allocator = VK_NULL_HANDLE;
+	o.m_allocation = VK_NULL_HANDLE;
+}
+
+image &image::operator=(image &&o) noexcept
+{
+	if (this != &o)
+	{
+		m_external_image = o.m_external_image;
+		m_handle = o.m_handle;
+		m_format = o.m_format;
+		m_width = o.m_width;
+		m_height = o.m_height;
+		m_layers = o.m_layers;
+		m_mipmapped = o.m_mipmapped;
+		m_sample_count = o.m_sample_count;
+		m_mip_levels = o.m_mip_levels;
+		m_layout = o.m_layout;
+		m_allocator = o.m_allocator;
+		m_allocation = o.m_allocation;
+
+		o.m_external_image = false;
+		o.m_handle = VK_NULL_HANDLE;
+		o.m_format = VK_FORMAT_UNDEFINED;
+		o.m_width = 0;
+		o.m_height = 0;
+		o.m_layers = 0;
+		o.m_mipmapped = false;
+		o.m_sample_count = VK_SAMPLE_COUNT_1_BIT;
+		o.m_mip_levels = 1;
+		o.m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+		o.m_allocator = VK_NULL_HANDLE;
+		o.m_allocation = VK_NULL_HANDLE;
+	}
+	return *this;
 }
 
 void image::set_mipmaps(bool mipmaps)
@@ -164,6 +214,17 @@ void image::build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageF
 	VULKAN_ASSERT_SUCCESS(vmaCreateImage(allocator, &create_info, &alloc_info, &m_handle, &m_allocation, nullptr));
 }
 
+void image::build_external(VkImage handle, VkFormat format, u32 width, u32 height)
+{
+	m_external_image = true;
+	m_handle = handle;
+	m_format = format;
+	m_width = width;
+	m_height = height;
+	m_layers = 1;
+	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
 void image::transition_layout(context &context, VkImageLayout new_layout)
 {
 	command_buffer command_buffer = {};
@@ -207,8 +268,7 @@ void image::fill_layer(context &context, const void *data, size_t size, u32 laye
 		transition_layout(context, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	}
 
-	buffer staging_buffer = {};
-	context.m_resource_allocator.allocate_buffer(staging_buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+	buffer staging_buffer = context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
 	staging_buffer.fill(data, size);
 
 	command_buffer command_buffer = {};

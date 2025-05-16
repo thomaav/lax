@@ -143,8 +143,7 @@ void context::backend_test()
 	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	uniforms.projection =
 	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
-	buffer uniform_buffer = {};
-	m_resource_allocator.allocate_buffer(uniform_buffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
+	buffer uniform_buffer = m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 	/* Color texture. */
@@ -169,10 +168,9 @@ void context::backend_test()
 	depth_texture.build(m_device, depth_texture_image);
 
 	/* Resolve texture. */
-	image resolve_texture_image = {};
-	m_resource_allocator.allocate_image_2d(resolve_texture_image, editor.m_settings.color_format,
-	                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
+	image resolve_texture_image = m_resource_allocator.allocate_image_2d(
+	    editor.m_settings.color_format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+	    m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
 	resolve_texture_image.transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 	texture resolve_texture = {};
 	resolve_texture.build(m_device, resolve_texture_image);

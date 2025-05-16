@@ -13,6 +13,35 @@ buffer::~buffer()
 	}
 }
 
+buffer::buffer(buffer &&o) noexcept
+    : m_handle(o.m_handle)
+    , m_size(o.m_size)
+    , m_allocator(o.m_allocator)
+    , m_allocation(o.m_allocation)
+{
+	o.m_handle = VK_NULL_HANDLE;
+	o.m_size = 0;
+	o.m_allocator = VK_NULL_HANDLE;
+	o.m_allocation = VK_NULL_HANDLE;
+}
+
+buffer &buffer::operator=(buffer &&o) noexcept
+{
+	if (this != &o)
+	{
+		m_handle = o.m_handle;
+		m_size = o.m_size;
+		m_allocator = o.m_allocator;
+		m_allocation = o.m_allocation;
+
+		o.m_handle = VK_NULL_HANDLE;
+		o.m_size = 0;
+		o.m_allocator = VK_NULL_HANDLE;
+		o.m_allocation = VK_NULL_HANDLE;
+	}
+	return *this;
+}
+
 void buffer::build(VmaAllocator allocator, VkBufferUsageFlags usage, VkDeviceSize size)
 {
 	m_allocator = allocator;

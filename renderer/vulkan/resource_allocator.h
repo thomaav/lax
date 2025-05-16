@@ -24,8 +24,10 @@ public:
 	resource_allocator operator=(const resource_allocator &) = delete;
 
 	void build(instance &instance, device &device);
-	void allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+	buffer allocate_buffer(VkBufferUsageFlags usage, VkDeviceSize size);
+	image allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
 	void allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
+	image allocate_image_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height, u32 layers);
 	void allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
 	                            u32 layers);
 

@@ -22,6 +22,9 @@ public:
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
+	image(image &&o) noexcept;
+	image &operator=(image &&o) noexcept;
+
 	void set_mipmaps(bool mipmaps);
 	void set_sample_count(VkSampleCountFlagBits sample_count);
 
