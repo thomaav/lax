@@ -13,9 +13,20 @@
 namespace vulkan
 {
 
-/* Forward declarations. */
-class buffer;
 class context;
+
+struct image_info
+{
+	VkFormat m_format;
+	u32 m_width;
+	u32 m_height;
+	VkImageUsageFlags m_usage;
+
+	u32 m_layers = 1;
+	bool m_mipmapped = false;
+	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
+	VkImage m_external_image = VK_NULL_HANDLE;
+};
 
 class image
 {
@@ -26,15 +37,7 @@ public:
 	image(const image &) = delete;
 	image operator=(const image &) = delete;
 
-	image(image &&o) noexcept;
-	image &operator=(image &&o) noexcept;
-
-	void set_mipmaps(bool mipmaps);
-	void set_sample_count(VkSampleCountFlagBits sample_count);
-
-	void build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	void build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-	                   u32 layers);
+	void build(VmaAllocator allocator, const image_info &texture_info);
 	void build_external(VkImage handle, VkFormat format, u32 width, u32 height);
 
 	void transition_layout(context &context, VkImageLayout new_layout);
@@ -42,16 +45,13 @@ public:
 	void fill_layer(context &context, const void *data, size_t size, u32 layer);
 	void generate_mipmaps(context &context);
 
+	VkImage m_handle;
+	image_info m_info;
+	u32 m_mip_levels;
+	VkImageLayout m_layout;
+
+	/* (TODO, thoave01): Fix external. */
 	bool m_external_image = false;
-	VkImage m_handle = {};
-	VkFormat m_format = {};
-	u32 m_width = 0;
-	u32 m_height = 0;
-	u32 m_layers = 0;
-	bool m_mipmapped = false;
-	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
-	u32 m_mip_levels = 1;
-	VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 private:
 	VmaAllocator m_allocator = VK_NULL_HANDLE;
@@ -67,13 +67,10 @@ public:
 	image_view(const image_view &) = delete;
 	image_view operator=(const image_view &) = delete;
 
-	image_view(image_view &&o) noexcept;
-	image_view &operator=(image_view &&o) noexcept;
-
-	void build(device &device, const ref<image> &image);
+	void build(device &device, const image &image);
 
 	VkImageView m_handle = {};
-	ref<image> m_image = nullptr;
+	const image *m_image = nullptr;
 
 private:
 	VkDevice m_device_handle = {};
@@ -88,12 +85,10 @@ public:
 	texture(const texture &) = delete;
 	texture operator=(const texture &) = delete;
 
-	texture(texture &&o) noexcept;
-	texture &operator=(texture &&o) noexcept;
+	void build(context &context, const image_info &image_info);
 
-	void build(device &device, const ref<image> &image);
-
-	ref<image> m_image = nullptr;
+	/* (TODO, thoave01): Should not be a ptr. */
+	image m_image = {};
 	image_view m_image_view = {};
 	VkSampler m_sampler = VK_NULL_HANDLE;
 

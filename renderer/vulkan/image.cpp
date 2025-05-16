@@ -59,153 +59,30 @@ image::~image()
 	}
 }
 
-image::image(image &&o) noexcept
-    : m_external_image(o.m_external_image)
-    , m_handle(o.m_handle)
-    , m_format(o.m_format)
-    , m_width(o.m_width)
-    , m_height(o.m_height)
-    , m_layers(o.m_layers)
-    , m_mipmapped(o.m_mipmapped)
-    , m_sample_count(o.m_sample_count)
-    , m_mip_levels(o.m_mip_levels)
-    , m_layout(o.m_layout)
-    , m_allocator(o.m_allocator)
-    , m_allocation(o.m_allocation)
-{
-	o.m_external_image = false;
-	o.m_handle = VK_NULL_HANDLE;
-	o.m_format = VK_FORMAT_UNDEFINED;
-	o.m_width = 0;
-	o.m_height = 0;
-	o.m_layers = 0;
-	o.m_mipmapped = false;
-	o.m_sample_count = VK_SAMPLE_COUNT_1_BIT;
-	o.m_mip_levels = 1;
-	o.m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-	o.m_allocator = VK_NULL_HANDLE;
-	o.m_allocation = VK_NULL_HANDLE;
-}
-
-image &image::operator=(image &&o) noexcept
-{
-	if (this != &o)
-	{
-		m_external_image = o.m_external_image;
-		m_handle = o.m_handle;
-		m_format = o.m_format;
-		m_width = o.m_width;
-		m_height = o.m_height;
-		m_layers = o.m_layers;
-		m_mipmapped = o.m_mipmapped;
-		m_sample_count = o.m_sample_count;
-		m_mip_levels = o.m_mip_levels;
-		m_layout = o.m_layout;
-		m_allocator = o.m_allocator;
-		m_allocation = o.m_allocation;
-
-		o.m_external_image = false;
-		o.m_handle = VK_NULL_HANDLE;
-		o.m_format = VK_FORMAT_UNDEFINED;
-		o.m_width = 0;
-		o.m_height = 0;
-		o.m_layers = 0;
-		o.m_mipmapped = false;
-		o.m_sample_count = VK_SAMPLE_COUNT_1_BIT;
-		o.m_mip_levels = 1;
-		o.m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-		o.m_allocator = VK_NULL_HANDLE;
-		o.m_allocation = VK_NULL_HANDLE;
-	}
-	return *this;
-}
-
-void image::set_mipmaps(bool mipmaps)
-{
-	m_mipmapped = mipmaps;
-}
-
-void image::set_sample_count(VkSampleCountFlagBits sample_count)
-{
-	m_sample_count = sample_count;
-}
-
-void image::build_2d(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
+void image::build(VmaAllocator allocator, const image_info &image_info)
 {
 	m_allocator = allocator;
-	m_external_image = false;
-	m_format = format;
-	m_width = width;
-	m_height = height;
-	m_layers = 1;
+	m_info = image_info;
+
+	m_mip_levels = m_info.m_mipmapped ? (u32)(std::floor(std::log2(std::max(m_info.m_width, m_info.m_height)))) + 1 : 1;
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	if (m_mipmapped)
-	{
-		m_mip_levels = (u32)(std::floor(std::log2(std::max(width, height)))) + 1;
-	}
-
-	const VkExtent3D extent = {
-		.width = m_width,   //
-		.height = m_height, //
-		.depth = 1          //
-	};
 	const VkImageCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //
-		.pNext = nullptr,                             //
-		.flags = 0,                                   //
-		.imageType = VK_IMAGE_TYPE_2D,                //
-		.format = format,                             //
-		.extent = extent,                             //
-		.mipLevels = m_mip_levels,                    //
-		.arrayLayers = m_layers,                      //
-		.samples = m_sample_count,                    //
-		.tiling = get_tiling_from_format(format),     //
-		.usage = usage,                               //
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
-		.queueFamilyIndexCount = 0,                   //
-		.pQueueFamilyIndices = nullptr,               //
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,   //
-	};
-
-	VmaAllocationCreateInfo alloc_info = {};
-	alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
-
-	VULKAN_ASSERT_SUCCESS(vmaCreateImage(allocator, &create_info, &alloc_info, &m_handle, &m_allocation, nullptr));
-}
-
-void image::build_layered(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-                          u32 layers)
-{
-	m_allocator = allocator;
-	m_external_image = false;
-	m_format = format;
-	m_width = width;
-	m_height = height;
-	m_layers = layers;
-	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-	const VkExtent3D extent = {
-		.width = m_width,   //
-		.height = m_height, //
-		.depth = 1          //
-	};
-	const VkImageCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //
-		.pNext = nullptr,                             //
-		.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, //
-		.imageType = VK_IMAGE_TYPE_2D,                //
-		.format = format,                             //
-		.extent = extent,                             //
-		.mipLevels = m_mip_levels,                    //
-		.arrayLayers = m_layers,                      //
-		.samples = m_sample_count,                    //
-		.tiling = get_tiling_from_format(format),     //
-		.usage = usage,                               //
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,     //
-		.queueFamilyIndexCount = 0,                   //
-		.pQueueFamilyIndices = nullptr,               //
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,   //
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                                //
+		.pNext = nullptr,                                                                            //
+		.flags = m_info.m_layers == 1 ? (VkImageCreateFlags)0 : VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, //
+		.imageType = VK_IMAGE_TYPE_2D,                                                               //
+		.format = m_info.m_format,                                                                   //
+		.extent = { m_info.m_width, m_info.m_height, 1 },                                            //
+		.mipLevels = m_mip_levels,                                                                   //
+		.arrayLayers = m_info.m_layers,                                                              //
+		.samples = m_info.m_sample_count,                                                            //
+		.tiling = get_tiling_from_format(m_info.m_format),                                           //
+		.usage = m_info.m_usage,                                                                     //
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,                                                    //
+		.queueFamilyIndexCount = 0,                                                                  //
+		.pQueueFamilyIndices = nullptr,                                                              //
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,                                                  //
 	};
 
 	VmaAllocationCreateInfo alloc_info = {};
@@ -218,10 +95,10 @@ void image::build_external(VkImage handle, VkFormat format, u32 width, u32 heigh
 {
 	m_external_image = true;
 	m_handle = handle;
-	m_format = format;
-	m_width = width;
-	m_height = height;
-	m_layers = 1;
+	m_info.m_format = format;
+	m_info.m_width = width;
+	m_info.m_height = height;
+	m_info.m_layers = 1;
 	m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
@@ -239,11 +116,11 @@ void image::transition_layout(context &context, VkImageLayout new_layout)
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = m_handle;
-		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_format);
+		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_info.m_format);
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = m_mip_levels;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = m_layers;
+		barrier.subresourceRange.layerCount = m_info.m_layers;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = 0;
 		vkCmdPipelineBarrier(command_buffer.m_handle, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -284,7 +161,7 @@ void image::fill_layer(context &context, const void *data, size_t size, u32 laye
 		region.imageSubresource.baseArrayLayer = layer;
 		region.imageSubresource.layerCount = 1;
 		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { m_width, m_height, 1 };
+		region.imageExtent = { m_info.m_width, m_info.m_height, 1 };
 		vkCmdCopyBufferToImage(command_buffer.m_handle, staging_buffer.m_handle, m_handle,
 		                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
@@ -299,12 +176,12 @@ void image::fill_layer(context &context, const void *data, size_t size, u32 laye
 
 void image::generate_mipmaps(context &context)
 {
-	if (!m_mipmapped)
+	if (!m_info.m_mipmapped)
 	{
 		return;
 	}
 
-	if (m_layers != 1)
+	if (m_info.m_layers != 1)
 	{
 		terminate("No mipmap generation supported for layered images");
 	}
@@ -316,8 +193,8 @@ void image::generate_mipmaps(context &context)
 		transition_layout(context, VK_IMAGE_LAYOUT_GENERAL);
 	}
 
-	int width = m_width;
-	int height = m_height;
+	int width = m_info.m_width;
+	int height = m_info.m_height;
 	command_buffer command_buffer = {};
 	command_buffer.build(context.m_device, context.m_command_pool);
 	command_buffer.begin();
@@ -330,11 +207,11 @@ void image::generate_mipmaps(context &context)
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = m_handle;
-		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_format);
+		barrier.subresourceRange.aspectMask = get_aspect_from_format(m_info.m_format);
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = m_layers;
+		barrier.subresourceRange.layerCount = m_info.m_layers;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = 0;
 		vkCmdPipelineBarrier(command_buffer.m_handle, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
@@ -376,52 +253,27 @@ image_view::~image_view()
 	}
 }
 
-image_view::image_view(image_view &&o) noexcept
-    : m_handle(o.m_handle)
-    , m_image(o.m_image)
-    , m_device_handle(o.m_device_handle)
+void image_view::build(device &device, const image &image)
 {
-	o.m_handle = VK_NULL_HANDLE;
-	o.m_image = nullptr;
-	o.m_device_handle = VK_NULL_HANDLE;
-}
-
-image_view &image_view::operator=(image_view &&o) noexcept
-{
-	if (this != &o)
-	{
-		m_handle = o.m_handle;
-		m_image = o.m_image;
-		m_device_handle = o.m_device_handle;
-
-		o.m_handle = VK_NULL_HANDLE;
-		o.m_image = nullptr;
-		o.m_device_handle = VK_NULL_HANDLE;
-	}
-	return *this;
-}
-
-void image_view::build(device &device, const ref<image> &image)
-{
-	m_image = image;
+	m_image = &image;
 
 	VkImageViewCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	create_info.image = m_image->m_handle;
 
-	create_info.viewType = image->m_layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE;
-	create_info.format = m_image->m_format;
+	create_info.viewType = m_image->m_info.m_layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE;
+	create_info.format = m_image->m_info.m_format;
 
 	create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 	create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-	create_info.subresourceRange.aspectMask = get_aspect_from_format(m_image->m_format);
+	create_info.subresourceRange.aspectMask = get_aspect_from_format(m_image->m_info.m_format);
 	create_info.subresourceRange.baseMipLevel = 0;
-	create_info.subresourceRange.levelCount = image->m_mip_levels;
+	create_info.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
 	create_info.subresourceRange.baseArrayLayer = 0;
-	create_info.subresourceRange.layerCount = image->m_layers;
+	create_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	VULKAN_ASSERT_SUCCESS(vkCreateImageView(device.m_logical.m_handle, &create_info, nullptr, &m_handle));
 
@@ -436,41 +288,14 @@ texture::~texture()
 	}
 }
 
-texture::texture(texture &&o) noexcept
-    : m_image(o.m_image)
-    , m_image_view(std::move(o.m_image_view))
-    , m_sampler(o.m_sampler)
-    , m_device_handle(o.m_device_handle)
+void texture::build(context &context, const image_info &image_info)
 {
-	o.m_image = nullptr;
-	o.m_image_view = {};
-	o.m_sampler = VK_NULL_HANDLE;
-	o.m_device_handle = VK_NULL_HANDLE;
-}
+	m_device_handle = context.m_device.m_logical.m_handle;
 
-texture &texture::operator=(texture &&o) noexcept
-{
-	if (this != &o)
-	{
-		m_image = o.m_image;
-		m_image_view = std::move(o.m_image_view);
-		m_sampler = o.m_sampler;
-		m_device_handle = o.m_device_handle;
+	m_image.build(context.m_resource_allocator.m_allocator, image_info);
+	m_image_view.build(context.m_device, m_image);
 
-		o.m_image = nullptr;
-		o.m_image_view = {};
-		o.m_sampler = VK_NULL_HANDLE;
-		o.m_device_handle = VK_NULL_HANDLE;
-	}
-	return *this;
-}
-
-void texture::build(device &device, const ref<image> &image)
-{
-	m_device_handle = device.m_logical.m_handle;
-	m_image = image;
-
-	m_image_view.build(device, image);
+	/* (TODO, thoave01): A little prettier. */
 	VkSamplerCreateInfo sampler_info = {
 		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,    //
 		.pNext = nullptr,                                  //
@@ -488,7 +313,7 @@ void texture::build(device &device, const ref<image> &image)
 		.compareEnable = VK_FALSE,                         //
 		.compareOp = VK_COMPARE_OP_ALWAYS,                 //
 		.minLod = 0.0f,                                    //
-		.maxLod = (float)image->m_mip_levels - 1.0f,       //
+		.maxLod = (float)m_image.m_mip_levels - 1.0f,      //
 		.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,   //
 		.unnormalizedCoordinates = VK_FALSE,               //
 	};

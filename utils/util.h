@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <random>
 #include <stdarg.h>
@@ -19,7 +20,7 @@ static inline void terminate(const char *e, ...)
 	}
 	printf("\n");
 
-	exit(1);
+	assert(false);
 }
 
 static inline void terminate_if(bool st, const char *e, ...)
@@ -38,7 +39,7 @@ static inline void terminate_if(bool st, const char *e, ...)
 	}
 	printf("\n");
 
-	exit(1);
+	assert(false);
 }
 
 static inline void info(const char *e, ...)

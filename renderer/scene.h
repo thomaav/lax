@@ -36,8 +36,6 @@ public:
 	                     VkSampleCountFlagBits sample_count);
 
 	assets::image m_asset_image = {};
-	/* (TODO, thoave01): Remove these members as ref, they should live in the texture. */
-	ref<vulkan::image> m_image = make_ref<vulkan::image>();
 	vulkan::texture m_texture = {};
 	vulkan::pipeline m_pipeline = {};
 
@@ -62,8 +60,6 @@ public:
 	vulkan::buffer m_vertex_buffer = {};
 	u32 m_index_count = 0;
 	vulkan::buffer m_index_buffer = {};
-	ref<vulkan::image> m_diffuse_image =
-	    make_ref<vulkan::image>(); /* (TODO, thoave01): Texture should contain image. */
 	vulkan::texture m_diffuse_texture = {};
 	vulkan::pipeline m_pipeline = {};
 

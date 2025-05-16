@@ -99,7 +99,7 @@ void context::backend_test()
 	editor.m_settings.enable_mipmapping = true;
 	editor.m_settings.enable_skybox = true;
 	editor.m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
-	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_format;
+	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
 	editor.build_default(*this);
 
@@ -126,7 +126,7 @@ void context::backend_test()
 	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
 	init_info.PipelineRenderingCreateInfo.viewMask = 0;
 	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_wsi.m_swapchain.m_images[0]->m_format;
+	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
 	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
@@ -147,38 +147,28 @@ void context::backend_test()
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 	/* Color texture. */
-	ref<image> color_texture_image = make_ref<image>();
-	color_texture_image->set_sample_count(VK_SAMPLE_COUNT_4_BIT);
-	m_resource_allocator.allocate_image_2d(*color_texture_image, editor.m_settings.color_format,
-	                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-	                                           VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
-	color_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 	texture color_texture = {};
-	color_texture.build(m_device, color_texture_image);
+	color_texture.build(*this,
+	                    { .m_format = editor.m_settings.color_format,
+	                      .m_width = m_wsi.m_swapchain.m_extent.width,
+	                      .m_height = m_wsi.m_swapchain.m_extent.height,
+	                      .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+	                      .m_sample_count = VK_SAMPLE_COUNT_4_BIT });
 
 	/* Depth texture. */
-	ref<image> depth_texture_image = make_ref<image>();
-	depth_texture_image->set_sample_count(VK_SAMPLE_COUNT_4_BIT);
-	m_resource_allocator.allocate_image_2d(*depth_texture_image, VK_FORMAT_D32_SFLOAT,
-	                                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-	                                       m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height);
-	depth_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 	texture depth_texture = {};
-	depth_texture.build(m_device, depth_texture_image);
+	depth_texture.build(*this, { .m_format = VK_FORMAT_D32_SFLOAT,
+	                             .m_width = m_wsi.m_swapchain.m_extent.width,
+	                             .m_height = m_wsi.m_swapchain.m_extent.height,
+	                             .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	                             .m_sample_count = VK_SAMPLE_COUNT_4_BIT });
 
 	/* Resolve texture. */
-	ref<image> resolve_texture_image = make_ref<image>(m_resource_allocator.allocate_image_2d(
-	    editor.m_settings.color_format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-	    m_wsi.m_swapchain.m_extent.width, m_wsi.m_swapchain.m_extent.height));
-	resolve_texture_image->transition_layout(*this, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
 	texture resolve_texture = {};
-	resolve_texture.build(m_device, resolve_texture_image);
-
-	for (ref<image> &image : m_wsi.m_swapchain.m_images)
-	{
-		image->transition_layout(*this, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-	}
+	resolve_texture.build(*this, { .m_format = editor.m_settings.color_format,
+	                               .m_width = m_wsi.m_swapchain.m_extent.width,
+	                               .m_height = m_wsi.m_swapchain.m_extent.height,
+	                               .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
 
 	semaphore image_available_semaphore = {};
 	image_available_semaphore.build(m_device);
@@ -235,7 +225,6 @@ void context::backend_test()
 		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 
 		/* (TODO, thoave01): Set pipeline sample count directly the first time we build it. */
-
 		editor.m_scene.m_skybox->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
 		editor.m_scene.m_static_mesh->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
 
@@ -245,10 +234,10 @@ void context::backend_test()
 		m_command_pool.reset();
 		command_buffer.begin();
 		{
-			command_buffer.transition_image_layout(*color_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+			command_buffer.transition_image_layout(color_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
-			command_buffer.transition_image_layout(*resolve_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+			command_buffer.transition_image_layout(resolve_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
 
@@ -282,16 +271,17 @@ void context::backend_test()
 				.clearValue = clear_depth,                               //
 			};
 			const VkRenderingInfo rendering_info = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,                                                       //
-				.pNext = nullptr,                                                                                //
-				.flags = 0,                                                                                      //
-				.renderArea = { { 0, 0 }, { color_texture.m_image->m_width, color_texture.m_image->m_height } }, //
-				.layerCount = 1,                                                                                 //
-				.viewMask = 0,                                                                                   //
-				.colorAttachmentCount = 1,                                                                       //
-				.pColorAttachments = &color_attachment,                                                          //
-				.pDepthAttachment = &depth_attachment,                                                           //
-				.pStencilAttachment = nullptr,                                                                   //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
+				.pNext = nullptr,                          //
+				.flags = 0,                                //
+				.renderArea = { { 0, 0 },
+				                { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height } }, //
+				.layerCount = 1,                                                                                   //
+				.viewMask = 0,                                                                                     //
+				.colorAttachmentCount = 1,                                                                         //
+				.pColorAttachments = &color_attachment,                                                            //
+				.pDepthAttachment = &depth_attachment,                                                             //
+				.pStencilAttachment = nullptr,                                                                     //
 			};
 
 			/* Render. */
@@ -320,7 +310,7 @@ void context::backend_test()
 			vkCmdEndRendering(command_buffer.m_handle);
 
 			command_buffer.transition_image_layout(
-			    *resolve_texture.m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			    resolve_texture.m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -338,16 +328,17 @@ void context::backend_test()
 				.clearValue = {},                                        //
 			};
 			const VkRenderingInfo rendering_info_2 = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,                                                       //
-				.pNext = nullptr,                                                                                //
-				.flags = 0,                                                                                      //
-				.renderArea = { { 0, 0 }, { color_texture.m_image->m_width, color_texture.m_image->m_height } }, //
-				.layerCount = 1,                                                                                 //
-				.viewMask = 0,                                                                                   //
-				.colorAttachmentCount = 1,                                                                       //
-				.pColorAttachments = &resolve_attachment,                                                        //
-				.pDepthAttachment = VK_NULL_HANDLE,                                                              //
-				.pStencilAttachment = nullptr,                                                                   //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
+				.pNext = nullptr,                          //
+				.flags = 0,                                //
+				.renderArea = { { 0, 0 },
+				                { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height } }, //
+				.layerCount = 1,                                                                                   //
+				.viewMask = 0,                                                                                     //
+				.colorAttachmentCount = 1,                                                                         //
+				.pColorAttachments = &resolve_attachment,                                                          //
+				.pDepthAttachment = VK_NULL_HANDLE,                                                                //
+				.pStencilAttachment = nullptr,                                                                     //
 			};
 			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info_2);
 			{
@@ -355,7 +346,7 @@ void context::backend_test()
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 
-			command_buffer.transition_image_layout(*resolve_texture.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			command_buffer.transition_image_layout(resolve_texture.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			                                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -374,8 +365,8 @@ void context::backend_test()
 			copy_info.dstSubresource.baseArrayLayer = 0;
 			copy_info.dstSubresource.layerCount = 1;
 			copy_info.dstOffset = { 0, 0, 0 };
-			copy_info.extent = { color_texture.m_image->m_width, color_texture.m_image->m_height, 1 };
-			vkCmdCopyImage(command_buffer.m_handle, resolve_texture.m_image->m_handle,
+			copy_info.extent = { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height, 1 };
+			vkCmdCopyImage(command_buffer.m_handle, resolve_texture.m_image.m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_wsi.m_swapchain.m_images[image_idx]->m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
 

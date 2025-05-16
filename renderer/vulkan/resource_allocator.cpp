@@ -5,6 +5,7 @@
 #include "vk_mem_alloc.h"
 #pragma clang diagnostic pop
 
+#include <renderer/vulkan/image.h>
 #include <renderer/vulkan/resource_allocator.h>
 #include <renderer/vulkan/util.h>
 
@@ -48,59 +49,5 @@ void resource_allocator::allocate_buffer(buffer &buffer, VkBufferUsageFlags usag
 {
 	buffer.build(m_allocator, usage, size);
 }
-
-image resource_allocator::allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
-{
-	image image = {};
-	image.build_2d(m_allocator, format, usage, width, height);
-	return image;
-}
-
-void resource_allocator::allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,
-                                           u32 height)
-{
-	image.build_2d(m_allocator, format, usage, width, height);
-}
-
-image resource_allocator::allocate_image_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-                                                 u32 layers)
-{
-	image image = {};
-	image.build_layered(m_allocator, format, usage, width, height, layers);
-	return image;
-}
-
-void resource_allocator::allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width,
-                                                u32 height, u32 layers)
-{
-	image.build_layered(m_allocator, format, usage, width, height, layers);
-}
-
-// texture resource_allocator::allocate_texture_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height)
-// {
-// 	texture texture = {};
-// 	texture.build_2d(m_allocator, format, usage, width, height);
-// 	return texture;
-// }
-
-// void resource_allocator::allocate_texture_2d(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width,
-//                                              u32 height)
-// {
-// 	texture.build_2d(m_allocator, format, usage, width, height);
-// }
-
-// texture resource_allocator::allocate_texture_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-//                                                      u32 layers)
-// {
-// 	texture texture = {};
-// 	texture.build_layered(m_allocator, format, usage, width, height, layers);
-// 	return texture;
-// }
-
-// void resource_allocator::allocate_texture_layered(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width,
-//                                                   u32 height, u32 layers)
-// {
-// 	texture.build_layered(m_allocator, format, usage, width, height, layers);
-// }
 
 } /* namespace vulkan */

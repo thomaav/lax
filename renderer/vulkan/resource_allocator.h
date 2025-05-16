@@ -8,7 +8,6 @@
 
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/device.h>
-#include <renderer/vulkan/image.h>
 #include <renderer/vulkan/instance.h>
 
 namespace vulkan
@@ -25,25 +24,15 @@ public:
 
 	void build(instance &instance, device &device);
 
+	/* (TODO, thoave01): Remove this too. */
 	buffer allocate_buffer(VkBufferUsageFlags usage, VkDeviceSize size);
 	void allocate_buffer(buffer &buffer, VkBufferUsageFlags usage, VkDeviceSize size);
 
-	image allocate_image_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	void allocate_image_2d(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	image allocate_image_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height, u32 layers);
-	void allocate_image_layered(image &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-	                            u32 layers);
-
-	texture allocate_texture_2d(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	void allocate_texture_2d(texture &texture, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height);
-	texture allocate_texture_layered(VkFormat format, VkImageUsageFlags usage, u32 width, u32 height, u32 layers);
-	void allocate_texture_layered(texture &image, VkFormat format, VkImageUsageFlags usage, u32 width, u32 height,
-	                              u32 layers);
+	VmaAllocator m_allocator = VK_NULL_HANDLE;
 
 private:
 	instance *m_instance = nullptr;
 	device *m_device = nullptr;
-	VmaAllocator m_allocator = VK_NULL_HANDLE;
 };
 
 } /* namespace vulkan */
