@@ -50,15 +50,32 @@ public:
 	void add_shader(const ref<shader_module> &shader);
 	void set_sample_count(VkSampleCountFlagBits sample_count);
 	void build(device &device, const render_pass &render_pass);
-	void rebuild(device &device, const render_pass &render_pass);
+	void update(const render_pass &render_pass);
 
 	VkPipeline m_handle = {};
-	ref<pipeline_layout> m_pipeline_layout = nullptr;
+	pipeline_layout m_pipeline_layout = {};
 
 private:
+	void finalize(const render_pass &render_pass);
+
 	VkDevice m_device_handle = {};
 	std::unordered_map<VkShaderStageFlagBits, ref<shader_module>> m_shader_modules = {};
+
+	/* Configurable. */
 	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
+
+	/* Set, and then re-used on update. */
+	VkPipelineVertexInputStateCreateInfo m_vertex_input_info = {};
+	VkPipelineInputAssemblyStateCreateInfo m_input_assembly = {};
+	VkPipelineViewportStateCreateInfo m_viewport_info = {};
+	VkPipelineRasterizationStateCreateInfo m_rasterizer_info = {};
+	VkPipelineMultisampleStateCreateInfo m_multisampling_info = {};
+	VkPipelineDepthStencilStateCreateInfo m_depth_stencil_info = {};
+	VkPipelineColorBlendAttachmentState m_blend_attachment_state = {};
+	VkPipelineColorBlendStateCreateInfo m_blending_info = {};
+	const VkDynamicState m_dynamic_states[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	VkPipelineDynamicStateCreateInfo m_dynamic_state_info = {};
+	std::vector<VkPipelineShaderStageCreateInfo> m_stage_create_infos = {};
 };
 
 } /* namespace vulkan */

@@ -32,8 +32,7 @@ public:
 
 	void build(vulkan::context &context, const vulkan::render_pass &render_pass);
 	void draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const override;
-	void update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
-	                     VkSampleCountFlagBits sample_count);
+	void update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count);
 
 	assets::image m_asset_image = {};
 	vulkan::texture m_texture = {};
@@ -53,8 +52,7 @@ public:
 
 	void build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model);
 	void draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const override;
-	void update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
-	                     VkSampleCountFlagBits sample_count);
+	void update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count);
 
 	ref<assets::model> m_model;
 	vulkan::buffer m_vertex_buffer = {};

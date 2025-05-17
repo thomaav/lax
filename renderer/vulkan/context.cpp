@@ -225,8 +225,8 @@ void context::backend_test()
 		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 
 		/* (TODO, thoave01): Set pipeline sample count directly the first time we build it. */
-		editor.m_scene.m_skybox->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
-		editor.m_scene.m_static_mesh->update_material(*this, render_pass, VK_SAMPLE_COUNT_4_BIT);
+		editor.m_scene.m_skybox->update_material(render_pass, VK_SAMPLE_COUNT_4_BIT);
+		editor.m_scene.m_static_mesh->update_material(render_pass, VK_SAMPLE_COUNT_4_BIT);
 
 		u32 image_idx = 0;
 		m_wsi.acquire_image(image_available_semaphore, &image_idx);

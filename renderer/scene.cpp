@@ -4,7 +4,6 @@ void skybox::build(vulkan::context &context, const vulkan::render_pass &render_p
 {
 	/* Load image to get dimensions. */
 	m_asset_image.load("bin/assets/images/skybox/right.jpg");
-
 	m_texture.build(context, {
 	                             .m_format = VK_FORMAT_R8G8B8A8_SRGB,
 	                             .m_width = (u32)m_asset_image.m_width,
@@ -12,6 +11,8 @@ void skybox::build(vulkan::context &context, const vulkan::render_pass &render_p
 	                             .m_usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 	                             .m_layers = 6,
 	                         });
+
+	/* (TODO, thoave01): Add `fill` etc. to texture as well. */
 	m_asset_image.load("bin/assets/images/skybox/right.jpg");
 	m_texture.m_image.fill_layer(context, m_asset_image.m_data.data(), m_asset_image.m_data.size(), 0);
 	m_asset_image.load("bin/assets/images/skybox/left.jpg");
@@ -40,11 +41,10 @@ void skybox::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &unifor
 	vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
 }
 
-void skybox::update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
-                             VkSampleCountFlagBits sample_count)
+void skybox::update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count)
 {
 	m_pipeline.set_sample_count(sample_count);
-	m_pipeline.rebuild(context.m_device, render_pass);
+	m_pipeline.update(render_pass);
 }
 
 void static_mesh::build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model)
@@ -97,11 +97,10 @@ void static_mesh::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &u
 	                 /* firstInstance = */ 0);
 }
 
-void static_mesh::update_material(vulkan::context &context, const vulkan::render_pass &render_pass,
-                                  VkSampleCountFlagBits sample_count)
+void static_mesh::update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count)
 {
 	m_pipeline.set_sample_count(sample_count);
-	m_pipeline.rebuild(context.m_device, render_pass);
+	m_pipeline.update(render_pass);
 }
 
 void node::add_child(const ref<object> &child)
