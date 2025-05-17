@@ -147,28 +147,28 @@ void context::backend_test()
 	uniform_buffer.fill(&uniforms, sizeof(uniforms));
 
 	/* Color texture. */
-	texture color_texture = {};
-	color_texture.build(*this,
-	                    { .m_format = editor.m_settings.color_format,
-	                      .m_width = m_wsi.m_swapchain.m_extent.width,
-	                      .m_height = m_wsi.m_swapchain.m_extent.height,
-	                      .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-	                      .m_sample_count = VK_SAMPLE_COUNT_4_BIT });
+	ref<texture> color_texture = make_ref<texture>();
+	color_texture->build(*this,
+	                     { .m_format = editor.m_settings.color_format,
+	                       .m_width = m_wsi.m_swapchain.m_extent.width,
+	                       .m_height = m_wsi.m_swapchain.m_extent.height,
+	                       .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+	                       .m_sample_count = editor.m_settings.sample_count });
 
 	/* Depth texture. */
-	texture depth_texture = {};
-	depth_texture.build(*this, { .m_format = VK_FORMAT_D32_SFLOAT,
-	                             .m_width = m_wsi.m_swapchain.m_extent.width,
-	                             .m_height = m_wsi.m_swapchain.m_extent.height,
-	                             .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-	                             .m_sample_count = VK_SAMPLE_COUNT_4_BIT });
+	ref<texture> depth_texture = make_ref<texture>();
+	depth_texture->build(*this, { .m_format = VK_FORMAT_D32_SFLOAT,
+	                              .m_width = m_wsi.m_swapchain.m_extent.width,
+	                              .m_height = m_wsi.m_swapchain.m_extent.height,
+	                              .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	                              .m_sample_count = editor.m_settings.sample_count });
 
 	/* Resolve texture. */
-	texture resolve_texture = {};
-	resolve_texture.build(*this, { .m_format = editor.m_settings.color_format,
-	                               .m_width = m_wsi.m_swapchain.m_extent.width,
-	                               .m_height = m_wsi.m_swapchain.m_extent.height,
-	                               .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
+	ref<texture> resolve_texture = make_ref<texture>();
+	resolve_texture->build(*this, { .m_format = editor.m_settings.color_format,
+	                                .m_width = m_wsi.m_swapchain.m_extent.width,
+	                                .m_height = m_wsi.m_swapchain.m_extent.height,
+	                                .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
 
 	semaphore image_available_semaphore = {};
 	image_available_semaphore.build(m_device);
@@ -179,11 +179,15 @@ void context::backend_test()
 	command_buffer.build(m_device, m_command_pool);
 
 	/* Settings. */
-	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA", "8xMSAA" };
+	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
 	int sample_count_selection = 0;
 
 	while (m_window.step())
 	{
+		render_pass render_pass = {};
+		render_pass.set_dynamic_rendering(true);
+		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
+
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -202,10 +206,26 @@ void context::backend_test()
 				case 1:
 					editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 					break;
-				case 2:
-					editor.m_settings.sample_count = VK_SAMPLE_COUNT_8_BIT;
-					break;
 				}
+
+				editor.m_scene.m_skybox->update_material(render_pass, editor.m_settings.sample_count);
+				editor.m_scene.m_static_mesh->update_material(render_pass, editor.m_settings.sample_count);
+
+				color_texture = make_ref<texture>();
+				color_texture->build(
+				    *this, { .m_format = editor.m_settings.color_format,
+				             .m_width = m_wsi.m_swapchain.m_extent.width,
+				             .m_height = m_wsi.m_swapchain.m_extent.height,
+				             .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+				             .m_sample_count = editor.m_settings.sample_count });
+
+				/* Depth texture. */
+				depth_texture = make_ref<texture>();
+				depth_texture->build(*this, { .m_format = VK_FORMAT_D32_SFLOAT,
+				                              .m_width = m_wsi.m_swapchain.m_extent.width,
+				                              .m_height = m_wsi.m_swapchain.m_extent.height,
+				                              .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+				                              .m_sample_count = editor.m_settings.sample_count });
 			}
 		}
 		ImGui::End();
@@ -216,17 +236,9 @@ void context::backend_test()
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 		glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		uniforms.model = time_rotation * editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
+		uniforms.model = editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
 		uniforms.enable_mipmapping = editor.m_settings.enable_mipmapping;
 		uniform_buffer.fill(&uniforms, sizeof(uniforms));
-
-		render_pass render_pass = {};
-		render_pass.set_dynamic_rendering(true);
-		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
-
-		/* (TODO, thoave01): Set pipeline sample count directly the first time we build it. */
-		editor.m_scene.m_skybox->update_material(render_pass, VK_SAMPLE_COUNT_4_BIT);
-		editor.m_scene.m_static_mesh->update_material(render_pass, VK_SAMPLE_COUNT_4_BIT);
 
 		u32 image_idx = 0;
 		m_wsi.acquire_image(image_available_semaphore, &image_idx);
@@ -234,83 +246,156 @@ void context::backend_test()
 		m_command_pool.reset();
 		command_buffer.begin();
 		{
-			command_buffer.transition_image_layout(color_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+			command_buffer.transition_image_layout(color_texture->m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
-			command_buffer.transition_image_layout(resolve_texture.m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+			command_buffer.transition_image_layout(resolve_texture->m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
 
-			/* Create render pass. */
-			VkClearValue clear_color = {};
-			clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-			const VkRenderingAttachmentInfo color_attachment = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,           //
-				.pNext = nullptr,                                               //
-				.imageView = color_texture.m_image_view.m_handle,               //
-				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        //
-				.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT,                     //
-				.resolveImageView = resolve_texture.m_image_view.m_handle,      //
-				.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                          //
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                        //
-				.clearValue = clear_color,                                      //
-			};
-			VkClearValue clear_depth = {};
-			clear_depth.depthStencil = { 1.0f, 0 };
-			const VkRenderingAttachmentInfo depth_attachment = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
-				.pNext = nullptr,                                        //
-				.imageView = depth_texture.m_image_view.m_handle,        //
-				.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
-				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
-				.resolveImageView = VK_NULL_HANDLE,                      //
-				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
-				.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
-				.clearValue = clear_depth,                               //
-			};
-			const VkRenderingInfo rendering_info = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
-				.pNext = nullptr,                          //
-				.flags = 0,                                //
-				.renderArea = { { 0, 0 },
-				                { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height } }, //
-				.layerCount = 1,                                                                                   //
-				.viewMask = 0,                                                                                     //
-				.colorAttachmentCount = 1,                                                                         //
-				.pColorAttachments = &color_attachment,                                                            //
-				.pDepthAttachment = &depth_attachment,                                                             //
-				.pStencilAttachment = nullptr,                                                                     //
-			};
-
-			/* Render. */
-			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
+			if (editor.m_settings.sample_count != VK_SAMPLE_COUNT_1_BIT)
 			{
-				VkViewport viewport = {};
-				viewport.x = 0.0f;
-				/* (TODO, thoave01): Not WSI, but color image. */
-				viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
-				viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
-				viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
-				viewport.minDepth = 0.0f;
-				viewport.maxDepth = 1.0f;
-				vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
-				VkRect2D scissor = {};
-				scissor.offset = { 0, 0 };
-				scissor.extent = m_wsi.m_swapchain.m_extent;
-				vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
+				VkClearValue clear_color = {};
+				clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+				const VkRenderingAttachmentInfo color_attachment = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,           //
+					.pNext = nullptr,                                               //
+					.imageView = color_texture->m_image_view.m_handle,              //
+					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        //
+					.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT,                     //
+					.resolveImageView = resolve_texture->m_image_view.m_handle,     //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                          //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,                    //
+					.clearValue = clear_color,                                      //
+				};
+				VkClearValue clear_depth = {};
+				clear_depth.depthStencil = { 1.0f, 0 };
+				const VkRenderingAttachmentInfo depth_attachment = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+					.pNext = nullptr,                                        //
+					.imageView = depth_texture->m_image_view.m_handle,       //
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+					.resolveImageView = VK_NULL_HANDLE,                      //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
+					.clearValue = clear_depth,                               //
+				};
+				const VkRenderingInfo rendering_info = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
+					.pNext = nullptr,                          //
+					.flags = 0,                                //
+					.renderArea = { { 0, 0 },
+					                { color_texture->m_image.m_info.m_width,
+					                  color_texture->m_image.m_info.m_height } }, //
+					.layerCount = 1,                                              //
+					.viewMask = 0,                                                //
+					.colorAttachmentCount = 1,                                    //
+					.pColorAttachments = &color_attachment,                       //
+					.pDepthAttachment = &depth_attachment,                        //
+					.pStencilAttachment = nullptr,                                //
+				};
 
-				editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
-				if (editor.m_settings.enable_skybox)
+				/* Render. */
+				vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 				{
-					editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
+					VkViewport viewport = {};
+					viewport.x = 0.0f;
+					/* (TODO, thoave01): Not WSI, but color image. */
+					viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
+					viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
+					viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
+					viewport.minDepth = 0.0f;
+					viewport.maxDepth = 1.0f;
+					vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
+					VkRect2D scissor = {};
+					scissor.offset = { 0, 0 };
+					scissor.extent = m_wsi.m_swapchain.m_extent;
+					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
+
+					editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
+					if (editor.m_settings.enable_skybox)
+					{
+						editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
+					}
 				}
+				vkCmdEndRendering(command_buffer.m_handle);
 			}
-			vkCmdEndRendering(command_buffer.m_handle);
+			else
+			{
+				VkClearValue clear_color = {};
+				clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+				const VkRenderingAttachmentInfo color_attachment = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+					.pNext = nullptr,                                        //
+					.imageView = resolve_texture->m_image_view.m_handle,     //
+					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+					.resolveImageView = VK_NULL_HANDLE,                      //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                 //
+					.clearValue = clear_color,                               //
+				};
+				VkClearValue clear_depth = {};
+				clear_depth.depthStencil = { 1.0f, 0 };
+				const VkRenderingAttachmentInfo depth_attachment = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
+					.pNext = nullptr,                                        //
+					.imageView = depth_texture->m_image_view.m_handle,       //
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
+					.resolveImageView = VK_NULL_HANDLE,                      //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
+					.clearValue = clear_depth,                               //
+				};
+				const VkRenderingInfo rendering_info = {
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
+					.pNext = nullptr,                          //
+					.flags = 0,                                //
+					.renderArea = { { 0, 0 },
+					                { color_texture->m_image.m_info.m_width,
+					                  color_texture->m_image.m_info.m_height } }, //
+					.layerCount = 1,                                              //
+					.viewMask = 0,                                                //
+					.colorAttachmentCount = 1,                                    //
+					.pColorAttachments = &color_attachment,                       //
+					.pDepthAttachment = &depth_attachment,                        //
+					.pStencilAttachment = nullptr,                                //
+				};
+
+				/* Render. */
+				vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
+				{
+					VkViewport viewport = {};
+					viewport.x = 0.0f;
+					/* (TODO, thoave01): Not WSI, but color image. */
+					viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
+					viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
+					viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
+					viewport.minDepth = 0.0f;
+					viewport.maxDepth = 1.0f;
+					vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
+					VkRect2D scissor = {};
+					scissor.offset = { 0, 0 };
+					scissor.extent = m_wsi.m_swapchain.m_extent;
+					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
+
+					editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
+					if (editor.m_settings.enable_skybox)
+					{
+						editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
+					}
+				}
+				vkCmdEndRendering(command_buffer.m_handle);
+			}
 
 			command_buffer.transition_image_layout(
-			    resolve_texture.m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			    resolve_texture->m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
@@ -318,7 +403,7 @@ void context::backend_test()
 			const VkRenderingAttachmentInfo resolve_attachment = {
 				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
 				.pNext = nullptr,                                        //
-				.imageView = resolve_texture.m_image_view.m_handle,      //
+				.imageView = resolve_texture->m_image_view.m_handle,     //
 				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
 				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
 				.resolveImageView = VK_NULL_HANDLE,                      //
@@ -332,13 +417,13 @@ void context::backend_test()
 				.pNext = nullptr,                          //
 				.flags = 0,                                //
 				.renderArea = { { 0, 0 },
-				                { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height } }, //
-				.layerCount = 1,                                                                                   //
-				.viewMask = 0,                                                                                     //
-				.colorAttachmentCount = 1,                                                                         //
-				.pColorAttachments = &resolve_attachment,                                                          //
-				.pDepthAttachment = VK_NULL_HANDLE,                                                                //
-				.pStencilAttachment = nullptr,                                                                     //
+				                { color_texture->m_image.m_info.m_width, color_texture->m_image.m_info.m_height } }, //
+				.layerCount = 1,                                                                                     //
+				.viewMask = 0,                                                                                       //
+				.colorAttachmentCount = 1,                                                                           //
+				.pColorAttachments = &resolve_attachment,                                                            //
+				.pDepthAttachment = VK_NULL_HANDLE,                                                                  //
+				.pStencilAttachment = nullptr,                                                                       //
 			};
 			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info_2);
 			{
@@ -346,7 +431,7 @@ void context::backend_test()
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 
-			command_buffer.transition_image_layout(resolve_texture.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			command_buffer.transition_image_layout(resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			                                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
@@ -365,8 +450,8 @@ void context::backend_test()
 			copy_info.dstSubresource.baseArrayLayer = 0;
 			copy_info.dstSubresource.layerCount = 1;
 			copy_info.dstOffset = { 0, 0, 0 };
-			copy_info.extent = { color_texture.m_image.m_info.m_width, color_texture.m_image.m_info.m_height, 1 };
-			vkCmdCopyImage(command_buffer.m_handle, resolve_texture.m_image.m_handle,
+			copy_info.extent = { color_texture->m_image.m_info.m_width, color_texture->m_image.m_info.m_height, 1 };
+			vkCmdCopyImage(command_buffer.m_handle, resolve_texture->m_image.m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_wsi.m_swapchain.m_images[image_idx]->m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
 
