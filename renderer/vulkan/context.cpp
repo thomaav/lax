@@ -33,9 +33,6 @@
 #include <utils/type.h>
 #include <utils/util.h>
 
-constexpr u32 WINDOW_WIDTH = 1280;
-constexpr u32 WINDOW_HEIGHT = 900;
-
 namespace vulkan
 {
 

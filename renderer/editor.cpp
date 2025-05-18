@@ -1,10 +1,6 @@
 #include <renderer/editor.h>
 #include <renderer/vulkan/render_pass.h>
 
-/* (TODO, thoave01): Move width and stuff into editor settings. */
-constexpr u32 WINDOW_WIDTH = 1280;
-constexpr u32 WINDOW_HEIGHT = 900;
-
 void editor::build_default(vulkan::context &context)
 {
 	/* (TODO, thoave01): Settings, this is a throwaway render pass anyway. */
@@ -18,10 +14,8 @@ void editor::build_default(vulkan::context &context)
 void editor::draw(vulkan::command_buffer &command_buffer)
 {
 	/* (TODO, thoave01): Camera object. */
-	m_scene.m_uniforms.view =
-	    glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	m_scene.m_uniforms.projection =
-	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
+	m_scene.m_uniforms.view = m_scene.m_camera.view;
+	m_scene.m_uniforms.projection = m_scene.m_camera.projection;
 	m_scene.m_uniforms.enable_mipmapping = m_settings.enable_mipmapping;
 	m_scene.m_uniform_buffer.fill(&m_scene.m_uniforms, sizeof(m_scene.m_uniforms));
 
