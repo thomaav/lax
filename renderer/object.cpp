@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <renderer/object.h>
 #include <renderer/vulkan/context.h>
 
@@ -120,4 +122,53 @@ void static_mesh::update_material(const vulkan::render_pass &render_pass, VkSamp
 
 void camera::draw(vulkan::command_buffer &command_buffer)
 {
+}
+
+void camera::process_input(const camera_input &input)
+{
+	/* (TODO, thoave01): Replace with actual frame timings once implemented. */
+	/* (TODO, thoave01): Or even better: decouple it from rendering entirely. */
+	static float last_frame = glfwGetTime();
+	float current_frame = glfwGetTime();
+	float delta_frame = current_frame - last_frame;
+	float camera_speed = m_speed * delta_frame;
+	last_frame = current_frame;
+
+	/* (TODO, thoave01): Normalize by window width. */
+	static double last_mouse_x = input.mouse_x;
+	static double last_mouse_y = input.mouse_y;
+	if (input.right_mouse_pressed)
+	{
+		m_yaw += (input.mouse_x - last_mouse_x) * m_sensitivity * delta_frame;
+		m_pitch += std::clamp((last_mouse_y - input.mouse_y) * m_sensitivity * delta_frame, -89.0, 89.0);
+		m_forward.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		m_forward.y = sin(glm::radians(m_pitch));
+		m_forward.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+	}
+	if (input.middle_mouse_pressed)
+	{
+		m_position += m_up * (float)((last_mouse_y - input.mouse_y) * m_speed * delta_frame);
+	}
+	last_mouse_x = input.mouse_x;
+	last_mouse_y = input.mouse_y;
+
+	if (input.w_pressed)
+	{
+		m_position += m_forward * camera_speed;
+	}
+	if (input.a_pressed)
+	{
+		m_position -= glm::normalize(glm::cross(m_forward, m_up)) * camera_speed;
+	}
+	if (input.s_pressed)
+	{
+		m_position -= m_forward * camera_speed;
+	}
+	if (input.d_pressed)
+	{
+		m_position += glm::normalize(glm::cross(m_forward, m_up)) * camera_speed;
+	}
+
+	m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
+	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
 }

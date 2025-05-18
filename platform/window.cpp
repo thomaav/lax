@@ -8,6 +8,7 @@ static void default_key_callback(GLFWwindow *window, int key, int scancode, int 
 	UNUSED(scancode);
 	UNUSED(mods);
 
+	/* Exiting. */
 	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -66,4 +67,19 @@ std::vector<const char *> glfw_window::get_required_surface_extensions()
 	u32 extension_count = 0;
 	const char **extensions = glfwGetRequiredInstanceExtensions(&extension_count);
 	return { extensions, extensions + extension_count };
+}
+
+bool glfw_window::is_key_pressed(int key)
+{
+	return glfwGetKey(m_window, key) == GLFW_PRESS;
+}
+
+bool glfw_window::is_mouse_button_pressed(int button)
+{
+	return glfwGetMouseButton(m_window, button) == GLFW_PRESS;
+}
+
+void glfw_window::get_mouse_position(double &x, double &y)
+{
+	glfwGetCursorPos(m_window, &x, &y);
 }

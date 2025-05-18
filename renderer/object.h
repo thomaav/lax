@@ -77,6 +77,18 @@ public:
 private:
 };
 
+struct camera_input
+{
+	bool w_pressed = false;
+	bool a_pressed = false;
+	bool s_pressed = false;
+	bool d_pressed = false;
+	double mouse_x = 0.0;
+	double mouse_y = 0.0;
+	bool right_mouse_pressed = false;
+	bool middle_mouse_pressed = false;
+};
+
 class camera : public object
 {
 public:
@@ -87,10 +99,22 @@ public:
 	camera operator=(const camera &) = delete;
 
 	void draw(vulkan::command_buffer &command_buffer) override;
+	void process_input(const camera_input &input);
 
-	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 projection =
-	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
+	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 5.0f);
+	float m_yaw = -90.0f;
+	float m_pitch = 0.0f;
+	glm::vec3 m_forward = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 m_up = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::mat4 m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
+
+	float m_fov = glm::radians(45.0f);
+	float m_aspect = float(WINDOW_WIDTH) / (float)WINDOW_HEIGHT;
+	float m_near = 0.1f;
+	float m_far = 256.0f;
+	glm::mat4 m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
 
 private:
+	const float m_speed = 2.0f;
+	const float m_sensitivity = 6.0f;
 };

@@ -162,6 +162,17 @@ void context::backend_test()
 
 	while (m_window.step())
 	{
+		/* (TODO, thoave01): This doesn't belong in the context. But for now it has the platform. */
+		camera_input camera_input = {};
+		camera_input.w_pressed = m_window.is_key_pressed(GLFW_KEY_W);
+		camera_input.a_pressed = m_window.is_key_pressed(GLFW_KEY_A);
+		camera_input.s_pressed = m_window.is_key_pressed(GLFW_KEY_S);
+		camera_input.d_pressed = m_window.is_key_pressed(GLFW_KEY_D);
+		m_window.get_mouse_position(camera_input.mouse_x, camera_input.mouse_y);
+		camera_input.right_mouse_pressed = m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_RIGHT);
+		camera_input.middle_mouse_pressed = m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_MIDDLE);
+		editor.m_scene.m_camera.process_input(camera_input);
+
 		render_pass render_pass = {};
 		render_pass.set_dynamic_rendering(true);
 		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);

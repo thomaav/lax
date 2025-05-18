@@ -14,8 +14,8 @@ void editor::build_default(vulkan::context &context)
 void editor::draw(vulkan::command_buffer &command_buffer)
 {
 	/* (TODO, thoave01): Camera object. */
-	m_scene.m_uniforms.view = m_scene.m_camera.view;
-	m_scene.m_uniforms.projection = m_scene.m_camera.projection;
+	m_scene.m_uniforms.view = m_scene.m_camera.m_view;
+	m_scene.m_uniforms.projection = m_scene.m_camera.m_projection;
 	m_scene.m_uniforms.enable_mipmapping = m_settings.enable_mipmapping;
 	m_scene.m_uniform_buffer.fill(&m_scene.m_uniforms, sizeof(m_scene.m_uniforms));
 
