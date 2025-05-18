@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include <renderer/scene.h>
 
 void skybox::build(vulkan::context &context, const vulkan::render_pass &render_pass)
@@ -31,12 +33,19 @@ void skybox::build(vulkan::context &context, const vulkan::render_pass &render_p
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/skybox.vert.spv");
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/skybox.frag.spv");
 	m_pipeline.build(context.m_device, render_pass);
+
+	/* Uniforms. */
+	m_uniforms.model = glm::mat4(1.0f);
 }
 
-void skybox::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const
+void skybox::draw(vulkan::command_buffer &command_buffer)
 {
+	/* (TODO, thoave01): Fix stage flags. */
+	vkCmdPushConstants(command_buffer.m_handle, m_pipeline.m_pipeline_layout.m_handle,
+	                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, /* offset = */ 0,
+	                   m_pipeline.m_pipeline_layout.m_push_constants_size, &m_uniforms);
+
 	command_buffer.bind_pipeline(m_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
-	command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	command_buffer.set_texture(1, m_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
 }
@@ -84,13 +93,22 @@ void static_mesh::build(vulkan::context &context, const vulkan::render_pass &ren
 	m_pipeline.build(context.m_device, render_pass);
 }
 
-void static_mesh::draw(vulkan::command_buffer &command_buffer, vulkan::buffer &uniform_buffer) const
+void static_mesh::draw(vulkan::command_buffer &command_buffer)
 {
+	/* (TODO, thoave01): Fix stage flags. */
+	static auto start_time = std::chrono::high_resolution_clock::now();
+	auto current_time = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+	glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_uniforms.model = time_rotation * m_model->m_meshes[0].m_transform;
+	vkCmdPushConstants(command_buffer.m_handle, m_pipeline.m_pipeline_layout.m_handle,
+	                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, /* offset = */ 0,
+	                   m_pipeline.m_pipeline_layout.m_push_constants_size, &m_uniforms);
+
 	command_buffer.bind_pipeline(m_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	constexpr VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &m_vertex_buffer.m_handle, &offset);
 	vkCmdBindIndexBuffer(command_buffer.m_handle, m_index_buffer.m_handle, 0, VK_INDEX_TYPE_UINT32);
-	command_buffer.set_uniform_buffer(0, uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	command_buffer.set_texture(1, m_diffuse_texture, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	vkCmdDrawIndexed(command_buffer.m_handle, m_index_count,
 	                 /* instanceCount = */ 1, /* firstIndex = */ 0, /* vertexOffset = */ 0,
@@ -124,4 +142,7 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 
 	m_skybox = skybox_;
 	m_static_mesh = static_mesh_;
+
+	m_uniform_buffer =
+	    context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(m_uniforms));
 }

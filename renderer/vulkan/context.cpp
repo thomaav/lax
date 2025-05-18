@@ -33,15 +33,6 @@
 #include <utils/type.h>
 #include <utils/util.h>
 
-struct uniforms
-{
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 projection;
-	u32 enable_mipmapping;
-};
-static_assert(sizeof(uniforms) == 4 * 4 * 4 * 3 + sizeof(u32), "Unexpected struct uniform size");
-
 constexpr u32 WINDOW_WIDTH = 1280;
 constexpr u32 WINDOW_HEIGHT = 900;
 
@@ -136,16 +127,6 @@ void context::backend_test()
 	init_info.CheckVkResultFn = nullptr;
 	ImGui_ImplVulkan_Init(&init_info);
 
-	/* (TODO, thoave01): So TODO is to fix uniforms for pipelines. */
-	/* Uniform buffer. */
-	uniforms uniforms = {};
-	uniforms.model = editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
-	uniforms.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	uniforms.projection =
-	    glm::perspectiveRH_ZO(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 256.0f);
-	buffer uniform_buffer = m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(uniforms));
-	uniform_buffer.fill(&uniforms, sizeof(uniforms));
-
 	/* Color texture. */
 	ref<texture> color_texture = make_ref<texture>();
 	color_texture->build(*this,
@@ -231,15 +212,6 @@ void context::backend_test()
 		ImGui::End();
 		ImGui::Render();
 
-		/* Update uniforms. */
-		static auto start_time = std::chrono::high_resolution_clock::now();
-		auto current_time = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-		glm::mat4 time_rotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		uniforms.model = editor.m_scene.m_static_mesh->m_model->m_meshes[0].m_transform;
-		uniforms.enable_mipmapping = editor.m_settings.enable_mipmapping;
-		uniform_buffer.fill(&uniforms, sizeof(uniforms));
-
 		u32 image_idx = 0;
 		m_wsi.acquire_image(image_available_semaphore, &image_idx);
 
@@ -315,11 +287,7 @@ void context::backend_test()
 					scissor.extent = m_wsi.m_swapchain.m_extent;
 					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
 
-					editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
-					if (editor.m_settings.enable_skybox)
-					{
-						editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
-					}
+					editor.draw(command_buffer);
 				}
 				vkCmdEndRendering(command_buffer.m_handle);
 			}
@@ -385,11 +353,7 @@ void context::backend_test()
 					scissor.extent = m_wsi.m_swapchain.m_extent;
 					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
 
-					editor.m_scene.m_root.m_children[0].m_object->draw(command_buffer, uniform_buffer);
-					if (editor.m_settings.enable_skybox)
-					{
-						editor.m_scene.m_root.m_children[1].m_object->draw(command_buffer, uniform_buffer);
-					}
+					editor.draw(command_buffer);
 				}
 				vkCmdEndRendering(command_buffer.m_handle);
 			}

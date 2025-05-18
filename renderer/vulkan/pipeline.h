@@ -26,16 +26,19 @@ public:
 	pipeline_layout(const pipeline_layout &) = delete;
 	pipeline_layout operator=(const pipeline_layout &) = delete;
 
-	void add_resource_bindings(shader_resource_binding *bindings, u32 binding_count);
+	void add_shader(const shader_module &shader);
 	void build(device &device);
 
 	VkPipelineLayout m_handle = {};
+	u32 m_push_constants_size = 0;
 
 private:
 	VkDevice m_device_handle = {};
 	std::vector<shader_resource_binding> m_resource_bindings = {};
 	descriptor_set_layout m_dset_layout = {};
 };
+
+/* (TODO, thoave01): public no_copy_no_move inheritance. */
 
 class pipeline
 {
@@ -49,6 +52,7 @@ public:
 	void add_shader(device &device, VkShaderStageFlagBits stage, const char *path);
 	void add_shader(const ref<shader_module> &shader);
 	void set_sample_count(VkSampleCountFlagBits sample_count);
+
 	void build(device &device, const render_pass &render_pass);
 	void update(const render_pass &render_pass);
 

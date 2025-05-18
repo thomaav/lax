@@ -27,6 +27,7 @@ public:
 	editor operator=(const editor &) = delete;
 
 	void build_default(vulkan::context &context);
+	void draw(vulkan::command_buffer &command_buffer);
 
 	settings m_settings = {};
 	scene m_scene = {};

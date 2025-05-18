@@ -36,6 +36,7 @@ public:
 	VkVertexInputBindingDescription m_vbd = {};
 	std::vector<VkVertexInputAttributeDescription> m_vads = {};
 	std::vector<shader_resource_binding> m_resource_bindings = {};
+	u32 m_push_constants_size = 0;
 
 private:
 	void reflect(std::vector<u32> &binary);

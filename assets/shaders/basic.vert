@@ -7,16 +7,20 @@ layout(location = 3) in vec4 color;
 
 layout(location = 0) out vec2 uv_out;
 
-layout(std140, set = 0, binding = 0) uniform uniforms_block
+layout(std140, set = 0, binding = 0) uniform ubo_block
 {
-	mat4 model;
 	mat4 view;
 	mat4 projection;
-	uint use_mipmap;
-} uniforms;
+	uint enable_mipmapping;
+} scene_uniforms;
+
+layout(push_constant) uniform push_constants_block
+{
+	mat4 model;
+} object_uniforms;
 
 void main() {
 	uv_out = uv_in;
     gl_Position =
-		uniforms.projection * uniforms.view * uniforms.model * vec4(position, 1.0f);
+		scene_uniforms.projection * scene_uniforms.view * object_uniforms.model * vec4(position, 1.0f);
 }

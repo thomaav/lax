@@ -129,7 +129,8 @@ void shader_module::reflect(std::vector<u32> &binary)
 	/* Push constants. */
 	if (!resources.push_constant_buffers.empty())
 	{
-		terminate("No support for push constants");
+		m_push_constants_size =
+		    compiler.get_declared_struct_size(compiler.get_type(resources.push_constant_buffers.front().base_type_id));
 	}
 
 	/* Specialization constants. */

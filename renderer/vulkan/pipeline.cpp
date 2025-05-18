@@ -13,18 +13,23 @@ pipeline_layout::~pipeline_layout()
 	}
 }
 
-void pipeline_layout::add_resource_bindings(shader_resource_binding *bindings, u32 binding_count)
+void pipeline_layout::add_shader(const shader_module &shader)
 {
-	for (u32 i = 0; i < binding_count; ++i)
+	/* Resource layout. */
+	for (const shader_resource_binding &shader_binding : shader.m_resource_bindings)
 	{
 		if (std::any_of(m_resource_bindings.begin(), m_resource_bindings.end(),
-		                [bindings, i](const shader_resource_binding &b) { return b.binding == bindings[i].binding; }))
+		                [shader_binding](const shader_resource_binding &b)
+		                { return b.binding == shader_binding.binding; }))
 		{
 			/* Don't allow duplicate bindings. */
 			continue;
 		}
-		m_resource_bindings.push_back(bindings[i]);
+		m_resource_bindings.push_back(shader_binding);
 	}
+
+	/* Push constants. */
+	m_push_constants_size = std::max(m_push_constants_size, shader.m_push_constants_size);
 }
 
 void pipeline_layout::build(device &device)
@@ -39,12 +44,17 @@ void pipeline_layout::build(device &device)
 	}
 	m_dset_layout.build(device);
 
+	VkPushConstantRange push_constants = {};
+	/* (TODO, thoave01): Fix stage flags. */
+	push_constants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	push_constants.offset = 0;
+	push_constants.size = m_push_constants_size;
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount = 1;
 	pipeline_layout_info.pSetLayouts = &m_dset_layout.m_handle;
-	pipeline_layout_info.pushConstantRangeCount = 0;
-	pipeline_layout_info.pPushConstantRanges = nullptr;
+	pipeline_layout_info.pushConstantRangeCount = 1;
+	pipeline_layout_info.pPushConstantRanges = &push_constants;
 
 	VULKAN_ASSERT_SUCCESS(vkCreatePipelineLayout(device.m_logical.m_handle, &pipeline_layout_info, nullptr, &m_handle));
 
@@ -65,7 +75,7 @@ void pipeline::add_shader(device &device, VkShaderStageFlagBits stage, const cha
 	ref<shader_module> sm = make_ref<shader_module>();
 	sm->build(device, stage, path);
 	m_shader_modules[stage] = sm;
-	m_pipeline_layout.add_resource_bindings(sm->m_resource_bindings.data(), sm->m_resource_bindings.size());
+	m_pipeline_layout.add_shader(*sm);
 	m_stage_create_infos.push_back(sm->get_pipeline_shader_stage_create_info());
 }
 
@@ -74,7 +84,7 @@ void pipeline::add_shader(const ref<shader_module> &shader)
 	terminate_if(shader->m_handle == VK_NULL_HANDLE, "Shader has not been built");
 	terminate_if(m_shader_modules.contains(shader->m_stage), "Pipeline already contains stage %u", shader->m_stage);
 	m_shader_modules[shader->m_stage] = shader;
-	m_pipeline_layout.add_resource_bindings(shader->m_resource_bindings.data(), shader->m_resource_bindings.size());
+	m_pipeline_layout.add_shader(*shader);
 	m_stage_create_infos.push_back(shader->get_pipeline_shader_stage_create_info());
 }
 
