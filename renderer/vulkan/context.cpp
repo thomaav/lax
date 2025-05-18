@@ -86,7 +86,7 @@ void context::backend_test()
 	editor editor = {};
 	editor.m_settings.enable_mipmapping = true;
 	editor.m_settings.enable_skybox = true;
-	editor.m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
+	editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
 	editor.build_default(*this);
@@ -158,7 +158,14 @@ void context::backend_test()
 
 	/* Settings. */
 	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
-	int sample_count_selection = 0;
+	int sample_count_selection = 1;
+
+	/* (TODO, thoave01): This should be part of initializing the defaults. */
+	render_pass render_pass_ = {};
+	render_pass_.set_dynamic_rendering(true);
+	render_pass_.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
+	editor.m_scene.m_skybox->update_material(render_pass_, editor.m_settings.sample_count);
+	editor.m_scene.m_static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
 
 	while (m_window.step())
 	{
