@@ -37,13 +37,6 @@
 namespace vulkan
 {
 
-context::~context()
-{
-	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-}
-
 void context::add_instance_extension(const char *extension)
 {
 	m_instance.add_extension(extension);
@@ -92,39 +85,6 @@ void context::backend_test()
 	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
 	editor.build_default(*this);
-
-	/* Dear ImGui. */
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO();
-	UNUSED(io);
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplGlfw_InitForVulkan(m_window.m_window, true);
-	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = m_instance.m_handle;
-	init_info.PhysicalDevice = m_device.m_physical.m_handle;
-	init_info.Device = m_device.m_logical.m_handle;
-	init_info.QueueFamily = *m_device.m_physical.m_queue_family.m_all;
-	init_info.Queue = m_queue.m_handle;
-	init_info.PipelineCache = VK_NULL_HANDLE;
-	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
-	init_info.UseDynamicRendering = VK_TRUE;
-	init_info.PipelineRenderingCreateInfo = {}; /* (TODO) */
-	init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
-	init_info.PipelineRenderingCreateInfo.viewMask = 0;
-	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_wsi.m_swapchain.m_images[0]->m_info.m_format;
-	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
-	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-	init_info.MinImageCount = m_wsi.m_swapchain.m_images.size();
-	init_info.ImageCount = m_wsi.m_swapchain.m_images.size();
-	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-	init_info.Allocator = nullptr;
-	init_info.CheckVkResultFn = nullptr;
-	ImGui_ImplVulkan_Init(&init_info);
 
 	/* Color texture. */
 	ref<texture> color_texture = make_ref<texture>();
@@ -190,7 +150,8 @@ void context::backend_test()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Begin("Lax", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		/* Settings. */
+		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 		{
 			ImGui::Checkbox("Skybox", &editor.m_settings.enable_skybox);
 			ImGui::Checkbox("Mipmapping", &editor.m_settings.enable_mipmapping);
@@ -227,6 +188,22 @@ void context::backend_test()
 			}
 		}
 		ImGui::End();
+
+		/* Console. */
+		ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetIO().DisplaySize.y - 200));
+		ImGui::SetNextWindowSize(ImVec2(800, 200));
+		ImGui::Begin("Console", nullptr,
+		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		                 ImGuiWindowFlags_HorizontalScrollbar);
+		{
+			ImGui::TextUnformatted(editor.m_logger.m_buffer.begin(), editor.m_logger.m_buffer.end());
+			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+			{
+				ImGui::SetScrollHereY(1.0f);
+			}
+		}
+		ImGui::End();
+
 		ImGui::Render();
 
 		u32 image_idx = 0;

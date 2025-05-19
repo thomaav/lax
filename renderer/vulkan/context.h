@@ -23,7 +23,7 @@ class context
 {
 public:
 	context() = default;
-	~context();
+	~context() = default;
 
 	context(const context &) = delete;
 	context operator=(const context &) = delete;

@@ -58,8 +58,3 @@ void logger::error(const char *str, ...)
 		logger::m_logger->log(buffer);
 	}
 }
-
-void console_logger::log(const char *str)
-{
-	printf("%s\n", str);
-}

@@ -1,8 +1,63 @@
+#include <iomanip>
+#include <sstream>
+#include <string>
+
 #include <renderer/editor.h>
 #include <renderer/vulkan/render_pass.h>
 
+void console_logger::log(const char *str)
+{
+	auto t = time(nullptr);
+	auto tm = *localtime(&t);
+	std::ostringstream oss;
+	oss << std::put_time(&tm, "[%H:%M:%S]");
+	std::string console_str = oss.str() + std::string(str) + "\n";
+	m_buffer.append(console_str.c_str());
+}
+
+editor::~editor()
+{
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
+
 void editor::build_default(vulkan::context &context)
 {
+	/* Dear ImGui. */
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	UNUSED(io);
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForVulkan(context.m_window.m_window, true);
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = context.m_instance.m_handle;
+	init_info.PhysicalDevice = context.m_device.m_physical.m_handle;
+	init_info.Device = context.m_device.m_logical.m_handle;
+	init_info.QueueFamily = *context.m_device.m_physical.m_queue_family.m_all;
+	init_info.Queue = context.m_queue.m_handle;
+	init_info.PipelineCache = VK_NULL_HANDLE;
+	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
+	init_info.UseDynamicRendering = VK_TRUE;
+	init_info.PipelineRenderingCreateInfo = {}; /* (TODO) */
+	init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
+	init_info.PipelineRenderingCreateInfo.viewMask = 0;
+	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats =
+	    &context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
+	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+	init_info.MinImageCount = context.m_wsi.m_swapchain.m_images.size();
+	init_info.ImageCount = context.m_wsi.m_swapchain.m_images.size();
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.Allocator = nullptr;
+	init_info.CheckVkResultFn = nullptr;
+	ImGui_ImplVulkan_Init(&init_info);
+
 	logger::register_logger(&m_logger);
 
 	/* (TODO, thoave01): Settings, this is a throwaway render pass anyway. */

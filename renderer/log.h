@@ -21,16 +21,3 @@ public:
 private:
 	static loggerp *m_logger;
 };
-
-/* (TODO, thoave01): Belongs in the editor somehow. */
-class console_logger : public loggerp
-{
-public:
-	console_logger() = default;
-	~console_logger() = default;
-
-	console_logger(const console_logger &) = delete;
-	console_logger operator=(const console_logger &) = delete;
-
-	void log(const char *str) override;
-};

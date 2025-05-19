@@ -1,5 +1,15 @@
 #pragma once
 
+// clang-format off
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#include <third_party/volk/volk.h>
+#include <third_party/imgui/imgui.h>
+#include <third_party/imgui/imgui_impl_glfw.h>
+#include <third_party/imgui/imgui_impl_vulkan.h>
+#pragma clang diagnostic pop
+// clang-format on
+
 #include <renderer/log.h>
 #include <renderer/scene.h>
 
@@ -18,11 +28,25 @@ struct settings
 	/* - resolution, which needs swapchain recreation */
 };
 
+class console_logger : public loggerp
+{
+public:
+	console_logger() = default;
+	~console_logger() = default;
+
+	console_logger(const console_logger &) = delete;
+	console_logger operator=(const console_logger &) = delete;
+
+	void log(const char *str) override;
+
+	ImGuiTextBuffer m_buffer = {};
+};
+
 class editor
 {
 public:
 	editor() = default;
-	~editor() = default;
+	~editor();
 
 	editor(const editor &) = delete;
 	editor operator=(const editor &) = delete;
