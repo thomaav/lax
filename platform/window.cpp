@@ -25,17 +25,16 @@ glfw_window::~glfw_window()
 	glfwTerminate();
 }
 
-void glfw_window::init(u32 width, u32 height)
+void glfw_window::init()
 {
-	m_width = width;
-	m_height = height;
 
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	m_window = glfwCreateWindow(width, height, "window", nullptr, nullptr);
+	const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+	m_window = glfwCreateWindow(mode->width, mode->height, "window", glfwGetPrimaryMonitor(), nullptr);
 
 	glfwSetKeyCallback(m_window, default_key_callback);
 }

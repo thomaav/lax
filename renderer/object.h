@@ -11,10 +11,6 @@
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
 
-/* (TODO, thoave01): Move width and stuff into editor settings. */
-constexpr u32 WINDOW_WIDTH = 1280;
-constexpr u32 WINDOW_HEIGHT = 900;
-
 struct object_uniforms
 {
 	glm::mat4 model;
@@ -101,20 +97,20 @@ public:
 	void draw(vulkan::command_buffer &command_buffer) override;
 	void process_input(const camera_input &input);
 
-	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 5.0f);
+	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 4.0f);
 	float m_yaw = -90.0f;
 	float m_pitch = 0.0f;
 	glm::vec3 m_forward = glm::vec3(0.0f, 0.0f, -1.0f);
 	glm::vec3 m_up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::mat4 m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
 
-	float m_fov = glm::radians(45.0f);
-	float m_aspect = float(WINDOW_WIDTH) / (float)WINDOW_HEIGHT;
+	float m_fov = glm::radians(75.0f);
+	float m_aspect = 16.0f / 9.0f;
 	float m_near = 0.1f;
 	float m_far = 256.0f;
 	glm::mat4 m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
 
 private:
-	const float m_speed = 2.0f;
+	const float m_speed = 1.0f;
 	const float m_sensitivity = 6.0f;
 };

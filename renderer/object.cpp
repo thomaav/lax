@@ -147,11 +147,14 @@ void camera::process_input(const camera_input &input)
 	}
 	if (input.middle_mouse_pressed)
 	{
-		m_position += m_up * (float)((last_mouse_y - input.mouse_y) * m_speed * delta_frame);
+		m_position += m_up * (float)((last_mouse_y - input.mouse_y) * m_speed / 5.0f * delta_frame);
+		m_position += glm::normalize(glm::cross(m_forward, m_up)) *
+		              (float)((input.mouse_x - last_mouse_x) * m_speed / 5.0f * delta_frame);
 	}
 	last_mouse_x = input.mouse_x;
 	last_mouse_y = input.mouse_y;
 
+	/* (TODO, thoave01): Scroll like A/S press. */
 	if (input.w_pressed)
 	{
 		m_position += m_forward * camera_speed;

@@ -26,7 +26,7 @@ public:
 	glfw_window operator=(const glfw_window &) = delete;
 
 	/* Window stuff. */
-	void init(u32 width, u32 height);
+	void init();
 	bool step();
 	VkResult create_vulkan_surface(VkInstance instance, VkSurfaceKHR &surface);
 	void get_framebuffer_size(int &width, int &height);
@@ -42,6 +42,4 @@ public:
 	GLFWwindow *m_window = nullptr;
 
 private:
-	u32 m_width = 0;
-	u32 m_height = 0;
 };

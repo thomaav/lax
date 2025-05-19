@@ -24,6 +24,11 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 	m_skybox = skybox_;
 	m_static_mesh = static_mesh_;
 
+	int width = 0;
+	int height = 0;
+	context.m_window.get_framebuffer_size(width, height);
+	m_camera.m_aspect = (float)width / (float)height;
+
 	m_uniform_buffer =
 	    context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(m_uniforms));
 }

@@ -65,7 +65,7 @@ void context::build()
 	};
 
 	/* Instance initialization. */
-	m_window.init(WINDOW_WIDTH, WINDOW_HEIGHT);
+	m_window.init();
 	m_instance.build(m_window, profile_properties);
 	volkLoadInstance(m_instance.m_handle);
 	m_wsi.build_surface(m_window, m_instance);
@@ -85,7 +85,7 @@ void context::backend_test()
 {
 	editor editor = {};
 	editor.m_settings.enable_mipmapping = true;
-	editor.m_settings.enable_skybox = true;
+	editor.m_settings.enable_skybox = false;
 	editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
