@@ -96,11 +96,7 @@ void device::find_physical_device(instance &instance, VkSurfaceKHR surface, bool
 {
 	u32 physical_device_count = 0;
 	vkEnumeratePhysicalDevices(instance.m_handle, &physical_device_count, nullptr);
-
-	if (physical_device_count == 0)
-	{
-		terminate("No Vulkan physical device found");
-	}
+	assert_if(physical_device_count == 0, "No Vulkan physical device found");
 
 	std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
 	vkEnumeratePhysicalDevices(instance.m_handle, &physical_device_count, physical_devices.data());
@@ -143,7 +139,7 @@ void device::find_physical_device(instance &instance, VkSurfaceKHR surface, bool
 		}
 	}
 
-	terminate("No suitable physical device found");
+	assert_if(true, "No suitable physical device found");
 }
 
 void device::create_logical_device(instance &instance, const VpProfileProperties &vp_profile_properties)
@@ -151,10 +147,7 @@ void device::create_logical_device(instance &instance, const VpProfileProperties
 	VkBool32 profile_supported = true;
 	vpGetPhysicalDeviceProfileSupport(instance.m_handle, m_physical.m_handle, &vp_profile_properties,
 	                                  &profile_supported);
-	if (!profile_supported)
-	{
-		terminate("Requested Vulkan profile not supported, error at device creation");
-	}
+	assert_if(!profile_supported, "Requested Vulkan profile not supported, error at device creation");
 
 	u32 queue_index = find_queue_family_with_all_capabilities(m_physical.m_handle).value();
 	VkDeviceQueueCreateInfo queue_create_info = {};

@@ -37,7 +37,7 @@ static VkFormat spirv_type_to_vkformat(const spirv_cross ::SPIRType &type)
 		}
 	}
 
-	terminate("spirv_type_to_vkformat found unsupported spirv_cross::SPIRType");
+	assert_if(true, "spirv_type_to_vkformat found unsupported spirv_cross::SPIRType");
 	return VK_FORMAT_UNDEFINED;
 }
 
@@ -80,10 +80,8 @@ void shader_module::reflect(std::vector<u32> &binary)
 	/* Descriptor sets. */
 	for (const auto &image : resources.sampled_images)
 	{
-		if (compiler.get_decoration(image.id, spv::DecorationDescriptorSet) != 0)
-		{
-			terminate("Only single descriptor set at index 0 supported");
-		}
+		assert_if(compiler.get_decoration(image.id, spv::DecorationDescriptorSet) != 0,
+		          "Only single descriptor set at index 0 supported");
 
 		const u32 set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(image.id, spv::DecorationBinding);
@@ -92,29 +90,27 @@ void shader_module::reflect(std::vector<u32> &binary)
 	for (const auto &image : resources.subpass_inputs)
 	{
 		UNUSED(image);
-		terminate("No support for subpass input image descriptors");
+		assert_if(true, "No support for subpass input image descriptors");
 	}
 	for (const auto &image : resources.separate_images)
 	{
 		UNUSED(image);
-		terminate("No support for separate image descriptors");
+		assert_if(true, "No support for separate image descriptors");
 	}
 	for (const auto &sampler : resources.separate_samplers)
 	{
 		UNUSED(sampler);
-		terminate("No support for separate sampler descriptors");
+		assert_if(true, "No support for separate sampler descriptors");
 	}
 	for (const auto &image : resources.storage_images)
 	{
 		UNUSED(image);
-		terminate("No support for storage image descriptors");
+		assert_if(true, "No support for storage image descriptors");
 	}
 	for (const auto &buffer : resources.uniform_buffers)
 	{
-		if (compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet) != 0)
-		{
-			terminate("Only single descriptor set at index 0 supported");
-		}
+		assert_if(compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet) != 0,
+		          "Only single descriptor set at index 0 supported");
 
 		const u32 set = compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet);
 		const u32 binding = compiler.get_decoration(buffer.id, spv::DecorationBinding);
@@ -123,7 +119,7 @@ void shader_module::reflect(std::vector<u32> &binary)
 	for (const auto &buffer : resources.storage_buffers)
 	{
 		UNUSED(buffer);
-		terminate("No support for storage buffer descriptors");
+		assert_if(true, "No support for storage buffer descriptors");
 	}
 
 	/* Push constants. */
@@ -138,7 +134,7 @@ void shader_module::reflect(std::vector<u32> &binary)
 	for (const auto &constants : spec_constants)
 	{
 		UNUSED(constants);
-		terminate("No support for specialization constants");
+		assert_if(true, "No support for specialization constants");
 	}
 }
 
@@ -150,10 +146,7 @@ void shader_module::build(device &device, VkShaderStageFlagBits stage, const cha
 	std::string shader_code = {};
 	{
 		std::ifstream file(filename, std::ios::binary);
-		if (!file.is_open())
-		{
-			terminate("Could not open shader %s", filename);
-		}
+		assert_if(!file.is_open(), "Could not open shader %s", filename);
 
 		std::stringstream file_data = {};
 		file_data << file.rdbuf();
@@ -219,10 +212,7 @@ void shader_object::build(device &device, VkShaderStageFlagBits stage, const cha
 	/* Read SPIR-V from filename. */
 	std::string shader_code = {};
 	std::ifstream file(filename, std::ios::binary);
-	if (!file.is_open())
-	{
-		terminate("Could not open shader %s", filename);
-	}
+	assert_if(!file.is_open(), "Could not open shader %s", filename);
 	std::stringstream file_data = {};
 	file_data << file.rdbuf();
 	shader_code = file_data.str();

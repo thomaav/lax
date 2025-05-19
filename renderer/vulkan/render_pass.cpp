@@ -22,12 +22,8 @@ void render_pass::set_dynamic_rendering(bool dr)
 
 void render_pass::build(device &device, VkFormat color_format, VkFormat depth_format)
 {
+	assert_if(!m_dynamic_rendering, "Only dynamic render passes supported");
 	m_device_handle = device.m_logical.m_handle;
-
-	if (!m_dynamic_rendering)
-	{
-		terminate("Only dynamic render passes supported");
-	}
 
 	m_handle = VK_NULL_HANDLE;
 	m_color_format = color_format;

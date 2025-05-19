@@ -36,10 +36,7 @@ void pipeline_layout::build(device &device)
 {
 	for (const shader_resource_binding &binding : m_resource_bindings)
 	{
-		if (binding.set != 0)
-		{
-			terminate("Only descriptor set index 0 is supported");
-		}
+		assert_if(binding.set != 0, "Only descriptor set index 0 is supported");
 		m_dset_layout.add_binding(binding.binding, binding.type);
 	}
 	m_dset_layout.build(device);
@@ -71,7 +68,7 @@ pipeline::~pipeline()
 
 void pipeline::add_shader(device &device, VkShaderStageFlagBits stage, const char *path)
 {
-	terminate_if(m_shader_modules.contains(stage), "Pipeline already contains stage %u", stage);
+	assert_if(m_shader_modules.contains(stage), "Pipeline already contains stage %u", stage);
 	ref<shader_module> sm = make_ref<shader_module>();
 	sm->build(device, stage, path);
 	m_shader_modules[stage] = sm;
@@ -81,8 +78,8 @@ void pipeline::add_shader(device &device, VkShaderStageFlagBits stage, const cha
 
 void pipeline::add_shader(const ref<shader_module> &shader)
 {
-	terminate_if(shader->m_handle == VK_NULL_HANDLE, "Shader has not been built");
-	terminate_if(m_shader_modules.contains(shader->m_stage), "Pipeline already contains stage %u", shader->m_stage);
+	assert_if(shader->m_handle == VK_NULL_HANDLE, "Shader has not been built");
+	assert_if(m_shader_modules.contains(shader->m_stage), "Pipeline already contains stage %u", shader->m_stage);
 	m_shader_modules[shader->m_stage] = shader;
 	m_pipeline_layout.add_shader(*shader);
 	m_stage_create_infos.push_back(shader->get_pipeline_shader_stage_create_info());
@@ -122,10 +119,8 @@ void pipeline::finalize(const render_pass &render_pass)
 
 void pipeline::build(device &device, const render_pass &render_pass)
 {
-	if (!m_shader_modules.contains(VK_SHADER_STAGE_VERTEX_BIT))
-	{
-		terminate("Cannot build a pipeline without a vertex shader");
-	}
+	assert_if(!m_shader_modules.contains(VK_SHADER_STAGE_VERTEX_BIT),
+	          "Cannot build a pipeline without a vertex shader");
 
 	m_device_handle = device.m_logical.m_handle;
 

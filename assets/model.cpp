@@ -40,10 +40,8 @@ void model::load(const char *path)
 {
 	Assimp::Importer importer = {};
 	const aiScene *scene = importer.ReadFile(path, aiProcess_FlipUVs);
-	if (nullptr == scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || nullptr == scene->mRootNode)
-	{
-		terminate("Assimp could not load %s", path);
-	}
+	assert_if(nullptr == scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || nullptr == scene->mRootNode,
+	          "Assimp could not load %s", path);
 
 	/* Parse the mesh. */
 	m_meshes.reserve(scene->mNumMeshes);
@@ -110,37 +108,25 @@ void model::load(const char *path)
 		{
 			/* Validate texture. */
 			aiTexture *texture = scene->mTextures[texture_idx];
-			if (nullptr == texture)
-			{
-				terminate("Assimp could not get diffuse aiTexture for %s, mesh %u", path, mesh_idx);
-			}
-			if (texture->mHeight != 0)
-			{
-				terminate("Found raw texture data with Assimp, handling not implemented");
-			}
+			assert_if(nullptr == texture, "Assimp could not get diffuse aiTexture for %s, mesh %u", path, mesh_idx);
+			assert_if(texture->mHeight != 0, "Found raw texture data with Assimp, handling not implemented");
 
 			/* Decode texture data. */
 			int channels;
 			stbi_uc *texture_data = stbi_load_from_memory((u8 *)texture->pcData, /* len = */ texture->mWidth,
 			                                              &mesh.m_width, &mesh.m_height, &channels, STBI_rgb_alpha);
-			if (nullptr == texture_data)
-			{
-				terminate("stbi_load_from_memory could not load texture for model %s", path);
-			}
+			assert_if(nullptr == texture_data, "stbi_load_from_memory could not load texture for model %s", path);
 			mesh.m_texture.assign(texture_data, texture_data + mesh.m_width * mesh.m_height * 4);
 			stbi_image_free(texture_data);
 		}
 		else
 		{
-			terminate("Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
+			assert_if(true, "Assimp could not get diffuse texture for %s, mesh %u", path, mesh_idx);
 		}
 
 		/* Add transform. */
 		const aiNode *mesh_node = find_mesh_node(scene, scene->mRootNode, assimp_mesh);
-		if (nullptr == mesh_node)
-		{
-			terminate("Could not find mesh %u scene node in model %s", mesh_idx, path);
-		}
+		assert_if(nullptr == mesh_node, "Could not find mesh %u scene node in model %s", mesh_idx, path);
 		aiMatrix4x4 transform = mesh_node->mTransformation;
 		const aiNode *node = mesh_node->mParent;
 		while (nullptr != node)

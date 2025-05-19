@@ -33,11 +33,7 @@ void instance::check_extensions_available()
 		    available_instance_extensions.begin(), available_instance_extensions.end(),
 		    [&extension](const auto &available_extension)
 		    { return std::string_view{ extension } == std::string_view{ available_extension.extensionName }; });
-
-		if (v == available_instance_extensions.end())
-		{
-			terminate("Extension %s not found", extension);
-		}
+		assert_if(v == available_instance_extensions.end(), "Extension %s not found", extension);
 	}
 }
 
@@ -45,10 +41,7 @@ void instance::build(glfw_window &window, const VpProfileProperties &vp_profile_
 {
 	VkBool32 profile_supported = true;
 	vpGetInstanceProfileSupport(nullptr, &vp_profile_properties, &profile_supported);
-	if (!profile_supported)
-	{
-		terminate("Requested Vulkan profile not supported, error at instance creation");
-	}
+	assert_if(!profile_supported, "Requested Vulkan profile not supported, error at instance creation");
 
 	VkInstanceCreateInfo instance_create_info = {};
 	instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

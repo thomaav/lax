@@ -49,15 +49,8 @@ void wsi::build_swapchain(device &device)
 	vkGetPhysicalDeviceSurfacePresentModesKHR(device.m_physical.m_handle, m_surface.handle, &present_mode_count,
 	                                          available_present_modes.data());
 
-	if (available_formats.empty() || available_present_modes.empty())
-	{
-		terminate("No suitable swapchain formats");
-	}
-
-	if (available_present_modes.empty())
-	{
-		terminate("No suitable swapchain present modes");
-	}
+	assert_if(available_formats.empty() || available_present_modes.empty(), "No suitable swapchain formats");
+	assert_if(available_present_modes.empty(), "No suitable swapchain present modes");
 
 	/* Choose swapchain surface format. */
 	VkSurfaceFormatKHR surface_format = {};
@@ -71,11 +64,7 @@ void wsi::build_swapchain(device &device)
 			found = true;
 		}
 	}
-
-	if (!found)
-	{
-		terminate("No suitable swapchain format found");
-	}
+	assert_if(!found, "No suitable swapchain format found");
 
 	/* Choose swapchain presentation mode. */
 	VkPresentModeKHR present_mode = {};

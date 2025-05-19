@@ -21,7 +21,7 @@ static VkImageAspectFlags get_aspect_from_format(VkFormat format)
 	case VK_FORMAT_D16_UNORM_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-		terminate("Only split depth/stencil supported");
+		assert_if(true, "Only split depth/stencil supported");
 		break;
 	default:
 		return VK_IMAGE_ASPECT_COLOR_BIT;
@@ -42,8 +42,7 @@ static VkImageTiling get_tiling_from_format(VkFormat format)
 	case VK_FORMAT_D16_UNORM_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-		terminate("Only split depth/stencil supported");
-		break;
+		assert_if(true, "Only split depth/stencil supported");
 	default:
 		return VK_IMAGE_TILING_OPTIMAL;
 	}
@@ -180,11 +179,7 @@ void image::generate_mipmaps(context &context)
 	{
 		return;
 	}
-
-	if (m_info.m_layers != 1)
-	{
-		terminate("No mipmap generation supported for layered images");
-	}
+	assert_if(m_info.m_layers != 1, "No mipmap generation supported for layered images");
 
 	VkImageLayout old_layout = m_layout;
 	if (VK_IMAGE_LAYOUT_GENERAL != m_layout)

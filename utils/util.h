@@ -9,21 +9,7 @@
 
 #define UNUSED(x) (void)x
 
-static inline void terminate(const char *e, ...)
-{
-	printf("[ERROR]: ");
-	va_list arglist;
-	{
-		va_start(arglist, e);
-		vprintf(e, arglist);
-		va_end(arglist);
-	}
-	printf("\n");
-
-	assert(false);
-}
-
-static inline void terminate_if(bool st, const char *e, ...)
+static inline void assert_if(bool st, const char *e, ...)
 {
 	if (!st)
 	{
