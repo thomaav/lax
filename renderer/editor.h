@@ -1,5 +1,6 @@
 #pragma once
 
+#include <renderer/log.h>
 #include <renderer/scene.h>
 
 struct settings
@@ -31,6 +32,7 @@ public:
 
 	settings m_settings = {};
 	scene m_scene = {};
+	console_logger m_logger = {};
 
 private:
 };

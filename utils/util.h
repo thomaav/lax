@@ -28,18 +28,6 @@ static inline void assert_if(bool st, const char *e, ...)
 	assert(false);
 }
 
-static inline void info(const char *e, ...)
-{
-	printf("[INFO]: ");
-	va_list arglist;
-	{
-		va_start(arglist, e);
-		vprintf(e, arglist);
-		va_end(arglist);
-	}
-	printf("\n");
-}
-
 /* (TODO, thoave01): util.cpp. */
 static inline float random_float()
 {
@@ -49,6 +37,7 @@ static inline float random_float()
 	return dist(gen);
 }
 
+/* (TODO, thoave01): Move to type.h? */
 template <typename T> using uref = std::unique_ptr<T>;
 template <typename T, typename... Args> std::unique_ptr<T> make_uref(Args &&...args)
 {

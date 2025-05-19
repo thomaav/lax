@@ -2,6 +2,7 @@
 #include <optional>
 #include <string_view>
 
+#include <renderer/log.h>
 #include <renderer/vulkan/device.h>
 #include <renderer/vulkan/util.h>
 #include <utils/type.h>
@@ -75,7 +76,7 @@ void device::log_info()
 {
 	VkPhysicalDeviceProperties device_properties;
 	vkGetPhysicalDeviceProperties(m_physical.m_handle, &device_properties);
-	info("Picked physical device %s", device_properties.deviceName);
+	logger::info("Picked physical device %s", device_properties.deviceName);
 }
 
 void device::build(instance &instance, VkSurfaceKHR surface, const VpProfileProperties &vp_profile_properties)

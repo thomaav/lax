@@ -3,6 +3,8 @@
 
 void editor::build_default(vulkan::context &context)
 {
+	logger::register_logger(&m_logger);
+
 	/* (TODO, thoave01): Settings, this is a throwaway render pass anyway. */
 	vulkan::render_pass render_pass = {};
 	render_pass.set_dynamic_rendering(true);

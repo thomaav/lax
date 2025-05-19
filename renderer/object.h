@@ -20,12 +20,8 @@ static_assert(sizeof(object_uniforms) == 4 * 4 * 4, "Unexpected object struct un
 class object
 {
 public:
-	object() = default;
 	virtual ~object() = default;
-
 	virtual void draw(vulkan::command_buffer &command_buffer) = 0;
-
-private:
 };
 
 class skybox : public object

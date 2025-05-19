@@ -20,6 +20,7 @@
 #include <assets/model.h>
 #include <platform/window.h>
 #include <renderer/editor.h>
+#include <renderer/log.h>
 #include <renderer/scene.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
@@ -83,6 +84,7 @@ void context::build()
 
 void context::backend_test()
 {
+	/* (TODO, thoave01): All editor stuff should initialize way before Vulkan. */
 	editor editor = {};
 	editor.m_settings.enable_mipmapping = true;
 	editor.m_settings.enable_skybox = false;
