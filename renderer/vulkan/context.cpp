@@ -224,11 +224,30 @@ void context::backend_test()
 		}
 		ImGui::End();
 
-		ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
+		u32 viewport_x = 0;
+		u32 viewport_y = 0;
+		u32 viewport_width = 0;
+		u32 viewport_height = 0;
+		ImGui::Begin("Viewport", nullptr,
+		             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
 		{
-			/* Empty. */
+			viewport_x = ImGui::GetCursorScreenPos().x;
+			viewport_y = ImGui::GetCursorScreenPos().y;
+			viewport_width = ImGui::GetContentRegionAvail().x;
+			viewport_height = ImGui::GetContentRegionAvail().y;
 		}
 		ImGui::End();
+
+		VkViewport viewport = {};
+		viewport.x = viewport_x;
+		viewport.y = (float)(viewport_y + viewport_height);
+		viewport.width = (float)viewport_width;
+		viewport.height = -(float)viewport_height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		VkRect2D scissor = {};
+		scissor.offset = { 0, 0 };
+		scissor.extent = { viewport_width, viewport_height };
 
 		ImGui::Render();
 
@@ -293,20 +312,8 @@ void context::backend_test()
 				/* Render. */
 				vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 				{
-					VkViewport viewport = {};
-					viewport.x = 0.0f;
-					/* (TODO, thoave01): Not WSI, but color image. */
-					viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
-					viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
-					viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
-					viewport.minDepth = 0.0f;
-					viewport.maxDepth = 1.0f;
 					vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
-					VkRect2D scissor = {};
-					scissor.offset = { 0, 0 };
-					scissor.extent = m_wsi.m_swapchain.m_extent;
 					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
-
 					editor.draw(command_buffer);
 				}
 				vkCmdEndRendering(command_buffer.m_handle);
@@ -359,20 +366,8 @@ void context::backend_test()
 				/* Render. */
 				vkCmdBeginRendering(command_buffer.m_handle, &rendering_info);
 				{
-					VkViewport viewport = {};
-					viewport.x = 0.0f;
-					/* (TODO, thoave01): Not WSI, but color image. */
-					viewport.y = (float)m_wsi.m_swapchain.m_extent.height;
-					viewport.width = (float)m_wsi.m_swapchain.m_extent.width;
-					viewport.height = -(float)m_wsi.m_swapchain.m_extent.height;
-					viewport.minDepth = 0.0f;
-					viewport.maxDepth = 1.0f;
 					vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
-					VkRect2D scissor = {};
-					scissor.offset = { 0, 0 };
-					scissor.extent = m_wsi.m_swapchain.m_extent;
 					vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
-
 					editor.draw(command_buffer);
 				}
 				vkCmdEndRendering(command_buffer.m_handle);
