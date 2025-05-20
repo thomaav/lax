@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <third_party/volk/volk.h>
 #include <third_party/imgui/imgui.h>
+#include <third_party/imgui/imgui_internal.h>
 #include <third_party/imgui/imgui_impl_glfw.h>
 #include <third_party/imgui/imgui_impl_vulkan.h>
 #pragma clang diagnostic pop
@@ -144,9 +145,45 @@ void context::backend_test()
 		render_pass.set_dynamic_rendering(true);
 		render_pass.build(m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 
+		/* (TODO, thoave01): ImGui stuff that doesn't belong here. */
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+
+		static bool first_frame = true;
+		if (first_frame)
+		{
+			ImGuiID window_id = ImGui::DockSpaceOverViewport();
+
+			ImGui::DockBuilderRemoveNode(window_id);
+			ImGui::DockBuilderAddNode(window_id, ImGuiDockNodeFlags_None);
+			ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
+
+			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.25f, nullptr, &window_id);
+			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
+
+			ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
+			ImGui::DockBuilderDockWindow("Settings", dock_right_id);
+			ImGui::DockBuilderDockWindow("Viewport", window_id);
+
+			ImGui::DockBuilderFinish(window_id);
+
+			first_frame = false;
+		}
+
+		/* Console. */
+		ImGui::Begin("Console", nullptr,
+		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+		{
+			ImGui::PushTextWrapPos();
+			ImGui::TextUnformatted(editor.m_logger.m_buffer.begin(), editor.m_logger.m_buffer.end());
+			ImGui::PopTextWrapPos();
+			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+			{
+				ImGui::SetScrollHereY(1.0f);
+			}
+		}
+		ImGui::End();
 
 		/* Settings. */
 		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -187,19 +224,9 @@ void context::backend_test()
 		}
 		ImGui::End();
 
-		/* Console. */
-		ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetIO().DisplaySize.y - 200));
-		ImGui::SetNextWindowSize(ImVec2(800, 200));
-		ImGui::Begin("Console", nullptr,
-		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+		ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground);
 		{
-			ImGui::PushTextWrapPos();
-			ImGui::TextUnformatted(editor.m_logger.m_buffer.begin(), editor.m_logger.m_buffer.end());
-			ImGui::PopTextWrapPos();
-			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-			{
-				ImGui::SetScrollHereY(1.0f);
-			}
+			/* Empty. */
 		}
 		ImGui::End();
 
