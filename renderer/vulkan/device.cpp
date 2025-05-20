@@ -86,6 +86,8 @@ void device::build(instance &instance, VkSurfaceKHR surface, const VpProfileProp
 
 	create_logical_device(instance, vp_profile_properties);
 	VULKAN_ASSERT_NOT_NULL(m_logical.m_handle);
+
+	volkLoadDevice(m_logical.m_handle);
 }
 
 void device::wait()

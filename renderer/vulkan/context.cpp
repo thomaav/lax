@@ -52,7 +52,7 @@ void context::build()
 	/* Initialize loading. */
 	VULKAN_ASSERT_SUCCESS(volkInitialize());
 
-	m_device.add_extension("VK_KHR_push_descriptor");
+	m_device.add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
 	const VpProfileProperties profile_properties = {
 		VP_LUNARG_MINIMUM_REQUIREMENTS_1_3_NAME,        //
 		VP_LUNARG_MINIMUM_REQUIREMENTS_1_3_SPEC_VERSION //
@@ -61,12 +61,10 @@ void context::build()
 	/* Instance initialization. */
 	m_window.init();
 	m_instance.build(m_window, profile_properties);
-	volkLoadInstance(m_instance.m_handle);
 	m_wsi.build_surface(m_window, m_instance);
 
 	/* Device initialization. */
 	m_device.build(m_instance, m_wsi.m_surface.handle, profile_properties);
-	volkLoadDevice(m_device.m_logical.m_handle);
 	m_wsi.build_swapchain(m_device);
 	m_queue.build(m_device);
 
@@ -193,10 +191,11 @@ void context::backend_test()
 		ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetIO().DisplaySize.y - 200));
 		ImGui::SetNextWindowSize(ImVec2(800, 200));
 		ImGui::Begin("Console", nullptr,
-		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-		                 ImGuiWindowFlags_HorizontalScrollbar);
+		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 		{
+			ImGui::PushTextWrapPos();
 			ImGui::TextUnformatted(editor.m_logger.m_buffer.begin(), editor.m_logger.m_buffer.end());
+			ImGui::PopTextWrapPos();
 			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
 			{
 				ImGui::SetScrollHereY(1.0f);

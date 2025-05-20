@@ -28,9 +28,15 @@ public:
 	VkInstance m_handle = {};
 
 private:
+	void check_layers_available();
 	void check_extensions_available();
+	void setup_debugging();
 
+	std::vector<const char *> m_layers = {};
 	std::vector<const char *> m_extensions = {};
+
+	VkDebugUtilsMessengerEXT m_debug_messenger = VK_NULL_HANDLE;
+	bool m_validation_layer_enabled = false;
 };
 
 } /* namespace vulkan */
