@@ -27,6 +27,7 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 	int width = 0;
 	int height = 0;
 	context.m_window.get_framebuffer_size(width, height);
+	/* (TODO, thoave01): Not correct. Updated during main loop by docking. */
 	m_camera.m_aspect = (float)width / (float)height;
 
 	m_uniform_buffer =

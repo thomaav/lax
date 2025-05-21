@@ -79,7 +79,7 @@ void context::backend_test()
 	/* (TODO, thoave01): All editor stuff should initialize way before Vulkan. */
 	editor editor = {};
 	editor.m_settings.enable_mipmapping = true;
-	editor.m_settings.enable_skybox = false;
+	editor.m_settings.enable_skybox = true;
 	editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 	editor.m_settings.color_format = m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	editor.m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
@@ -159,7 +159,7 @@ void context::backend_test()
 			ImGui::DockBuilderAddNode(window_id, ImGuiDockNodeFlags_None);
 			ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
 
-			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.25f, nullptr, &window_id);
+			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
 			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
 
 			ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
@@ -231,10 +231,11 @@ void context::backend_test()
 		ImGui::Begin("Viewport", nullptr,
 		             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
 		{
-			viewport_x = ImGui::GetCursorScreenPos().x;
-			viewport_y = ImGui::GetCursorScreenPos().y;
-			viewport_width = ImGui::GetContentRegionAvail().x;
-			viewport_height = ImGui::GetContentRegionAvail().y;
+			viewport_x = ImGui::GetWindowPos().x;
+			viewport_y = ImGui::GetWindowPos().y;
+			viewport_width = ImGui::GetWindowWidth();
+			viewport_height = ImGui::GetWindowHeight();
+			editor.m_scene.m_camera.m_aspect = (float)viewport_width / (float)viewport_height;
 		}
 		ImGui::End();
 
