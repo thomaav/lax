@@ -161,9 +161,12 @@ void context::backend_test()
 
 			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
 			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
+			ImGuiID dock_right_bottom_id =
+			    ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.60f, nullptr, &dock_right_id);
 
 			ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
 			ImGui::DockBuilderDockWindow("Settings", dock_right_id);
+			ImGui::DockBuilderDockWindow("Debug", dock_right_bottom_id);
 			ImGui::DockBuilderDockWindow("Viewport", window_id);
 
 			ImGui::DockBuilderFinish(window_id);
@@ -186,7 +189,7 @@ void context::backend_test()
 		ImGui::End();
 
 		/* Settings. */
-		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
 		{
 			ImGui::Checkbox("Skybox", &editor.m_settings.enable_skybox);
 			ImGui::Checkbox("Mipmapping", &editor.m_settings.enable_mipmapping);
@@ -223,6 +226,48 @@ void context::backend_test()
 			}
 		}
 		ImGui::End();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove);
+		{
+			static bool first = true;
+			static auto last = std::chrono::steady_clock::now();
+			static std::vector<float> frame_times = {};
+
+			auto now = std::chrono::steady_clock::now();
+			float ms = std::chrono::duration<float, std::ratio<1, 1000>>(now - last).count();
+			last = now;
+
+			if (!first)
+			{
+				frame_times.push_back(ms);
+				if (frame_times.size() > 100)
+				{
+					frame_times.erase(frame_times.begin());
+				}
+				auto [min, max] = std::minmax_element(frame_times.begin(), frame_times.end());
+				ImGui::PlotLines("##frame_time", frame_times.data(), frame_times.size(), 0, "Frame time", 0.0, 33.3,
+				                 ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() * 0.2f));
+			}
+			else
+			{
+				first = false;
+			}
+
+			float window_width = ImGui::GetWindowSize().x / 2.0f;
+			float ms_text_width = ImGui::CalcTextSize(" MS %.1f").x;
+			ImGui::SetCursorPosX((window_width - ms_text_width) * 0.5f);
+			ImGui::Text(" MS %.1f", ms);
+
+			ImGui::SameLine(ImGui::GetWindowWidth() / 2.0f);
+			float fps_text_width = ImGui::CalcTextSize("FPS %.1f").x;
+			ImGui::SetCursorPosX(window_width + (window_width - fps_text_width) * 0.5f);
+			ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
+		}
+		ImGui::End();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 
 		u32 viewport_x = 0;
 		u32 viewport_y = 0;
