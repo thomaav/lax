@@ -1,8 +1,7 @@
 #include <stdarg.h>
-#include <stdio.h>
 #include <string>
 
-#include <renderer/log.h>
+#include "log.h"
 
 loggerp *logger::m_logger = nullptr;
 

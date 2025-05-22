@@ -21,8 +21,6 @@
 #include <assets/model.h>
 #include <platform/window.h>
 #include <renderer/editor.h>
-#include <renderer/log.h>
-#include <renderer/scene.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/context.h>
@@ -32,6 +30,7 @@
 #include <renderer/vulkan/semaphore.h>
 #include <renderer/vulkan/shader.h>
 #include <renderer/vulkan/util.h>
+#include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>
 

@@ -1,4 +1,9 @@
-#include <utils/util.h>
+#include <cassert>
+#include <cassert>
+#include <random>
+#include <stdarg.h>
+
+#include "util.h"
 
 void assert_if(bool st, const char *e, ...)
 {
