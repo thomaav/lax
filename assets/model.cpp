@@ -2,8 +2,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <third_party/stb/stb_image.h>
 
 #include <utils/type.h>
 #include <utils/util.h>

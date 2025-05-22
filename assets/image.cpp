@@ -1,5 +1,4 @@
-/* STB_IMAGE_IMPLEMENTATION in model.cpp */
-#include <stb_image.h>
+#include <third_party/stb/stb_image.h>
 
 #include <utils/util.h>
 
