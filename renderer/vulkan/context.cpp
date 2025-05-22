@@ -7,19 +7,10 @@
 // clang-format off
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <third_party/volk/volk.h>
-#include <third_party/imgui/imgui.h>
-#include <third_party/imgui/imgui_internal.h>
-#include <third_party/imgui/imgui_impl_glfw.h>
-#include <third_party/imgui/imgui_impl_vulkan.h>
 #pragma clang diagnostic pop
 // clang-format on
 
-#include <assets/image.h>
-#include <assets/model.h>
-#include <editor/editor.h>
 #include <platform/window.h>
 #include <utils/log.h>
 #include <utils/type.h>
