@@ -1,8 +1,9 @@
 #include <vector>
 
-#include <renderer/vulkan/render_pass.h>
-#include <renderer/vulkan/util.h>
 #include <utils/util.h>
+
+#include "render_pass.h"
+#include "util.h"
 
 namespace vulkan
 {

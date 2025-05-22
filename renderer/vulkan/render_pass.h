@@ -5,10 +5,11 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/image.h>
-#include <renderer/vulkan/render_pass.h>
 #include <utils/type.h>
+
+#include "device.h"
+#include "image.h"
+#include "render_pass.h"
 
 namespace vulkan
 {

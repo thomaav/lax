@@ -1,8 +1,9 @@
-/* STB_IMAGE_IMPLEMENTATION in model.h */
+/* STB_IMAGE_IMPLEMENTATION in model.cpp */
 #include <stb_image.h>
 
-#include <assets/image.h>
 #include <utils/util.h>
+
+#include "image.h"
 
 namespace assets
 {

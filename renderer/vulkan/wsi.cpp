@@ -1,8 +1,9 @@
 #include <algorithm>
 
-#include <renderer/vulkan/util.h>
-#include <renderer/vulkan/wsi.h>
 #include <utils/util.h>
+
+#include "util.h"
+#include "wsi.h"
 
 namespace vulkan
 {

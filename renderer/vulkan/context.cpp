@@ -21,18 +21,19 @@
 #include <assets/model.h>
 #include <editor/editor.h>
 #include <platform/window.h>
-#include <renderer/vulkan/buffer.h>
-#include <renderer/vulkan/command_buffer.h>
-#include <renderer/vulkan/context.h>
-#include <renderer/vulkan/fence.h>
-#include <renderer/vulkan/pipeline.h>
-#include <renderer/vulkan/render_pass.h>
-#include <renderer/vulkan/semaphore.h>
-#include <renderer/vulkan/shader.h>
-#include <renderer/vulkan/util.h>
 #include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>
+
+#include "buffer.h"
+#include "command_buffer.h"
+#include "context.h"
+#include "fence.h"
+#include "pipeline.h"
+#include "render_pass.h"
+#include "semaphore.h"
+#include "shader.h"
+#include "util.h"
 
 namespace vulkan
 {

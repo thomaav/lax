@@ -5,9 +5,9 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/buffer.h>
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/pipeline.h>
+#include "buffer.h"
+#include "device.h"
+#include "pipeline.h"
 
 namespace vulkan
 {

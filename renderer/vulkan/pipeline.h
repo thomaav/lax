@@ -9,10 +9,11 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/render_pass.h>
-#include <renderer/vulkan/shader.h>
 #include <utils/util.h>
+
+#include "device.h"
+#include "render_pass.h"
+#include "shader.h"
 
 namespace vulkan
 {

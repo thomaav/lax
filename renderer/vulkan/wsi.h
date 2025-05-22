@@ -8,11 +8,12 @@
 #pragma clang diagnostic pop
 
 #include <platform/window.h>
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/image.h>
-#include <renderer/vulkan/instance.h>
-#include <renderer/vulkan/semaphore.h>
 #include <utils/util.h>
+
+#include "device.h"
+#include "image.h"
+#include "instance.h"
+#include "semaphore.h"
 
 namespace vulkan
 {

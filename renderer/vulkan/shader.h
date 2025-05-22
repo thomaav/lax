@@ -5,8 +5,8 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/descriptor_set.h>
-#include <renderer/vulkan/device.h>
+#include "descriptor_set.h"
+#include "device.h"
 
 namespace vulkan
 {

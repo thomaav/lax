@@ -7,8 +7,9 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/instance.h>
 #include <utils/type.h>
+
+#include "instance.h"
 
 namespace vulkan
 {

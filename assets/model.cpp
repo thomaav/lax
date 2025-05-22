@@ -1,5 +1,3 @@
-#include <filesystem>
-
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -7,9 +5,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include <assets/model.h>
 #include <utils/type.h>
 #include <utils/util.h>
+
+#include "model.h"
 
 const aiNode *find_mesh_node(const aiScene *scene, const aiNode *node, const aiMesh *mesh)
 {

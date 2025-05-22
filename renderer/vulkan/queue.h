@@ -5,11 +5,11 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/command_buffer.h>
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/fence.h>
-#include <renderer/vulkan/semaphore.h>
-#include <renderer/vulkan/wsi.h>
+#include "command_buffer.h"
+#include "device.h"
+#include "fence.h"
+#include "semaphore.h"
+#include "wsi.h"
 
 namespace vulkan
 {

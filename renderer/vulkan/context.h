@@ -9,12 +9,13 @@
 #pragma clang diagnostic pop
 
 #include <platform/window.h>
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/instance.h>
-#include <renderer/vulkan/queue.h>
-#include <renderer/vulkan/resource_allocator.h>
-#include <renderer/vulkan/wsi.h>
 #include <utils/type.h>
+
+#include "device.h"
+#include "instance.h"
+#include "queue.h"
+#include "resource_allocator.h"
+#include "wsi.h"
 
 namespace vulkan
 {
@@ -33,7 +34,6 @@ public:
 
 	void build();
 
-	/* (TODO, thoave01): Hide this again. */
 	glfw_window m_window = {};
 	instance m_instance = {};
 	device m_device = {};

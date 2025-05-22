@@ -5,9 +5,9 @@
 #include "vk_mem_alloc.h"
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/image.h>
-#include <renderer/vulkan/resource_allocator.h>
-#include <renderer/vulkan/util.h>
+#include "image.h"
+#include "resource_allocator.h"
+#include "util.h"
 
 namespace vulkan
 {

@@ -1,11 +1,12 @@
 #include <algorithm>
 #include <string_view>
 
-#include <renderer/vulkan/instance.h>
-#include <renderer/vulkan/util.h>
 #include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>
+
+#include "instance.h"
+#include "util.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT type,

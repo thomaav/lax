@@ -1,7 +1,8 @@
 #include <cassert>
 
-#include <platform/window.h>
 #include <utils/util.h>
+
+#include "window.h"
 
 static void default_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {

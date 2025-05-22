@@ -11,8 +11,8 @@
 // clang-format on
 
 #include <renderer/vulkan/command_buffer.h>
-#include <utils/log.h>
 
+#include "log.h"
 #include "scene.h"
 
 struct settings
@@ -28,20 +28,6 @@ struct settings
 
 	/* (TODO): */
 	/* - resolution, which needs swapchain recreation */
-};
-
-class console_logger : public loggerp
-{
-public:
-	console_logger() = default;
-	~console_logger() = default;
-
-	console_logger(const console_logger &) = delete;
-	console_logger operator=(const console_logger &) = delete;
-
-	void log(const char *str) override;
-
-	ImGuiTextBuffer m_buffer = {};
 };
 
 class editor

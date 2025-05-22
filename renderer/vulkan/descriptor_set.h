@@ -7,7 +7,7 @@
 #include <third_party/volk/volk.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/device.h>
+#include "device.h"
 
 namespace vulkan
 {

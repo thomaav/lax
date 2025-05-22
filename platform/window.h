@@ -7,10 +7,6 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
 #include <GLFW/glfw3.h>
-#if defined(__APPLE__)
-#define GLFW_EXPOSE_NATIVE_COCOA
-#include <GLFW/glfw3native.h>
-#endif
 #pragma clang diagnostic pop
 // clang-format on
 

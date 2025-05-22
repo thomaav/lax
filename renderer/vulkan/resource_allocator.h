@@ -6,9 +6,9 @@
 #include <vma/vk_mem_alloc.h>
 #pragma clang diagnostic pop
 
-#include <renderer/vulkan/buffer.h>
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/instance.h>
+#include "buffer.h"
+#include "device.h"
+#include "instance.h"
 
 namespace vulkan
 {

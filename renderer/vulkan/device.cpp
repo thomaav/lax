@@ -2,11 +2,12 @@
 #include <optional>
 #include <string_view>
 
-#include <renderer/vulkan/device.h>
-#include <renderer/vulkan/util.h>
 #include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>
+
+#include "device.h"
+#include "util.h"
 
 static std::optional<u32> find_queue_family_with_all_capabilities(VkPhysicalDevice physical_device)
 {
