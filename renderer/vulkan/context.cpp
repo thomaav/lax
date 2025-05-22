@@ -160,11 +160,13 @@ void context::backend_test()
 			ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
 
 			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
+			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Left, 0.15f, nullptr, &window_id);
 			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
 			ImGuiID dock_right_bottom_id =
 			    ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.60f, nullptr, &dock_right_id);
 
 			ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
+			ImGui::DockBuilderDockWindow("Scene", dock_left_id);
 			ImGui::DockBuilderDockWindow("Settings", dock_right_id);
 			ImGui::DockBuilderDockWindow("Debug", dock_right_bottom_id);
 			ImGui::DockBuilderDockWindow("Viewport", window_id);
@@ -185,6 +187,12 @@ void context::backend_test()
 			{
 				ImGui::SetScrollHereY(1.0f);
 			}
+		}
+		ImGui::End();
+
+		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove);
+		{
+			/* Empty. */
 		}
 		ImGui::End();
 
@@ -292,7 +300,7 @@ void context::backend_test()
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
+		scissor.offset = { viewport_x, viewport_y };
 		scissor.extent = { viewport_width, viewport_height };
 
 		ImGui::Render();
