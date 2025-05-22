@@ -12,15 +12,6 @@
 
 #include "object.h"
 
-struct scene_uniforms
-{
-	glm::mat4 view;
-	glm::mat4 projection;
-	/* (TODO, thoave01): Don't enable mipmapping at shader level. */
-	u32 enable_mipmapping;
-};
-static_assert(sizeof(scene_uniforms) == 4 * 4 * 4 * 2 + sizeof(u32), "Unexpected scene struct uniform size");
-
 class node
 {
 public:
@@ -38,6 +29,15 @@ public:
 private:
 };
 
+struct scene_uniforms
+{
+	glm::mat4 view;
+	glm::mat4 projection;
+	/* (TODO, thoave01): Don't enable mipmapping at shader level. */
+	u32 enable_mipmapping;
+};
+static_assert(sizeof(scene_uniforms) == 4 * 4 * 4 * 2 + sizeof(u32), "Unexpected scene struct uniform size");
+
 class scene
 {
 public:
@@ -49,14 +49,12 @@ public:
 
 	void build_default_scene(vulkan::context &context, const vulkan::render_pass &render_pass);
 
-	node m_root = {};
-
-	/* (TODO, thoave01): Should go away. */
-	ref<static_mesh> m_static_mesh = nullptr;
-	ref<skybox> m_skybox = nullptr;
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};
 	vulkan::buffer m_uniform_buffer = {};
+
+	std::vector<ref<static_mesh>> m_static_meshes = {};
+	skybox m_skybox = {};
 
 private:
 };

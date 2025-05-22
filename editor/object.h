@@ -101,7 +101,7 @@ public:
 	glm::mat4 m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
 
 	float m_fov = glm::radians(75.0f);
-	float m_aspect = 16.0f / 9.0f;
+	float m_aspect = 0;
 	float m_near = 0.1f;
 	float m_far = 256.0f;
 	glm::mat4 m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);

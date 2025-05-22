@@ -72,8 +72,11 @@ int main(int argc, char *argv[])
 	vulkan::render_pass render_pass_ = {};
 	render_pass_.set_dynamic_rendering(true);
 	render_pass_.build(editor.m_context.m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
-	editor.m_scene.m_skybox->update_material(render_pass_, editor.m_settings.sample_count);
-	editor.m_scene.m_static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+	editor.m_scene.m_skybox.update_material(render_pass_, editor.m_settings.sample_count);
+	for (auto &static_mesh : editor.m_scene.m_static_meshes)
+	{
+		static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+	}
 
 	while (editor.m_context.m_window.step())
 	{
@@ -123,6 +126,9 @@ int main(int argc, char *argv[])
 			first_frame = false;
 		}
 
+		/* Global UI stuff. */
+		ImGui::GetStyle().WindowMenuButtonPosition = ImGuiDir_None;
+
 		/* Console. */
 		ImGui::Begin("Console", nullptr,
 		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
@@ -139,7 +145,19 @@ int main(int argc, char *argv[])
 
 		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove);
 		{
-			/* Empty. */
+			if (ImGui::TreeNodeEx("Root", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				/* Static meshes. */
+				for (const auto &static_mesh : editor.m_scene.m_static_meshes)
+				{
+					ImGui::Text("Static mesh");
+				}
+
+				/* Skybox. */
+				ImGui::Text("Skybox");
+
+				ImGui::TreePop();
+			}
 		}
 		ImGui::End();
 
@@ -160,8 +178,11 @@ int main(int argc, char *argv[])
 					break;
 				}
 
-				editor.m_scene.m_skybox->update_material(render_pass, editor.m_settings.sample_count);
-				editor.m_scene.m_static_mesh->update_material(render_pass, editor.m_settings.sample_count);
+				editor.m_scene.m_skybox.update_material(render_pass, editor.m_settings.sample_count);
+				for (auto &static_mesh : editor.m_scene.m_static_meshes)
+				{
+					static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+				}
 
 				color_texture = make_ref<vulkan::texture>();
 				color_texture->build(editor.m_context, { .m_format = editor.m_settings.color_format,
@@ -231,6 +252,7 @@ int main(int argc, char *argv[])
 		ImGui::Begin("Viewport", nullptr,
 		             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
 		{
+			ImGui::GetWindowDockNode()->SetLocalFlags(ImGuiDockNodeFlags_NoTabBar);
 			viewport_x = ImGui::GetWindowPos().x;
 			viewport_y = ImGui::GetWindowPos().y;
 			viewport_width = ImGui::GetWindowWidth();
