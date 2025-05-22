@@ -2,8 +2,9 @@
 #include <sstream>
 #include <string>
 
-#include <renderer/editor.h>
 #include <renderer/vulkan/render_pass.h>
+
+#include "editor.h"
 
 void console_logger::log(const char *str)
 {
@@ -22,8 +23,14 @@ editor::~editor()
 	ImGui::DestroyContext();
 }
 
-void editor::build_default(vulkan::context &context)
+void editor::build_default()
 {
+	m_context.build();
+
+	/* Settings derived from context (not really settings?). */
+	m_settings.color_format = m_context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
+	m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
+
 	/* Dear ImGui. */
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -33,13 +40,13 @@ void editor::build_default(vulkan::context &context)
 
 	ImGui::StyleColorsDark();
 
-	ImGui_ImplGlfw_InitForVulkan(context.m_window.m_window, true);
+	ImGui_ImplGlfw_InitForVulkan(m_context.m_window.m_window, true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = context.m_instance.m_handle;
-	init_info.PhysicalDevice = context.m_device.m_physical.m_handle;
-	init_info.Device = context.m_device.m_logical.m_handle;
-	init_info.QueueFamily = *context.m_device.m_physical.m_queue_family.m_all;
-	init_info.Queue = context.m_queue.m_handle;
+	init_info.Instance = m_context.m_instance.m_handle;
+	init_info.PhysicalDevice = m_context.m_device.m_physical.m_handle;
+	init_info.Device = m_context.m_device.m_logical.m_handle;
+	init_info.QueueFamily = *m_context.m_device.m_physical.m_queue_family.m_all;
+	init_info.Queue = m_context.m_queue.m_handle;
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
 	init_info.UseDynamicRendering = VK_TRUE;
@@ -49,11 +56,11 @@ void editor::build_default(vulkan::context &context)
 	init_info.PipelineRenderingCreateInfo.viewMask = 0;
 	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats =
-	    &context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
+	    &m_context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
 	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
 	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-	init_info.MinImageCount = context.m_wsi.m_swapchain.m_images.size();
-	init_info.ImageCount = context.m_wsi.m_swapchain.m_images.size();
+	init_info.MinImageCount = m_context.m_wsi.m_swapchain.m_images.size();
+	init_info.ImageCount = m_context.m_wsi.m_swapchain.m_images.size();
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = nullptr;
 	init_info.CheckVkResultFn = nullptr;
@@ -64,9 +71,9 @@ void editor::build_default(vulkan::context &context)
 	/* (TODO, thoave01): Settings, this is a throwaway render pass anyway. */
 	vulkan::render_pass render_pass = {};
 	render_pass.set_dynamic_rendering(true);
-	render_pass.build(context.m_device, m_settings.color_format, m_settings.depth_format);
+	render_pass.build(m_context.m_device, m_settings.color_format, m_settings.depth_format);
 
-	m_scene.build_default_scene(context, render_pass);
+	m_scene.build_default_scene(m_context, render_pass);
 }
 
 void editor::draw(vulkan::command_buffer &command_buffer)

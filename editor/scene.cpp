@@ -1,6 +1,6 @@
 #include <chrono>
 
-#include <renderer/scene.h>
+#include "scene.h"
 
 void node::add_child(const ref<object> &child)
 {

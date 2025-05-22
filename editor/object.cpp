@@ -1,7 +1,8 @@
 #include <algorithm>
 
-#include <renderer/object.h>
 #include <renderer/vulkan/context.h>
+
+#include "object.h"
 
 void skybox::build(vulkan::context &context, const vulkan::render_pass &render_pass)
 {

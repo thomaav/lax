@@ -10,8 +10,10 @@
 #pragma clang diagnostic pop
 // clang-format on
 
-#include <renderer/scene.h>
+#include <renderer/vulkan/command_buffer.h>
 #include <utils/log.h>
+
+#include "scene.h"
 
 struct settings
 {
@@ -51,9 +53,10 @@ public:
 	editor(const editor &) = delete;
 	editor operator=(const editor &) = delete;
 
-	void build_default(vulkan::context &context);
+	void build_default();
 	void draw(vulkan::command_buffer &command_buffer);
 
+	vulkan::context m_context = {};
 	settings m_settings = {};
 	scene m_scene = {};
 	console_logger m_logger = {};

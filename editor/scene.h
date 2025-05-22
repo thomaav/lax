@@ -4,12 +4,13 @@
 
 #include <assets/image.h>
 #include <assets/model.h>
-#include <renderer/object.h>
 #include <renderer/vulkan/buffer.h>
 #include <renderer/vulkan/command_buffer.h>
 #include <renderer/vulkan/context.h>
 #include <renderer/vulkan/image.h>
 #include <utils/util.h>
+
+#include "object.h"
 
 struct scene_uniforms
 {

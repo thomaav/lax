@@ -31,7 +31,7 @@ add_library(imgui
   ${imgui_SOURCE_DIR}/imgui_impl_vulkan.cpp
 )
 
-file(GLOB EDITOR_SOURCES "${PROJECT_SOURCE_DIR}/basic/main.cpp")
+file(GLOB EDITOR_SOURCES "${PROJECT_SOURCE_DIR}/editor/*.cpp")
 file(GLOB ASSETS_SOURCES "${PROJECT_SOURCE_DIR}/assets/*.cpp")
 file(GLOB RENDERER_SOURCES "${PROJECT_SOURCE_DIR}/renderer/*.cpp")
 file(GLOB UTILS_SOURCES "${PROJECT_SOURCE_DIR}/utils/*.cpp")

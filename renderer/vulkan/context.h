@@ -32,7 +32,6 @@ public:
 	void add_device_extension(const char *extension);
 
 	void build();
-	void backend_test();
 
 	/* (TODO, thoave01): Hide this again. */
 	glfw_window m_window = {};
