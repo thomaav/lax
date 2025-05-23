@@ -72,10 +72,13 @@ int main(int argc, char *argv[])
 	vulkan::render_pass render_pass_ = {};
 	render_pass_.set_dynamic_rendering(true);
 	render_pass_.build(editor.m_context.m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
-	editor.m_scene.m_skybox.update_material(render_pass_, editor.m_settings.sample_count);
-	for (auto &static_mesh : editor.m_scene.m_static_meshes)
+	for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
 	{
 		static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+	}
+	for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
+	{
+		skybox->update_material(render_pass_, editor.m_settings.sample_count);
 	}
 
 	while (editor.m_context.m_window.step())
@@ -147,15 +150,18 @@ int main(int argc, char *argv[])
 		{
 			if (ImGui::TreeNodeEx("Root", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				/* Static meshes. */
-				for (const auto &static_mesh : editor.m_scene.m_static_meshes)
+				if (ImGui::TreeNodeEx("Static meshes", ImGuiTreeNodeFlags_DefaultOpen))
 				{
-					ImGui::Text("Static mesh");
+					for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
+					{
+						ImGui::Text("[e%lu] Static mesh", e);
+					}
+					ImGui::TreePop();
 				}
-
-				/* Skybox. */
-				ImGui::Text("Skybox");
-
+				for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
+				{
+					ImGui::Text("[e%lu] Skybox", e);
+				}
 				ImGui::TreePop();
 			}
 		}
@@ -178,10 +184,13 @@ int main(int argc, char *argv[])
 					break;
 				}
 
-				editor.m_scene.m_skybox.update_material(render_pass, editor.m_settings.sample_count);
-				for (auto &static_mesh : editor.m_scene.m_static_meshes)
+				for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
 				{
 					static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+				}
+				for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
+				{
+					skybox->update_material(render_pass_, editor.m_settings.sample_count);
 				}
 
 				color_texture = make_ref<vulkan::texture>();

@@ -71,15 +71,18 @@ void editor::draw(vulkan::command_buffer &command_buffer)
 	m_scene.m_uniform_buffer.fill(&m_scene.m_uniforms, sizeof(m_scene.m_uniforms));
 
 	/* (TODO, thoave01): Add some sort of default pipeline with scene defaults and pipeline compatibility. */
-	command_buffer.bind_pipeline(m_scene.m_skybox.m_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+	command_buffer.bind_pipeline(*m_scene.m_default_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	command_buffer.set_uniform_buffer(0, m_scene.m_uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-	for (auto &static_mesh : m_scene.m_static_meshes)
+	for (auto &[e, static_mesh] : m_scene.m_static_mesh_storage)
 	{
 		static_mesh->draw(command_buffer);
 	}
-	if (m_settings.enable_skybox)
+	for (auto &[e, skybox] : m_scene.m_skybox_storage)
 	{
-		m_scene.m_skybox.draw(command_buffer);
+		if (m_settings.enable_skybox)
+		{
+			skybox->draw(command_buffer);
+		}
 	}
 }

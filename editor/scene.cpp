@@ -2,6 +2,12 @@
 
 #include "scene.h"
 
+entity create_entity()
+{
+	static entity e = 0;
+	return e++;
+}
+
 void node::add_child(const ref<object> &child)
 {
 	node child_node = {};
@@ -25,10 +31,20 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 			new_static_mesh->build(context, render_pass, model);
 			new_static_mesh->m_uniforms.model =
 			    glm::translate(new_static_mesh->m_uniforms.model, glm::vec3((float)x * 2.0f, 0.0f, (float)y * 2.0f));
-			m_static_meshes.push_back(new_static_mesh);
+
+			entity e = create_entity();
+			m_static_mesh_storage[e] = new_static_mesh;
 		}
 	}
 
 	/* Skybox object. */
-	m_skybox.build(context, render_pass);
+	entity skybox_e = create_entity();
+	m_skybox_storage[skybox_e] = make_ref<skybox>();
+	m_skybox_storage[skybox_e]->build(context, render_pass);
+	m_default_pipeline = &m_skybox_storage[skybox_e]->m_pipeline;
+}
+
+entity scene::create_entity()
+{
+	return m_entity++;
 }

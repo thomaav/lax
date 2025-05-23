@@ -12,6 +12,9 @@
 
 #include "object.h"
 
+using entity = u64;
+template <typename T> using estorage = std::unordered_map<entity, T>;
+
 class node
 {
 public:
@@ -33,7 +36,6 @@ struct scene_uniforms
 {
 	glm::mat4 view;
 	glm::mat4 projection;
-	/* (TODO, thoave01): Don't enable mipmapping at shader level. */
 	u32 enable_mipmapping;
 };
 static_assert(sizeof(scene_uniforms) == 4 * 4 * 4 * 2 + sizeof(u32), "Unexpected scene struct uniform size");
@@ -52,9 +54,13 @@ public:
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};
 	vulkan::buffer m_uniform_buffer = {};
+	vulkan::pipeline *m_default_pipeline = nullptr;
 
-	std::vector<ref<static_mesh>> m_static_meshes = {};
-	skybox m_skybox = {};
+	entity create_entity();
+
+	estorage<ref<static_mesh>> m_static_mesh_storage = {};
+	estorage<ref<skybox>> m_skybox_storage = {};
 
 private:
+	entity m_entity = 0;
 };
