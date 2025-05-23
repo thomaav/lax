@@ -20,6 +20,11 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 	m_uniform_buffer =
 	    context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(m_uniforms));
 
+	/* Camera. */
+	glm::vec3 camera_position = glm::vec3(3.0f, 2.0f, 5.0f);
+	glm::vec3 camera_target = glm::vec3(0.0f);
+	m_camera.build(camera_position, camera_target);
+
 	/* Static mesh objects. */
 	ref<assets::model> model = make_ref<assets::model>();
 	model->load("bin/assets/models/DamagedHelmet.glb");

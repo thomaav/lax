@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 	editor editor = {};
 	editor.m_settings.enable_mipmapping = true;
 	editor.m_settings.enable_skybox = true;
+	editor.m_settings.enable_grid = true;
 	editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 	editor.build_default();
 
@@ -172,6 +173,7 @@ int main(int argc, char *argv[])
 		{
 			ImGui::Checkbox("Skybox", &editor.m_settings.enable_skybox);
 			ImGui::Checkbox("Mipmapping", &editor.m_settings.enable_mipmapping);
+			ImGui::Checkbox("Enable grid", &editor.m_settings.enable_grid);
 			if (ImGui::Combo("##MSAA", &sample_count_selection, sample_counts.data(), sample_counts.size()))
 			{
 				switch (sample_count_selection)

@@ -2,6 +2,7 @@
 
 #include <renderer/vulkan/context.h>
 
+#include "log.h"
 #include "object.h"
 
 void skybox::build(vulkan::context &context, const vulkan::render_pass &render_pass)
@@ -121,21 +122,33 @@ void static_mesh::update_material(const vulkan::render_pass &render_pass, VkSamp
 	m_pipeline.update(render_pass);
 }
 
-void camera::draw(vulkan::command_buffer &command_buffer)
+void camera::build(glm::vec3 position, glm::vec3 target)
 {
+	m_position = position;
+	m_forward = glm::normalize(target - position);
+
+	const glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
+	const glm::vec3 right = glm::normalize(glm::cross(m_forward, world_up));
+	m_up = glm::vec3(0.0f, 1.0f, 0.0f);
+	m_yaw = glm::degrees(atan2(m_forward.z, m_forward.x));
+	m_pitch = glm::degrees(asin(m_forward.y));
+	m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
+
+	m_fov = glm::radians(75.0f);
+	m_aspect = 0;
+	m_near = 0.1f;
+	m_far = 256.0f;
+	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
 }
 
 void camera::process_input(const camera_input &input)
 {
-	/* (TODO, thoave01): Replace with actual frame timings once implemented. */
-	/* (TODO, thoave01): Or even better: decouple it from rendering entirely. */
 	static float last_frame = glfwGetTime();
 	float current_frame = glfwGetTime();
 	float delta_frame = current_frame - last_frame;
 	float camera_speed = m_speed * delta_frame;
 	last_frame = current_frame;
 
-	/* (TODO, thoave01): Normalize by window width. */
 	static double last_mouse_x = input.mouse_x;
 	static double last_mouse_y = input.mouse_y;
 	if (input.right_mouse_pressed)
@@ -155,7 +168,6 @@ void camera::process_input(const camera_input &input)
 	last_mouse_x = input.mouse_x;
 	last_mouse_y = input.mouse_y;
 
-	/* (TODO, thoave01): Scroll like A/S press. */
 	if (input.w_pressed)
 	{
 		m_position += m_forward * camera_speed;
@@ -175,4 +187,8 @@ void camera::process_input(const camera_input &input)
 
 	m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
 	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
+}
+
+void camera::draw(vulkan::command_buffer &command_buffer)
+{
 }

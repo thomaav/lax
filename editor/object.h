@@ -90,23 +90,29 @@ public:
 	camera(const camera &) = delete;
 	camera operator=(const camera &) = delete;
 
-	void draw(vulkan::command_buffer &command_buffer) override;
+	void build(glm::vec3 position, glm::vec3 target);
 	void process_input(const camera_input &input);
+	void draw(vulkan::command_buffer &command_buffer) override;
 
-	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 4.0f);
-	float m_yaw = -90.0f;
-	float m_pitch = 0.0f;
-	glm::vec3 m_forward = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 m_up = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::mat4 m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
+	/* Depends on viewport size. */
+	float m_aspect;
 
-	float m_fov = glm::radians(75.0f);
-	float m_aspect = 0;
-	float m_near = 0.1f;
-	float m_far = 256.0f;
-	glm::mat4 m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
+	/* Needed by rendering. */
+	glm::mat4 m_view;
+	glm::mat4 m_projection;
 
 private:
 	const float m_speed = 1.0f;
 	const float m_sensitivity = 6.0f;
+
+	glm::vec3 m_position;
+	glm::vec3 m_forward;
+
+	float m_yaw;
+	float m_pitch;
+	glm::vec3 m_up;
+
+	float m_fov;
+	float m_near;
+	float m_far;
 };

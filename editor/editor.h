@@ -20,6 +20,7 @@ struct settings
 	/* Configurable at runtime. */
 	bool enable_mipmapping;
 	bool enable_skybox;
+	bool enable_grid;
 	VkSampleCountFlagBits sample_count;
 
 	/* Static. */
