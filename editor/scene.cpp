@@ -47,6 +47,43 @@ void scene::build_default_scene(vulkan::context &context, const vulkan::render_p
 	m_skybox_storage[skybox_e] = make_ref<skybox>();
 	m_skybox_storage[skybox_e]->build(context, render_pass);
 	m_default_pipeline = &m_skybox_storage[skybox_e]->m_pipeline;
+
+	/* Grid. */
+	ref<assets::model> grid_model = make_ref<assets::model>();
+	grid_model->generate_grid();
+
+	m_grid.m_vertex_buffer = context.m_resource_allocator.allocate_buffer(
+	    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+	    sizeof(grid_model->m_meshes[0].m_vertices[0]) * grid_model->m_meshes[0].m_vertices.size());
+	m_grid.m_vertex_buffer.fill(grid_model->m_meshes[0].m_vertices.data(),
+	                            sizeof(grid_model->m_meshes[0].m_vertices[0]) *
+	                                grid_model->m_meshes[0].m_vertices.size());
+	m_grid.m_vertex_count = grid_model->m_meshes[0].m_vertices.size();
+
+	m_grid.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/grid.vert.spv");
+	m_grid.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/grid.frag.spv");
+	m_grid.m_pipeline.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_grid.m_pipeline.set_cull_mode(VK_CULL_MODE_NONE);
+	m_grid.m_pipeline.build(context.m_device, render_pass);
+
+	/* Plane. */
+	ref<assets::model> plane_model = make_ref<assets::model>();
+	plane_model->generate_plane();
+
+	m_plane.m_vertex_buffer = context.m_resource_allocator.allocate_buffer(
+	    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+	    sizeof(plane_model->m_meshes[0].m_vertices[0]) * plane_model->m_meshes[0].m_vertices.size());
+	m_plane.m_vertex_buffer.fill(plane_model->m_meshes[0].m_vertices.data(),
+	                             sizeof(plane_model->m_meshes[0].m_vertices[0]) *
+	                                 plane_model->m_meshes[0].m_vertices.size());
+	m_plane.m_vertex_count = plane_model->m_meshes[0].m_vertices.size();
+
+	m_plane.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/plane.vert.spv");
+	m_plane.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/plane.frag.spv");
+	m_plane.m_pipeline.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_plane.m_pipeline.set_cull_mode(VK_CULL_MODE_NONE);
+	m_plane.m_pipeline.set_blend_enable(VK_TRUE);
+	m_plane.m_pipeline.build(context.m_device, render_pass);
 }
 
 entity scene::create_entity()

@@ -52,7 +52,11 @@ public:
 
 	void add_shader(device &device, VkShaderStageFlagBits stage, const char *path);
 	void add_shader(const ref<shader_module> &shader);
+
 	void set_sample_count(VkSampleCountFlagBits sample_count);
+	void set_topology(VkPrimitiveTopology topology);
+	void set_cull_mode(VkCullModeFlags cull_mode);
+	void set_blend_enable(VkBool32 blend_enable);
 
 	void build(device &device, const render_pass &render_pass);
 	void update(const render_pass &render_pass);
@@ -68,6 +72,9 @@ private:
 
 	/* Configurable. */
 	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
+	VkPrimitiveTopology m_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	VkCullModeFlags m_cull_mode = VK_CULL_MODE_BACK_BIT;
+	bool m_blend_enable = false;
 
 	/* Set, and then re-used on update. */
 	VkPipelineVertexInputStateCreateInfo m_vertex_input_info = {};

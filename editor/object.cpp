@@ -127,6 +127,7 @@ void camera::build(glm::vec3 position, glm::vec3 target)
 	m_position = position;
 	m_forward = glm::normalize(target - position);
 
+	/* (TODO, thoave01): Pitch up/down glitches camera over 90 degrees. */
 	const glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
 	const glm::vec3 right = glm::normalize(glm::cross(m_forward, world_up));
 	m_up = glm::vec3(0.0f, 1.0f, 0.0f);

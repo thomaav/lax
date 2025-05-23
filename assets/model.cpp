@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <third_party/stb/stb_image.h>
 
+#include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>
 
@@ -134,6 +135,64 @@ void model::load(const char *path)
 		}
 		mesh.m_transform = glm::transpose(glm::make_mat4(&transform.a1));
 	}
+}
+
+void model::generate_grid()
+{
+	int grid_min = -64.0f;
+	int grid_max = 64.0f;
+	float line_width = 0.01f;
+	glm::vec4 color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+
+	m_meshes.push_back({});
+	mesh &mesh = m_meshes[0];
+
+	for (int x = grid_min; x <= grid_max; ++x)
+	{
+		glm::vec3 v1 = { (float)x - line_width, 0.0f, (float)grid_min };
+		glm::vec3 v2 = { (float)x - line_width, 0.0f, (float)grid_max };
+		glm::vec3 v3 = { (float)x + line_width, 0.0f, (float)grid_min };
+		glm::vec3 v4 = { (float)x + line_width, 0.0f, (float)grid_max };
+		mesh.m_vertices.push_back({ v1, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v4, /* normal = */ {}, /* texture = */ {}, color });
+	}
+	for (int z = grid_min; z <= grid_max; ++z)
+	{
+		glm::vec3 v1 = { (float)grid_min, 0.0f, (float)z - line_width };
+		glm::vec3 v2 = { (float)grid_max, 0.0f, (float)z - line_width };
+		glm::vec3 v3 = { (float)grid_min, 0.0f, (float)z + line_width };
+		glm::vec3 v4 = { (float)grid_max, 0.0f, (float)z + line_width };
+		mesh.m_vertices.push_back({ v1, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, color });
+		mesh.m_vertices.push_back({ v4, /* normal = */ {}, /* texture = */ {}, color });
+	}
+}
+
+void model::generate_plane()
+{
+	int plane_min = -64.0f;
+	int plane_max = 64.0f;
+
+	m_meshes.push_back({});
+	mesh &mesh = m_meshes[0];
+
+	glm::vec3 v1 = { (float)plane_min, -0.003f, (float)plane_min };
+	glm::vec3 v2 = { (float)plane_min, -0.003f, (float)plane_max };
+	glm::vec3 v3 = { (float)plane_max, -0.003f, (float)plane_min };
+	glm::vec3 v4 = { (float)plane_max, -0.003f, (float)plane_max };
+	mesh.m_vertices.push_back({ v1, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
+	mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
+	mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
+	mesh.m_vertices.push_back({ v2, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
+	mesh.m_vertices.push_back({ v3, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
+	mesh.m_vertices.push_back({ v4, /* normal = */ {}, /* texture = */ {}, /* color = */ {} });
 }
 
 } /* namespace assets */

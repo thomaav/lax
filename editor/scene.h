@@ -61,6 +61,20 @@ public:
 	estorage<ref<static_mesh>> m_static_mesh_storage = {};
 	estorage<ref<skybox>> m_skybox_storage = {};
 
+	struct
+	{
+		u32 m_vertex_count = 0;
+		vulkan::pipeline m_pipeline = {};
+		vulkan::buffer m_vertex_buffer = {};
+	} m_grid;
+
+	struct
+	{
+		u32 m_vertex_count = 6;
+		vulkan::pipeline m_pipeline = {};
+		vulkan::buffer m_vertex_buffer = {};
+	} m_plane;
+
 private:
 	entity m_entity = 0;
 };

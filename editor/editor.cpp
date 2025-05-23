@@ -85,4 +85,19 @@ void editor::draw(vulkan::command_buffer &command_buffer)
 			skybox->draw(command_buffer);
 		}
 	}
+	if (m_settings.enable_grid)
+	{
+		/* Draw grid. */
+		command_buffer.bind_pipeline(m_scene.m_grid.m_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+		constexpr VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &m_scene.m_grid.m_vertex_buffer.m_handle, &offset);
+		command_buffer.set_uniform_buffer(0, m_scene.m_uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+		vkCmdDraw(command_buffer.m_handle, m_scene.m_grid.m_vertex_count, 1, 0, 0);
+
+		/* Draw plane. */
+		command_buffer.bind_pipeline(m_scene.m_plane.m_pipeline, VK_PIPELINE_BIND_POINT_GRAPHICS);
+		vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &m_scene.m_plane.m_vertex_buffer.m_handle, &offset);
+		command_buffer.set_uniform_buffer(0, m_scene.m_uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+		vkCmdDraw(command_buffer.m_handle, 6, 1, 0, 0);
+	}
 }

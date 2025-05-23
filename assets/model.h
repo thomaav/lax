@@ -50,6 +50,9 @@ public:
 
 	void load(const char *path);
 
+	void generate_grid();
+	void generate_plane();
+
 	std::vector<mesh> m_meshes;
 
 private:

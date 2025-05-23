@@ -81,6 +81,10 @@ int main(int argc, char *argv[])
 	{
 		skybox->update_material(render_pass_, editor.m_settings.sample_count);
 	}
+	editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
+	editor.m_scene.m_grid.m_pipeline.update(render_pass_);
+	editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
+	editor.m_scene.m_plane.m_pipeline.update(render_pass_);
 
 	while (editor.m_context.m_window.step())
 	{
@@ -194,6 +198,10 @@ int main(int argc, char *argv[])
 				{
 					skybox->update_material(render_pass_, editor.m_settings.sample_count);
 				}
+				editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
+				editor.m_scene.m_grid.m_pipeline.update(render_pass_);
+				editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
+				editor.m_scene.m_plane.m_pipeline.update(render_pass_);
 
 				color_texture = make_ref<vulkan::texture>();
 				color_texture->build(editor.m_context, { .m_format = editor.m_settings.color_format,

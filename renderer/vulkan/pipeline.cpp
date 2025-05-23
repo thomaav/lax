@@ -51,8 +51,16 @@ void pipeline_layout::build(device &device)
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount = 1;
 	pipeline_layout_info.pSetLayouts = &m_dset_layout.m_handle;
-	pipeline_layout_info.pushConstantRangeCount = 1;
-	pipeline_layout_info.pPushConstantRanges = &push_constants;
+	if (m_push_constants_size > 0)
+	{
+		pipeline_layout_info.pushConstantRangeCount = 1;
+		pipeline_layout_info.pPushConstantRanges = &push_constants;
+	}
+	else
+	{
+		pipeline_layout_info.pushConstantRangeCount = 0;
+		pipeline_layout_info.pPushConstantRanges = nullptr;
+	}
 
 	VULKAN_ASSERT_SUCCESS(vkCreatePipelineLayout(device.m_logical.m_handle, &pipeline_layout_info, nullptr, &m_handle));
 
@@ -91,6 +99,21 @@ void pipeline::set_sample_count(VkSampleCountFlagBits sample_count)
 	m_sample_count = sample_count;
 }
 
+void pipeline::set_topology(VkPrimitiveTopology topology)
+{
+	m_topology = topology;
+}
+
+void pipeline::set_cull_mode(VkCullModeFlags cull_mode)
+{
+	m_cull_mode = cull_mode;
+}
+
+void pipeline::set_blend_enable(VkBool32 blend_enable)
+{
+	m_blend_enable = (bool)blend_enable;
+}
+
 void pipeline::finalize(const render_pass &render_pass)
 {
 	/* Overwrite anything that's configurable. */
@@ -126,13 +149,17 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	m_device_handle = device.m_logical.m_handle;
 
 	m_vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	m_vertex_input_info.vertexBindingDescriptionCount = 1;
-	m_vertex_input_info.pVertexBindingDescriptions = &m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vbd;
-	m_vertex_input_info.vertexAttributeDescriptionCount = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vads.size();
-	m_vertex_input_info.pVertexAttributeDescriptions = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vads.data();
+	if (m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vads.size() != 0)
+	{
+		m_vertex_input_info.vertexBindingDescriptionCount = 1;
+		m_vertex_input_info.pVertexBindingDescriptions = &m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vbd;
+		m_vertex_input_info.vertexAttributeDescriptionCount =
+		    m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vads.size();
+		m_vertex_input_info.pVertexAttributeDescriptions = m_shader_modules[VK_SHADER_STAGE_VERTEX_BIT]->m_vads.data();
+	}
 
 	m_input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	m_input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	m_input_assembly.topology = m_topology;
 	m_input_assembly.primitiveRestartEnable = VK_FALSE;
 
 	m_viewport_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -146,7 +173,7 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	m_rasterizer_info.rasterizerDiscardEnable = VK_FALSE;
 	m_rasterizer_info.polygonMode = VK_POLYGON_MODE_FILL;
 	m_rasterizer_info.lineWidth = 1.0f;
-	m_rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
+	m_rasterizer_info.cullMode = m_cull_mode;
 	m_rasterizer_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	m_rasterizer_info.depthBiasEnable = VK_FALSE;
 	m_rasterizer_info.depthBiasConstantFactor = 0.0f;
@@ -173,15 +200,30 @@ void pipeline::build(device &device, const render_pass &render_pass)
 	m_depth_stencil_info.minDepthBounds = 0.0f;
 	m_depth_stencil_info.maxDepthBounds = 0.0f;
 
-	m_blend_attachment_state.colorWriteMask =
-	    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	m_blend_attachment_state.blendEnable = VK_FALSE;
-	m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-	m_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
-	m_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	m_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	m_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+	if (!m_blend_enable)
+	{
+		m_blend_attachment_state.colorWriteMask =
+		    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		m_blend_attachment_state.blendEnable = VK_FALSE;
+		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		m_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+		m_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		m_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+	}
+	else
+	{
+		m_blend_attachment_state.colorWriteMask =
+		    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		m_blend_attachment_state.blendEnable = VK_TRUE;
+		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		m_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+		m_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		m_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+	}
 
 	m_blending_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	m_blending_info.logicOpEnable = VK_FALSE;
