@@ -21,22 +21,7 @@ int main(int argc, char *argv[])
 
 	while (editor.m_context.m_window.step())
 	{
-		/* (TODO, thoave01): This doesn't belong in the context. But for now it has the platform. */
-		camera_input camera_input = {};
-		camera_input.w_pressed = editor.m_context.m_window.is_key_pressed(GLFW_KEY_W);
-		camera_input.a_pressed = editor.m_context.m_window.is_key_pressed(GLFW_KEY_A);
-		camera_input.s_pressed = editor.m_context.m_window.is_key_pressed(GLFW_KEY_S);
-		camera_input.d_pressed = editor.m_context.m_window.is_key_pressed(GLFW_KEY_D);
-		editor.m_context.m_window.get_mouse_position(camera_input.mouse_x, camera_input.mouse_y);
-		camera_input.right_mouse_pressed = editor.m_context.m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_RIGHT);
-		camera_input.middle_mouse_pressed = editor.m_context.m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_MIDDLE);
-		editor.m_scene.m_camera.process_input(camera_input);
-
-		vulkan::render_pass render_pass = {};
-		render_pass.set_dynamic_rendering(true);
-		render_pass.build(editor.m_context.m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
-
-		editor.m_ui.generate_frame();
+		editor.update();
 
 		VkViewport viewport = {};
 		viewport.x = editor.m_ui.m_viewport_x;

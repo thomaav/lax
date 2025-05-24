@@ -17,6 +17,8 @@ public:
 	editor operator=(const editor &) = delete;
 
 	void build();
+
+	void update();
 	void draw(vulkan::command_buffer &command_buffer);
 
 	vulkan::context m_context = {};
