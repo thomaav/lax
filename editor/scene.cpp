@@ -115,6 +115,22 @@ void scene::build(vulkan::context &context, const settings &settings)
 	               .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
 }
 
+void scene::update(const settings &settings)
+{
+	/* Update camera. */
+	m_camera.update((float)settings.viewport_width / (float)settings.viewport_height);
+
+	/* Update uniforms. */
+	m_uniforms.view = m_camera.m_view;
+	m_uniforms.projection = m_camera.m_projection;
+	m_uniforms.enable_mipmapping = settings.enable_mipmapping;
+	m_uniform_buffer.fill(&m_uniforms, sizeof(m_uniforms));
+}
+
+void scene::draw(vulkan::command_buffer &command_buffer)
+{
+}
+
 entity scene::create_entity()
 {
 	return m_entity++;

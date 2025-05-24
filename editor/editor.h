@@ -17,9 +17,9 @@ public:
 	editor operator=(const editor &) = delete;
 
 	void build();
-
 	void update();
-	void draw(vulkan::command_buffer &command_buffer);
+	void draw_(vulkan::command_buffer &command_buffer); /* (TODO, thoave01): Goes into scene. */
+	void draw();
 
 	vulkan::context m_context = {};
 	settings m_settings = {};
@@ -29,4 +29,5 @@ public:
 
 private:
 	void build_default_settings();
+	void draw_ui(vulkan::command_buffer &command_buffer);
 };

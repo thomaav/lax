@@ -51,6 +51,8 @@ public:
 	scene operator=(const scene &) = delete;
 
 	void build(vulkan::context &context, const settings &settings);
+	void update(const settings &settings);
+	void draw(vulkan::command_buffer &command_buffer);
 
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};

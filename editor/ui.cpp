@@ -263,10 +263,10 @@ void ui::generate_viewport()
 	             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
 	{
 		ImGui::GetWindowDockNode()->SetLocalFlags(ImGuiDockNodeFlags_NoTabBar);
-		m_viewport_x = ImGui::GetWindowPos().x;
-		m_viewport_y = ImGui::GetWindowPos().y;
-		m_viewport_width = ImGui::GetWindowWidth();
-		m_viewport_height = ImGui::GetWindowHeight();
+		m_editor->m_settings.viewport_x = ImGui::GetWindowPos().x;
+		m_editor->m_settings.viewport_y = ImGui::GetWindowPos().y;
+		m_editor->m_settings.viewport_width = ImGui::GetWindowWidth();
+		m_editor->m_settings.viewport_height = ImGui::GetWindowHeight();
 	}
 	ImGui::End();
 }

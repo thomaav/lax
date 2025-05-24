@@ -22,11 +22,6 @@ public:
 	void generate_frame();
 	void draw(vulkan::command_buffer &command_buffer);
 
-	u32 m_viewport_x;
-	u32 m_viewport_y;
-	u32 m_viewport_width;
-	u32 m_viewport_height;
-
 private:
 	void generate_docking();
 	void generate_console();
