@@ -7,6 +7,7 @@
 
 #include "buffer.h"
 #include "device.h"
+#include "image.h"
 #include "pipeline.h"
 
 namespace vulkan

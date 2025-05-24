@@ -70,21 +70,18 @@ int main(int argc, char *argv[])
 	int sample_count_selection = 1;
 
 	/* (TODO, thoave01): This should be part of initializing the defaults. */
-	vulkan::render_pass render_pass_ = {};
-	render_pass_.set_dynamic_rendering(true);
-	render_pass_.build(editor.m_context.m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 	for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
 	{
-		static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+		static_mesh->update_material(editor.m_settings.sample_count);
 	}
 	for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
 	{
-		skybox->update_material(render_pass_, editor.m_settings.sample_count);
+		skybox->update_material(editor.m_settings.sample_count);
 	}
 	editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-	editor.m_scene.m_grid.m_pipeline.update(render_pass_);
+	editor.m_scene.m_grid.m_pipeline.update();
 	editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-	editor.m_scene.m_plane.m_pipeline.update(render_pass_);
+	editor.m_scene.m_plane.m_pipeline.update();
 
 	while (editor.m_context.m_window.step())
 	{
@@ -192,16 +189,16 @@ int main(int argc, char *argv[])
 
 				for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
 				{
-					static_mesh->update_material(render_pass_, editor.m_settings.sample_count);
+					static_mesh->update_material(editor.m_settings.sample_count);
 				}
 				for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
 				{
-					skybox->update_material(render_pass_, editor.m_settings.sample_count);
+					skybox->update_material(editor.m_settings.sample_count);
 				}
 				editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-				editor.m_scene.m_grid.m_pipeline.update(render_pass_);
+				editor.m_scene.m_grid.m_pipeline.update();
 				editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-				editor.m_scene.m_plane.m_pipeline.update(render_pass_);
+				editor.m_scene.m_plane.m_pipeline.update();
 
 				color_texture = make_ref<vulkan::texture>();
 				color_texture->build(editor.m_context, { .m_format = editor.m_settings.color_format,

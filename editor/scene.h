@@ -49,7 +49,7 @@ public:
 	scene(const scene &) = delete;
 	scene operator=(const scene &) = delete;
 
-	void build_default_scene(vulkan::context &context, const vulkan::render_pass &render_pass);
+	void build_default_scene(vulkan::context &context);
 
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};

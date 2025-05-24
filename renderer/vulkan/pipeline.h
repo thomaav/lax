@@ -12,7 +12,6 @@
 #include <utils/util.h>
 
 #include "device.h"
-#include "render_pass.h"
 #include "shader.h"
 
 namespace vulkan
@@ -44,7 +43,7 @@ private:
 class pipeline
 {
 public:
-	pipeline() = default;
+	pipeline();
 	~pipeline();
 
 	pipeline(const pipeline &) = delete;
@@ -57,37 +56,36 @@ public:
 	void set_topology(VkPrimitiveTopology topology);
 	void set_cull_mode(VkCullModeFlags cull_mode);
 	void set_blend_enable(VkBool32 blend_enable);
+	void set_color_format(VkFormat format);
+	void set_depth_format(VkFormat format);
 
-	void build(device &device, const render_pass &render_pass);
-	void update(const render_pass &render_pass);
+	void build(device &device);
+	void update();
 
 	VkPipeline m_handle = {};
 	pipeline_layout m_pipeline_layout = {};
 
 private:
-	void finalize(const render_pass &render_pass);
+	void finalize();
 
 	VkDevice m_device_handle = {};
 	std::unordered_map<VkShaderStageFlagBits, ref<shader_module>> m_shader_modules = {};
 
-	/* Configurable. */
-	VkSampleCountFlagBits m_sample_count = VK_SAMPLE_COUNT_1_BIT;
-	VkPrimitiveTopology m_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	VkCullModeFlags m_cull_mode = VK_CULL_MODE_BACK_BIT;
-	bool m_blend_enable = false;
+	VkPipelineVertexInputStateCreateInfo m_vertex_input_info;
+	VkPipelineInputAssemblyStateCreateInfo m_input_assembly;
+	VkPipelineViewportStateCreateInfo m_viewport_info;
+	VkPipelineRasterizationStateCreateInfo m_rasterizer_info;
+	VkPipelineMultisampleStateCreateInfo m_multisampling_info;
+	VkPipelineDepthStencilStateCreateInfo m_depth_stencil_info;
+	VkPipelineColorBlendAttachmentState m_blend_attachment_state;
+	VkPipelineColorBlendStateCreateInfo m_blending_info;
+	std::vector<VkDynamicState> m_dynamic_states;
 
-	/* Set, and then re-used on update. */
-	VkPipelineVertexInputStateCreateInfo m_vertex_input_info = {};
-	VkPipelineInputAssemblyStateCreateInfo m_input_assembly = {};
-	VkPipelineViewportStateCreateInfo m_viewport_info = {};
-	VkPipelineRasterizationStateCreateInfo m_rasterizer_info = {};
-	VkPipelineMultisampleStateCreateInfo m_multisampling_info = {};
-	VkPipelineDepthStencilStateCreateInfo m_depth_stencil_info = {};
-	VkPipelineColorBlendAttachmentState m_blend_attachment_state = {};
-	VkPipelineColorBlendStateCreateInfo m_blending_info = {};
-	const VkDynamicState m_dynamic_states[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 	VkPipelineDynamicStateCreateInfo m_dynamic_state_info = {};
 	std::vector<VkPipelineShaderStageCreateInfo> m_stage_create_infos = {};
+
+	VkFormat m_color_format = {};
+	VkPipelineRenderingCreateInfo m_rendering_info = {};
 };
 
 } /* namespace vulkan */

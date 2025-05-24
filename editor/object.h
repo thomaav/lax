@@ -33,9 +33,9 @@ public:
 	skybox(const skybox &) = delete;
 	skybox operator=(const skybox &) = delete;
 
-	void build(vulkan::context &context, const vulkan::render_pass &render_pass);
+	void build(vulkan::context &context);
 	void draw(vulkan::command_buffer &command_buffer) override;
-	void update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count);
+	void update_material(VkSampleCountFlagBits sample_count);
 
 	assets::image m_asset_image = {};
 	vulkan::texture m_texture = {};
@@ -54,9 +54,9 @@ public:
 	static_mesh(const static_mesh &) = delete;
 	static_mesh operator=(const static_mesh &) = delete;
 
-	void build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model);
+	void build(vulkan::context &context, ref<assets::model> model);
 	void draw(vulkan::command_buffer &command_buffer) override;
-	void update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count);
+	void update_material(VkSampleCountFlagBits sample_count);
 
 	ref<assets::model> m_model;
 	vulkan::buffer m_vertex_buffer = {};

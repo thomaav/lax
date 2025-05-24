@@ -54,12 +54,7 @@ void editor::build_default()
 
 	logger::register_logger(&m_logger);
 
-	/* (TODO, thoave01): Settings, this is a throwaway render pass anyway. */
-	vulkan::render_pass render_pass = {};
-	render_pass.set_dynamic_rendering(true);
-	render_pass.build(m_context.m_device, m_settings.color_format, m_settings.depth_format);
-
-	m_scene.build_default_scene(m_context, render_pass);
+	m_scene.build_default_scene(m_context);
 }
 
 void editor::draw(vulkan::command_buffer &command_buffer)

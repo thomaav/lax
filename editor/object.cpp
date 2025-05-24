@@ -5,7 +5,7 @@
 #include "log.h"
 #include "object.h"
 
-void skybox::build(vulkan::context &context, const vulkan::render_pass &render_pass)
+void skybox::build(vulkan::context &context)
 {
 	/* Load image to get dimensions. */
 	m_asset_image.load("bin/assets/images/skybox/right.jpg");
@@ -35,7 +35,7 @@ void skybox::build(vulkan::context &context, const vulkan::render_pass &render_p
 	/* Pipeline. */
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/skybox.vert.spv");
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/skybox.frag.spv");
-	m_pipeline.build(context.m_device, render_pass);
+	m_pipeline.build(context.m_device);
 
 	/* Uniforms. */
 	m_uniforms.model = glm::mat4(1.0f);
@@ -53,13 +53,13 @@ void skybox::draw(vulkan::command_buffer &command_buffer)
 	vkCmdDraw(command_buffer.m_handle, 36, 1, /* firstVertex = */ 0, /* firstInstance = */ 0);
 }
 
-void skybox::update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count)
+void skybox::update_material(VkSampleCountFlagBits sample_count)
 {
 	m_pipeline.set_sample_count(sample_count);
-	m_pipeline.update(render_pass);
+	m_pipeline.update();
 }
 
-void static_mesh::build(vulkan::context &context, const vulkan::render_pass &render_pass, ref<assets::model> model)
+void static_mesh::build(vulkan::context &context, ref<assets::model> model)
 {
 	m_model = model;
 
@@ -93,7 +93,7 @@ void static_mesh::build(vulkan::context &context, const vulkan::render_pass &ren
 	/* Pipeline. */
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/basic.vert.spv");
 	m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/basic.frag.spv");
-	m_pipeline.build(context.m_device, render_pass);
+	m_pipeline.build(context.m_device);
 
 	/* Uniforms. */
 	m_uniforms.model = m_model->m_meshes[0].m_transform;
@@ -116,10 +116,10 @@ void static_mesh::draw(vulkan::command_buffer &command_buffer)
 	                 /* firstInstance = */ 0);
 }
 
-void static_mesh::update_material(const vulkan::render_pass &render_pass, VkSampleCountFlagBits sample_count)
+void static_mesh::update_material(VkSampleCountFlagBits sample_count)
 {
 	m_pipeline.set_sample_count(sample_count);
-	m_pipeline.update(render_pass);
+	m_pipeline.update();
 }
 
 void camera::build(glm::vec3 position, glm::vec3 target)
