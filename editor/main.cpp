@@ -1,20 +1,5 @@
-// clang-format off
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <third_party/volk/volk.h>
-#include <third_party/imgui/imgui.h>
-#include <third_party/imgui/imgui_internal.h>
-#include <third_party/imgui/imgui_impl_glfw.h>
-#include <third_party/imgui/imgui_impl_vulkan.h>
-#pragma clang diagnostic pop
-// clang-format on
-
-#include <renderer/vulkan/image.h>
 #include <renderer/vulkan/render_pass.h>
 #include <renderer/vulkan/semaphore.h>
-#include <utils/util.h>
 
 #include "editor.h"
 
@@ -26,31 +11,6 @@ int main(int argc, char *argv[])
 	editor editor = {};
 	editor.build();
 
-	/* Color texture. */
-	ref<vulkan::texture> color_texture = make_ref<vulkan::texture>();
-	color_texture->build(editor.m_context,
-	                     { .m_format = editor.m_settings.color_format,
-	                       .m_width = editor.m_context.m_wsi.m_swapchain.m_extent.width,
-	                       .m_height = editor.m_context.m_wsi.m_swapchain.m_extent.height,
-	                       .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-	                       .m_sample_count = editor.m_settings.sample_count });
-
-	/* Depth texture. */
-	ref<vulkan::texture> depth_texture = make_ref<vulkan::texture>();
-	depth_texture->build(editor.m_context, { .m_format = VK_FORMAT_D32_SFLOAT,
-	                                         .m_width = editor.m_context.m_wsi.m_swapchain.m_extent.width,
-	                                         .m_height = editor.m_context.m_wsi.m_swapchain.m_extent.height,
-	                                         .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-	                                         .m_sample_count = editor.m_settings.sample_count });
-
-	/* Resolve texture. */
-	ref<vulkan::texture> resolve_texture = make_ref<vulkan::texture>();
-	resolve_texture->build(editor.m_context,
-	                       { .m_format = editor.m_settings.color_format,
-	                         .m_width = editor.m_context.m_wsi.m_swapchain.m_extent.width,
-	                         .m_height = editor.m_context.m_wsi.m_swapchain.m_extent.height,
-	                         .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
-
 	vulkan::semaphore image_available_semaphore = {};
 	image_available_semaphore.build(editor.m_context.m_device);
 	vulkan::semaphore render_finished_semaphore = {};
@@ -58,10 +18,6 @@ int main(int argc, char *argv[])
 
 	vulkan::command_buffer command_buffer = {};
 	command_buffer.build(editor.m_context.m_device, editor.m_context.m_command_pool);
-
-	/* Settings. */
-	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
-	int sample_count_selection = 1;
 
 	while (editor.m_context.m_window.step())
 	{
@@ -82,58 +38,6 @@ int main(int argc, char *argv[])
 
 		editor.m_ui.generate_frame();
 
-		/* Settings. */
-		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
-		{
-			ImGui::Checkbox("Skybox", &editor.m_settings.enable_skybox);
-			ImGui::Checkbox("Mipmapping", &editor.m_settings.enable_mipmapping);
-			ImGui::Checkbox("Enable grid", &editor.m_settings.enable_grid);
-			if (ImGui::Combo("##MSAA", &sample_count_selection, sample_counts.data(), sample_counts.size()))
-			{
-				switch (sample_count_selection)
-				{
-				case 0:
-					editor.m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
-					break;
-				case 1:
-					editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
-					break;
-				}
-
-				for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
-				{
-					static_mesh->update_material(editor.m_settings.sample_count);
-				}
-				for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
-				{
-					skybox->update_material(editor.m_settings.sample_count);
-				}
-				editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-				editor.m_scene.m_grid.m_pipeline.update();
-				editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-				editor.m_scene.m_plane.m_pipeline.update();
-
-				color_texture = make_ref<vulkan::texture>();
-				color_texture->build(editor.m_context, { .m_format = editor.m_settings.color_format,
-				                                         .m_width = editor.m_context.m_wsi.m_swapchain.m_extent.width,
-				                                         .m_height = editor.m_context.m_wsi.m_swapchain.m_extent.height,
-				                                         .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-				                                                    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-				                                         .m_sample_count = editor.m_settings.sample_count });
-
-				/* Depth texture. */
-				depth_texture = make_ref<vulkan::texture>();
-				depth_texture->build(editor.m_context, { .m_format = VK_FORMAT_D32_SFLOAT,
-				                                         .m_width = editor.m_context.m_wsi.m_swapchain.m_extent.width,
-				                                         .m_height = editor.m_context.m_wsi.m_swapchain.m_extent.height,
-				                                         .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				                                         .m_sample_count = editor.m_settings.sample_count });
-			}
-		}
-		ImGui::End();
-
-		ImGui::Render();
-
 		VkViewport viewport = {};
 		viewport.x = editor.m_ui.m_viewport_x;
 		viewport.y = (float)(editor.m_ui.m_viewport_y + editor.m_ui.m_viewport_height);
@@ -151,11 +55,11 @@ int main(int argc, char *argv[])
 		editor.m_context.m_command_pool.reset();
 		command_buffer.begin();
 		{
-			command_buffer.transition_image_layout(color_texture->m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-			                                       VK_PIPELINE_STAGE_2_NONE, 0,
+			command_buffer.transition_image_layout(editor.m_scene.m_framebuffer.m_color_texture->m_image,
+			                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
-			command_buffer.transition_image_layout(resolve_texture->m_image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-			                                       VK_PIPELINE_STAGE_2_NONE, 0,
+			command_buffer.transition_image_layout(editor.m_scene.m_framebuffer.m_resolve_texture->m_image,
+			                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
 
 			if (editor.m_settings.sample_count != VK_SAMPLE_COUNT_1_BIT)
@@ -163,44 +67,44 @@ int main(int argc, char *argv[])
 				VkClearValue clear_color = {};
 				clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 				const VkRenderingAttachmentInfo color_attachment = {
-					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,           //
-					.pNext = nullptr,                                               //
-					.imageView = color_texture->m_image_view.m_handle,              //
-					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        //
-					.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT,                     //
-					.resolveImageView = resolve_texture->m_image_view.m_handle,     //
-					.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
-					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                          //
-					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,                    //
-					.clearValue = clear_color,                                      //
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,                                      //
+					.pNext = nullptr,                                                                          //
+					.imageView = editor.m_scene.m_framebuffer.m_color_texture->m_image_view.m_handle,          //
+					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                                   //
+					.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT,                                                //
+					.resolveImageView = editor.m_scene.m_framebuffer.m_resolve_texture->m_image_view.m_handle, //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                            //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                                                     //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,                                               //
+					.clearValue = clear_color,                                                                 //
 				};
 				VkClearValue clear_depth = {};
 				clear_depth.depthStencil = { 1.0f, 0 };
 				const VkRenderingAttachmentInfo depth_attachment = {
-					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
-					.pNext = nullptr,                                        //
-					.imageView = depth_texture->m_image_view.m_handle,       //
-					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
-					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
-					.resolveImageView = VK_NULL_HANDLE,                      //
-					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
-					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
-					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
-					.clearValue = clear_depth,                               //
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,                             //
+					.pNext = nullptr,                                                                 //
+					.imageView = editor.m_scene.m_framebuffer.m_depth_texture->m_image_view.m_handle, //
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,                          //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                                              //
+					.resolveImageView = VK_NULL_HANDLE,                                               //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                                  //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                                            //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,                                      //
+					.clearValue = clear_depth,                                                        //
 				};
 				const VkRenderingInfo rendering_info = {
 					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
 					.pNext = nullptr,                          //
 					.flags = 0,                                //
 					.renderArea = { { 0, 0 },
-					                { color_texture->m_image.m_info.m_width,
-					                  color_texture->m_image.m_info.m_height } }, //
-					.layerCount = 1,                                              //
-					.viewMask = 0,                                                //
-					.colorAttachmentCount = 1,                                    //
-					.pColorAttachments = &color_attachment,                       //
-					.pDepthAttachment = &depth_attachment,                        //
-					.pStencilAttachment = nullptr,                                //
+					                { editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_width,
+					                  editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_height } }, //
+					.layerCount = 1,                                                                             //
+					.viewMask = 0,                                                                               //
+					.colorAttachmentCount = 1,                                                                   //
+					.pColorAttachments = &color_attachment,                                                      //
+					.pDepthAttachment = &depth_attachment,                                                       //
+					.pStencilAttachment = nullptr,                                                               //
 				};
 
 				/* Render. */
@@ -217,44 +121,44 @@ int main(int argc, char *argv[])
 				VkClearValue clear_color = {};
 				clear_color.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 				const VkRenderingAttachmentInfo color_attachment = {
-					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
-					.pNext = nullptr,                                        //
-					.imageView = resolve_texture->m_image_view.m_handle,     //
-					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
-					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
-					.resolveImageView = VK_NULL_HANDLE,                      //
-					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
-					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
-					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                 //
-					.clearValue = clear_color,                               //
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,                               //
+					.pNext = nullptr,                                                                   //
+					.imageView = editor.m_scene.m_framebuffer.m_resolve_texture->m_image_view.m_handle, //
+					.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                            //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                                                //
+					.resolveImageView = VK_NULL_HANDLE,                                                 //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                                    //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                                              //
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                                            //
+					.clearValue = clear_color,                                                          //
 				};
 				VkClearValue clear_depth = {};
 				clear_depth.depthStencil = { 1.0f, 0 };
 				const VkRenderingAttachmentInfo depth_attachment = {
-					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
-					.pNext = nullptr,                                        //
-					.imageView = depth_texture->m_image_view.m_handle,       //
-					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, //
-					.resolveMode = VK_RESOLVE_MODE_NONE,                     //
-					.resolveImageView = VK_NULL_HANDLE,                      //
-					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
-					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                   //
-					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,             //
-					.clearValue = clear_depth,                               //
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,                             //
+					.pNext = nullptr,                                                                 //
+					.imageView = editor.m_scene.m_framebuffer.m_depth_texture->m_image_view.m_handle, //
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,                          //
+					.resolveMode = VK_RESOLVE_MODE_NONE,                                              //
+					.resolveImageView = VK_NULL_HANDLE,                                               //
+					.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                                  //
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,                                            //
+					.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,                                      //
+					.clearValue = clear_depth,                                                        //
 				};
 				const VkRenderingInfo rendering_info = {
 					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
 					.pNext = nullptr,                          //
 					.flags = 0,                                //
 					.renderArea = { { 0, 0 },
-					                { color_texture->m_image.m_info.m_width,
-					                  color_texture->m_image.m_info.m_height } }, //
-					.layerCount = 1,                                              //
-					.viewMask = 0,                                                //
-					.colorAttachmentCount = 1,                                    //
-					.pColorAttachments = &color_attachment,                       //
-					.pDepthAttachment = &depth_attachment,                        //
-					.pStencilAttachment = nullptr,                                //
+					                { editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_width,
+					                  editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_height } }, //
+					.layerCount = 1,                                                                             //
+					.viewMask = 0,                                                                               //
+					.colorAttachmentCount = 1,                                                                   //
+					.pColorAttachments = &color_attachment,                                                      //
+					.pDepthAttachment = &depth_attachment,                                                       //
+					.pStencilAttachment = nullptr,                                                               //
 				};
 
 				/* Render. */
@@ -268,46 +172,47 @@ int main(int argc, char *argv[])
 			}
 
 			command_buffer.transition_image_layout(
-			    resolve_texture->m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			    editor.m_scene.m_framebuffer.m_resolve_texture->m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
 			    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
 			const VkRenderingAttachmentInfo resolve_attachment = {
-				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,    //
-				.pNext = nullptr,                                        //
-				.imageView = resolve_texture->m_image_view.m_handle,     //
-				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //
-				.resolveMode = VK_RESOLVE_MODE_NONE,                     //
-				.resolveImageView = VK_NULL_HANDLE,                      //
-				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,         //
-				.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,                    //
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                 //
-				.clearValue = {},                                        //
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,                               //
+				.pNext = nullptr,                                                                   //
+				.imageView = editor.m_scene.m_framebuffer.m_resolve_texture->m_image_view.m_handle, //
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                            //
+				.resolveMode = VK_RESOLVE_MODE_NONE,                                                //
+				.resolveImageView = VK_NULL_HANDLE,                                                 //
+				.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,                                    //
+				.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,                                               //
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,                                            //
+				.clearValue = {},                                                                   //
 			};
 			const VkRenderingInfo rendering_info_2 = {
 				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO, //
 				.pNext = nullptr,                          //
 				.flags = 0,                                //
 				.renderArea = { { 0, 0 },
-				                { color_texture->m_image.m_info.m_width, color_texture->m_image.m_info.m_height } }, //
-				.layerCount = 1,                                                                                     //
-				.viewMask = 0,                                                                                       //
-				.colorAttachmentCount = 1,                                                                           //
-				.pColorAttachments = &resolve_attachment,                                                            //
-				.pDepthAttachment = VK_NULL_HANDLE,                                                                  //
-				.pStencilAttachment = nullptr,                                                                       //
+				                { editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_width,
+				                  editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_height } }, //
+				.layerCount = 1,                                                                             //
+				.viewMask = 0,                                                                               //
+				.colorAttachmentCount = 1,                                                                   //
+				.pColorAttachments = &resolve_attachment,                                                    //
+				.pDepthAttachment = VK_NULL_HANDLE,                                                          //
+				.pStencilAttachment = nullptr,                                                               //
 			};
 			vkCmdBeginRendering(command_buffer.m_handle, &rendering_info_2);
 			{
-				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
+				editor.m_ui.draw(command_buffer);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
 
-			command_buffer.transition_image_layout(resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			                                       VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+			command_buffer.transition_image_layout(
+			    editor.m_scene.m_framebuffer.m_resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			    VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
 			command_buffer.transition_image_layout(*editor.m_context.m_wsi.m_swapchain.m_images[image_idx],
 			                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
@@ -323,8 +228,9 @@ int main(int argc, char *argv[])
 			copy_info.dstSubresource.baseArrayLayer = 0;
 			copy_info.dstSubresource.layerCount = 1;
 			copy_info.dstOffset = { 0, 0, 0 };
-			copy_info.extent = { color_texture->m_image.m_info.m_width, color_texture->m_image.m_info.m_height, 1 };
-			vkCmdCopyImage(command_buffer.m_handle, resolve_texture->m_image.m_handle,
+			copy_info.extent = { editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_width,
+				                 editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_height, 1 };
+			vkCmdCopyImage(command_buffer.m_handle, editor.m_scene.m_framebuffer.m_resolve_texture->m_image.m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			               editor.m_context.m_wsi.m_swapchain.m_images[image_idx]->m_handle,
 			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);

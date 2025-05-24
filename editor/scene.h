@@ -76,6 +76,13 @@ public:
 		vulkan::buffer m_vertex_buffer = {};
 	} m_plane;
 
+	struct
+	{
+		ref<vulkan::texture> m_color_texture = make_ref<vulkan::texture>();
+		ref<vulkan::texture> m_depth_texture = make_ref<vulkan::texture>();
+		ref<vulkan::texture> m_resolve_texture = make_ref<vulkan::texture>();
+	} m_framebuffer;
+
 private:
 	entity m_entity = 0;
 };

@@ -95,6 +95,24 @@ void scene::build(vulkan::context &context, const settings &settings)
 	{
 		skybox->update_material(settings.sample_count);
 	}
+
+	/* Framebuffer. */
+	m_framebuffer.m_color_texture->build(
+	    context, { .m_format = settings.color_format,
+	               .m_width = context.m_wsi.m_swapchain.m_extent.width,
+	               .m_height = context.m_wsi.m_swapchain.m_extent.height,
+	               .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+	               .m_sample_count = settings.sample_count });
+	m_framebuffer.m_depth_texture->build(context, { .m_format = VK_FORMAT_D32_SFLOAT,
+	                                                .m_width = context.m_wsi.m_swapchain.m_extent.width,
+	                                                .m_height = context.m_wsi.m_swapchain.m_extent.height,
+	                                                .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+	                                                .m_sample_count = settings.sample_count });
+	m_framebuffer.m_resolve_texture->build(
+	    context, { .m_format = settings.color_format,
+	               .m_width = context.m_wsi.m_swapchain.m_extent.width,
+	               .m_height = context.m_wsi.m_swapchain.m_extent.height,
+	               .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT });
 }
 
 entity scene::create_entity()

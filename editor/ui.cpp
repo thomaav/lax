@@ -11,6 +11,8 @@
 #pragma clang diagnostic pop
 // clang-format on
 
+#include <renderer/vulkan/command_buffer.h>
+
 #include "editor.h"
 #include "ui.h"
 
@@ -78,10 +80,12 @@ void ui::generate_frame()
 	generate_settings();
 	generate_debug();
 	generate_viewport();
+	ImGui::Render();
 }
 
-void ui::draw()
+void ui::draw(vulkan::command_buffer &command_buffer)
 {
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 }
 
 void ui::generate_docking()
@@ -154,7 +158,58 @@ void ui::generate_scene()
 
 void ui::generate_settings()
 {
-	/* (TODO, thoave01): Move here but that requires moving the framebuffer. */
+	static std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
+	static int sample_count_selection = 1;
+	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+	{
+		ImGui::Checkbox("Skybox", &m_editor->m_settings.enable_skybox);
+		ImGui::Checkbox("Mipmapping", &m_editor->m_settings.enable_mipmapping);
+		ImGui::Checkbox("Enable grid", &m_editor->m_settings.enable_grid);
+		if (ImGui::Combo("##MSAA", &sample_count_selection, sample_counts.data(), sample_counts.size()))
+		{
+			switch (sample_count_selection)
+			{
+			case 0:
+				m_editor->m_settings.sample_count = VK_SAMPLE_COUNT_1_BIT;
+				break;
+			case 1:
+				m_editor->m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
+				break;
+			}
+
+			for (auto &[e, static_mesh] : m_editor->m_scene.m_static_mesh_storage)
+			{
+				static_mesh->update_material(m_editor->m_settings.sample_count);
+			}
+			for (auto &[e, skybox] : m_editor->m_scene.m_skybox_storage)
+			{
+				skybox->update_material(m_editor->m_settings.sample_count);
+			}
+			m_editor->m_scene.m_grid.m_pipeline.set_sample_count(m_editor->m_settings.sample_count);
+			m_editor->m_scene.m_grid.m_pipeline.update();
+			m_editor->m_scene.m_plane.m_pipeline.set_sample_count(m_editor->m_settings.sample_count);
+			m_editor->m_scene.m_plane.m_pipeline.update();
+
+			m_editor->m_scene.m_framebuffer.m_color_texture = make_ref<vulkan::texture>();
+			m_editor->m_scene.m_framebuffer.m_color_texture->build(
+			    m_editor->m_context,
+			    { .m_format = m_editor->m_settings.color_format,
+			      .m_width = m_editor->m_context.m_wsi.m_swapchain.m_extent.width,
+			      .m_height = m_editor->m_context.m_wsi.m_swapchain.m_extent.height,
+			      .m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+			      .m_sample_count = m_editor->m_settings.sample_count });
+
+			/* Depth texture. */
+			m_editor->m_scene.m_framebuffer.m_depth_texture = make_ref<vulkan::texture>();
+			m_editor->m_scene.m_framebuffer.m_depth_texture->build(
+			    m_editor->m_context, { .m_format = VK_FORMAT_D32_SFLOAT,
+			                           .m_width = m_editor->m_context.m_wsi.m_swapchain.m_extent.width,
+			                           .m_height = m_editor->m_context.m_wsi.m_swapchain.m_extent.height,
+			                           .m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			                           .m_sample_count = m_editor->m_settings.sample_count });
+		}
+	}
+	ImGui::End();
 }
 
 void ui::generate_debug()

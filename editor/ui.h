@@ -1,6 +1,11 @@
 #pragma once
 
-#include <renderer/vulkan/context.h>
+#include <utils/type.h>
+
+namespace vulkan
+{
+class command_buffer;
+}
 
 class editor;
 
@@ -15,7 +20,7 @@ public:
 
 	void build(editor &editor);
 	void generate_frame();
-	void draw();
+	void draw(vulkan::command_buffer &command_buffer);
 
 	u32 m_viewport_x;
 	u32 m_viewport_y;
