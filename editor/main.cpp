@@ -1,5 +1,3 @@
-#include <chrono>
-
 // clang-format off
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
@@ -82,74 +80,7 @@ int main(int argc, char *argv[])
 		render_pass.set_dynamic_rendering(true);
 		render_pass.build(editor.m_context.m_device, editor.m_settings.color_format, editor.m_settings.depth_format);
 
-		/* (TODO, thoave01): ImGui stuff that doesn't belong here. */
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		static bool first_frame = true;
-		if (first_frame)
-		{
-			ImGuiID window_id = ImGui::DockSpaceOverViewport();
-
-			ImGui::DockBuilderRemoveNode(window_id);
-			ImGui::DockBuilderAddNode(window_id, ImGuiDockNodeFlags_None);
-			ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
-
-			ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
-			ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Left, 0.15f, nullptr, &window_id);
-			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
-			ImGuiID dock_right_bottom_id =
-			    ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.60f, nullptr, &dock_right_id);
-
-			ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
-			ImGui::DockBuilderDockWindow("Scene", dock_left_id);
-			ImGui::DockBuilderDockWindow("Settings", dock_right_id);
-			ImGui::DockBuilderDockWindow("Debug", dock_right_bottom_id);
-			ImGui::DockBuilderDockWindow("Viewport", window_id);
-
-			ImGui::DockBuilderFinish(window_id);
-
-			first_frame = false;
-		}
-
-		/* Global UI stuff. */
-		ImGui::GetStyle().WindowMenuButtonPosition = ImGuiDir_None;
-
-		/* Console. */
-		ImGui::Begin("Console", nullptr,
-		             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-		{
-			ImGui::PushTextWrapPos();
-			ImGui::TextUnformatted(editor.m_logger.m_buffer.begin(), editor.m_logger.m_buffer.end());
-			ImGui::PopTextWrapPos();
-			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-			{
-				ImGui::SetScrollHereY(1.0f);
-			}
-		}
-		ImGui::End();
-
-		ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove);
-		{
-			if (ImGui::TreeNodeEx("Root", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				if (ImGui::TreeNodeEx("Static meshes", ImGuiTreeNodeFlags_DefaultOpen))
-				{
-					for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
-					{
-						ImGui::Text("[e%lu] Static mesh", e);
-					}
-					ImGui::TreePop();
-				}
-				for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
-				{
-					ImGui::Text("[e%lu] Skybox", e);
-				}
-				ImGui::TreePop();
-			}
-		}
-		ImGui::End();
+		editor.m_ui.generate_frame();
 
 		/* Settings. */
 		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
@@ -201,76 +132,18 @@ int main(int argc, char *argv[])
 		}
 		ImGui::End();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove);
-		{
-			static bool first = true;
-			static auto last = std::chrono::steady_clock::now();
-			static std::vector<float> frame_times = {};
-
-			auto now = std::chrono::steady_clock::now();
-			float ms = std::chrono::duration<float, std::ratio<1, 1000>>(now - last).count();
-			last = now;
-
-			if (!first)
-			{
-				frame_times.push_back(ms);
-				if (frame_times.size() > 100)
-				{
-					frame_times.erase(frame_times.begin());
-				}
-				auto [min, max] = std::minmax_element(frame_times.begin(), frame_times.end());
-				ImGui::PlotLines("##frame_time", frame_times.data(), frame_times.size(), 0, "Frame time", 0.0, 33.3,
-				                 ImVec2(ImGui::GetWindowWidth(), ImGui::GetWindowHeight() * 0.2f));
-			}
-			else
-			{
-				first = false;
-			}
-
-			float window_width = ImGui::GetWindowSize().x / 2.0f;
-			float ms_text_width = ImGui::CalcTextSize(" MS %.1f").x;
-			ImGui::SetCursorPosX((window_width - ms_text_width) * 0.5f);
-			ImGui::Text(" MS %.1f", ms);
-
-			ImGui::SameLine(ImGui::GetWindowWidth() / 2.0f);
-			float fps_text_width = ImGui::CalcTextSize("FPS %.1f").x;
-			ImGui::SetCursorPosX(window_width + (window_width - fps_text_width) * 0.5f);
-			ImGui::Text("FPS %.1f", ImGui::GetIO().Framerate);
-		}
-		ImGui::End();
-		ImGui::PopStyleVar();
-		ImGui::PopStyleVar();
-
-		u32 viewport_x = 0;
-		u32 viewport_y = 0;
-		u32 viewport_width = 0;
-		u32 viewport_height = 0;
-		ImGui::Begin("Viewport", nullptr,
-		             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
-		{
-			ImGui::GetWindowDockNode()->SetLocalFlags(ImGuiDockNodeFlags_NoTabBar);
-			viewport_x = ImGui::GetWindowPos().x;
-			viewport_y = ImGui::GetWindowPos().y;
-			viewport_width = ImGui::GetWindowWidth();
-			viewport_height = ImGui::GetWindowHeight();
-			editor.m_scene.m_camera.m_aspect = (float)viewport_width / (float)viewport_height;
-		}
-		ImGui::End();
+		ImGui::Render();
 
 		VkViewport viewport = {};
-		viewport.x = viewport_x;
-		viewport.y = (float)(viewport_y + viewport_height);
-		viewport.width = (float)viewport_width;
-		viewport.height = -(float)viewport_height;
+		viewport.x = editor.m_ui.m_viewport_x;
+		viewport.y = (float)(editor.m_ui.m_viewport_y + editor.m_ui.m_viewport_height);
+		viewport.width = (float)editor.m_ui.m_viewport_width;
+		viewport.height = -(float)editor.m_ui.m_viewport_height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		VkRect2D scissor = {};
-		scissor.offset = { viewport_x, viewport_y };
-		scissor.extent = { viewport_width, viewport_height };
-
-		ImGui::Render();
+		scissor.offset = { editor.m_ui.m_viewport_x, editor.m_ui.m_viewport_y };
+		scissor.extent = { editor.m_ui.m_viewport_width, editor.m_ui.m_viewport_height };
 
 		u32 image_idx = 0;
 		editor.m_context.m_wsi.acquire_image(image_available_semaphore, &image_idx);

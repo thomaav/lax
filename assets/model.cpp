@@ -1,8 +1,11 @@
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <third_party/stb/stb_image.h>
+#pragma clang diagnostic pop
 
 #include <utils/log.h>
 #include <utils/type.h>

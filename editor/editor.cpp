@@ -5,7 +5,7 @@ void editor::build()
 	logger::register_logger(&m_logger);
 
 	m_context.build();
-	m_ui.build(m_context);
+	m_ui.build(*this);
 
 	build_default_settings();
 	m_scene.build(m_context, m_settings);
