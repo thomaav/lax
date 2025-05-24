@@ -1,19 +1,10 @@
 #pragma once
 
-// clang-format off
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#include <third_party/volk/volk.h>
-#include <third_party/imgui/imgui.h>
-#include <third_party/imgui/imgui_impl_glfw.h>
-#include <third_party/imgui/imgui_impl_vulkan.h>
-#pragma clang diagnostic pop
-// clang-format on
-
 #include <renderer/vulkan/command_buffer.h>
 
 #include "log.h"
 #include "scene.h"
+#include "ui.h"
 
 struct settings
 {
@@ -35,7 +26,7 @@ class editor
 {
 public:
 	editor() = default;
-	~editor();
+	~editor() = default;
 
 	editor(const editor &) = delete;
 	editor operator=(const editor &) = delete;
@@ -46,7 +37,9 @@ public:
 	vulkan::context m_context = {};
 	settings m_settings = {};
 	scene m_scene = {};
+	ui m_ui = {};
 	console_logger m_logger = {};
 
 private:
+	void set_default_settings();
 };

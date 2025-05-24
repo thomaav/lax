@@ -26,10 +26,6 @@ int main(int argc, char *argv[])
 	UNUSED(argv);
 
 	editor editor = {};
-	editor.m_settings.enable_mipmapping = true;
-	editor.m_settings.enable_skybox = true;
-	editor.m_settings.enable_grid = true;
-	editor.m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
 	editor.build_default();
 
 	/* Color texture. */

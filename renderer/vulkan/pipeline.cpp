@@ -43,10 +43,10 @@ void pipeline_layout::build(device &device)
 	m_dset_layout.build(device);
 
 	VkPushConstantRange push_constants = {};
-	/* (TODO, thoave01): Fix stage flags. */
 	push_constants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	push_constants.offset = 0;
 	push_constants.size = m_push_constants_size;
+
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipeline_layout_info.setLayoutCount = 1;
@@ -61,7 +61,6 @@ void pipeline_layout::build(device &device)
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 	}
-
 	VULKAN_ASSERT_SUCCESS(vkCreatePipelineLayout(device.m_logical.m_handle, &pipeline_layout_info, nullptr, &m_handle));
 
 	m_device_handle = device.m_logical.m_handle;
@@ -205,9 +204,9 @@ void pipeline::set_blend_enable(VkBool32 blend_enable)
 	{
 		m_blend_attachment_state.colorWriteMask =
 		    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		m_blend_attachment_state.blendEnable = VK_FALSE;
-		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		m_blend_attachment_state.blendEnable = VK_TRUE;
+		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		m_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
 		m_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		m_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -217,9 +216,9 @@ void pipeline::set_blend_enable(VkBool32 blend_enable)
 	{
 		m_blend_attachment_state.colorWriteMask =
 		    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		m_blend_attachment_state.blendEnable = VK_TRUE;
-		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		m_blend_attachment_state.blendEnable = VK_FALSE;
+		m_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 		m_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
 		m_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		m_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;

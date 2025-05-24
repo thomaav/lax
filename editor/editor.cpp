@@ -1,59 +1,13 @@
-#include <renderer/vulkan/render_pass.h>
-
 #include "editor.h"
-
-editor::~editor()
-{
-	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-}
 
 void editor::build_default()
 {
-	m_context.build();
-
-	/* Settings derived from context (not really settings?). */
-	m_settings.color_format = m_context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
-	m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
-
-	/* Dear ImGui. */
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplGlfw_InitForVulkan(m_context.m_window.m_window, true);
-	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = m_context.m_instance.m_handle;
-	init_info.PhysicalDevice = m_context.m_device.m_physical.m_handle;
-	init_info.Device = m_context.m_device.m_logical.m_handle;
-	init_info.QueueFamily = *m_context.m_device.m_physical.m_queue_family.m_all;
-	init_info.Queue = m_context.m_queue.m_handle;
-	init_info.PipelineCache = VK_NULL_HANDLE;
-	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
-	init_info.UseDynamicRendering = VK_TRUE;
-	init_info.PipelineRenderingCreateInfo = {}; /* (TODO) */
-	init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
-	init_info.PipelineRenderingCreateInfo.viewMask = 0;
-	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats =
-	    &m_context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
-	init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
-	init_info.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-	init_info.MinImageCount = m_context.m_wsi.m_swapchain.m_images.size();
-	init_info.ImageCount = m_context.m_wsi.m_swapchain.m_images.size();
-	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-	init_info.Allocator = nullptr;
-	init_info.CheckVkResultFn = nullptr;
-	ImGui_ImplVulkan_Init(&init_info);
-
 	logger::register_logger(&m_logger);
 
+	m_context.build();
+	m_ui.build(m_context);
+
+	set_default_settings();
 	m_scene.build_default_scene(m_context);
 }
 
@@ -94,5 +48,27 @@ void editor::draw(vulkan::command_buffer &command_buffer)
 		vkCmdBindVertexBuffers(command_buffer.m_handle, 0, 1, &m_scene.m_plane.m_vertex_buffer.m_handle, &offset);
 		command_buffer.set_uniform_buffer(0, m_scene.m_uniform_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 		vkCmdDraw(command_buffer.m_handle, 6, 1, 0, 0);
+	}
+}
+
+void editor::set_default_settings()
+{
+	/* No dependencies. */
+	m_settings.enable_mipmapping = true;
+	m_settings.enable_skybox = true;
+	m_settings.enable_grid = true;
+	m_settings.sample_count = VK_SAMPLE_COUNT_4_BIT;
+
+	/* Dependencies. */
+	if (VK_NULL_HANDLE != m_context.m_wsi.m_swapchain.m_handle)
+	{
+		m_settings.color_format = m_context.m_wsi.m_swapchain.m_images[0]->m_info.m_format;
+		m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
+	}
+	else
+	{
+		logger::warn("Swapchain not initialized when setting default framebuffer formats, using defaults");
+		m_settings.color_format = VK_FORMAT_B8G8R8A8_SRGB;
+		m_settings.depth_format = VK_FORMAT_D32_SFLOAT;
 	}
 }
