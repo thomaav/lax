@@ -11,35 +11,23 @@ int main(int argc, char *argv[])
 	editor editor = {};
 	editor.build();
 
-	vulkan::semaphore image_available_semaphore = {};
-	image_available_semaphore.build(editor.m_context.m_device);
-	vulkan::semaphore render_finished_semaphore = {};
-	render_finished_semaphore.build(editor.m_context.m_device);
-
-	vulkan::command_buffer command_buffer = {};
-	command_buffer.build(editor.m_context.m_device, editor.m_context.m_command_pool);
-
 	while (editor.m_context.m_window.step())
 	{
 		editor.update();
 
-		VkViewport viewport = {};
-		viewport.x = editor.m_ui.m_viewport_x;
-		viewport.y = (float)(editor.m_ui.m_viewport_y + editor.m_ui.m_viewport_height);
-		viewport.width = (float)editor.m_ui.m_viewport_width;
-		viewport.height = -(float)editor.m_ui.m_viewport_height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		VkRect2D scissor = {};
-		scissor.offset = { editor.m_ui.m_viewport_x, editor.m_ui.m_viewport_y };
-		scissor.extent = { editor.m_ui.m_viewport_width, editor.m_ui.m_viewport_height };
-
-		u32 image_idx = 0;
-		editor.m_context.m_wsi.acquire_image(image_available_semaphore, &image_idx);
-
-		editor.m_context.m_command_pool.reset();
-		command_buffer.begin();
+		vulkan::command_buffer &command_buffer = editor.m_context.begin_frame();
 		{
+			VkViewport viewport = {};
+			viewport.x = editor.m_ui.m_viewport_x;
+			viewport.y = (float)(editor.m_ui.m_viewport_y + editor.m_ui.m_viewport_height);
+			viewport.width = (float)editor.m_ui.m_viewport_width;
+			viewport.height = -(float)editor.m_ui.m_viewport_height;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			VkRect2D scissor = {};
+			scissor.offset = { editor.m_ui.m_viewport_x, editor.m_ui.m_viewport_y };
+			scissor.extent = { editor.m_ui.m_viewport_width, editor.m_ui.m_viewport_height };
+
 			command_buffer.transition_image_layout(editor.m_scene.m_framebuffer.m_color_texture->m_image,
 			                                       VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
 			                                       VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0);
@@ -193,44 +181,7 @@ int main(int argc, char *argv[])
 				editor.m_ui.draw(command_buffer);
 			}
 			vkCmdEndRendering(command_buffer.m_handle);
-
-			command_buffer.transition_image_layout(
-			    editor.m_scene.m_framebuffer.m_resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-			    VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-			command_buffer.transition_image_layout(*editor.m_context.m_wsi.m_swapchain.m_images[image_idx],
-			                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
-			                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
-
-			VkImageCopy copy_info = {};
-			copy_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			copy_info.srcSubresource.mipLevel = 0;
-			copy_info.srcSubresource.baseArrayLayer = 0;
-			copy_info.srcSubresource.layerCount = 1;
-			copy_info.srcOffset = { 0, 0, 0 };
-			copy_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			copy_info.dstSubresource.mipLevel = 0;
-			copy_info.dstSubresource.baseArrayLayer = 0;
-			copy_info.dstSubresource.layerCount = 1;
-			copy_info.dstOffset = { 0, 0, 0 };
-			copy_info.extent = { editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_width,
-				                 editor.m_scene.m_framebuffer.m_color_texture->m_image.m_info.m_height, 1 };
-			vkCmdCopyImage(command_buffer.m_handle, editor.m_scene.m_framebuffer.m_resolve_texture->m_image.m_handle,
-			               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			               editor.m_context.m_wsi.m_swapchain.m_images[image_idx]->m_handle,
-			               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
-
-			command_buffer.transition_image_layout(*editor.m_context.m_wsi.m_swapchain.m_images[image_idx],
-			                                       VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-			                                       VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_NONE, 0);
 		}
-		command_buffer.end();
-
-		vulkan::fence unused_fence = {};
-		vulkan::semaphore unused_semaphore = {};
-		editor.m_context.m_queue.submit(command_buffer, image_available_semaphore, render_finished_semaphore,
-		                                unused_fence);
-		editor.m_context.m_queue.present(render_finished_semaphore, editor.m_context.m_wsi, image_idx);
-		editor.m_context.m_device.wait();
+		editor.m_context.end_frame(*editor.m_scene.m_framebuffer.m_resolve_texture);
 	}
 }

@@ -34,13 +34,20 @@ public:
 
 	void build();
 
+	command_buffer &begin_frame();
+	void end_frame(texture &frame);
+
 	glfw_window m_window = {};
 	instance m_instance = {};
 	device m_device = {};
 	wsi m_wsi = {};
 	queue m_queue = {};
 	resource_allocator m_resource_allocator = {};
+
 	command_pool m_command_pool = {};
+	command_buffer m_command_buffer = {};
+	semaphore m_image_available_semaphore = {};
+	semaphore m_render_finished_semaphore = {};
 
 private:
 };
