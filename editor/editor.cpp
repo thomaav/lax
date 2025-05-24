@@ -1,14 +1,14 @@
 #include "editor.h"
 
-void editor::build_default()
+void editor::build()
 {
 	logger::register_logger(&m_logger);
 
 	m_context.build();
 	m_ui.build(m_context);
 
-	set_default_settings();
-	m_scene.build_default_scene(m_context);
+	build_default_settings();
+	m_scene.build(m_context, m_settings);
 }
 
 void editor::draw(vulkan::command_buffer &command_buffer)
@@ -51,7 +51,7 @@ void editor::draw(vulkan::command_buffer &command_buffer)
 	}
 }
 
-void editor::set_default_settings()
+void editor::build_default_settings()
 {
 	/* No dependencies. */
 	m_settings.enable_mipmapping = true;

@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	UNUSED(argv);
 
 	editor editor = {};
-	editor.build_default();
+	editor.build();
 
 	/* Color texture. */
 	ref<vulkan::texture> color_texture = make_ref<vulkan::texture>();
@@ -64,20 +64,6 @@ int main(int argc, char *argv[])
 	/* Settings. */
 	std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
 	int sample_count_selection = 1;
-
-	/* (TODO, thoave01): This should be part of initializing the defaults. */
-	for (auto &[e, static_mesh] : editor.m_scene.m_static_mesh_storage)
-	{
-		static_mesh->update_material(editor.m_settings.sample_count);
-	}
-	for (auto &[e, skybox] : editor.m_scene.m_skybox_storage)
-	{
-		skybox->update_material(editor.m_settings.sample_count);
-	}
-	editor.m_scene.m_grid.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-	editor.m_scene.m_grid.m_pipeline.update();
-	editor.m_scene.m_plane.m_pipeline.set_sample_count(editor.m_settings.sample_count);
-	editor.m_scene.m_plane.m_pipeline.update();
 
 	while (editor.m_context.m_window.step())
 	{

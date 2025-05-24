@@ -11,6 +11,7 @@
 #include <utils/util.h>
 
 #include "object.h"
+#include "settings.h"
 
 using entity = u64;
 template <typename T> using estorage = std::unordered_map<entity, T>;
@@ -49,7 +50,7 @@ public:
 	scene(const scene &) = delete;
 	scene operator=(const scene &) = delete;
 
-	void build_default_scene(vulkan::context &context);
+	void build(vulkan::context &context, const settings &settings);
 
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};

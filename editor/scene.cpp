@@ -15,14 +15,15 @@ void node::add_child(const ref<object> &child)
 	m_children.push_back(child_node);
 }
 
-void scene::build_default_scene(vulkan::context &context)
+void scene::build(vulkan::context &context, const settings &settings)
 {
+	/* Scene uniforms. */
 	m_uniform_buffer =
 	    context.m_resource_allocator.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(m_uniforms));
 
 	/* Camera. */
-	glm::vec3 camera_position = glm::vec3(3.0f, 2.0f, 5.0f);
-	glm::vec3 camera_target = glm::vec3(0.0f);
+	const glm::vec3 camera_position = glm::vec3(3.0f, 2.0f, 5.0f);
+	const glm::vec3 camera_target = glm::vec3(0.0f);
 	m_camera.build(camera_position, camera_target);
 
 	/* Static mesh objects. */
@@ -62,7 +63,7 @@ void scene::build_default_scene(vulkan::context &context)
 
 	m_grid.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/grid.vert.spv");
 	m_grid.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/grid.frag.spv");
-	m_grid.m_pipeline.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_grid.m_pipeline.set_sample_count(settings.sample_count);
 	m_grid.m_pipeline.set_cull_mode(VK_CULL_MODE_NONE);
 	m_grid.m_pipeline.build(context.m_device);
 
@@ -80,10 +81,20 @@ void scene::build_default_scene(vulkan::context &context)
 
 	m_plane.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_VERTEX_BIT, "bin/assets/shaders/plane.vert.spv");
 	m_plane.m_pipeline.add_shader(context.m_device, VK_SHADER_STAGE_FRAGMENT_BIT, "bin/assets/shaders/plane.frag.spv");
-	m_plane.m_pipeline.set_sample_count(VK_SAMPLE_COUNT_4_BIT);
+	m_plane.m_pipeline.set_sample_count(settings.sample_count);
 	m_plane.m_pipeline.set_cull_mode(VK_CULL_MODE_NONE);
 	m_plane.m_pipeline.set_blend_enable(VK_TRUE);
 	m_plane.m_pipeline.build(context.m_device);
+
+	/* (TODO, thoave01): Updates based on settings, should be part of initialization. */
+	for (auto &[e, static_mesh] : m_static_mesh_storage)
+	{
+		static_mesh->update_material(settings.sample_count);
+	}
+	for (auto &[e, skybox] : m_skybox_storage)
+	{
+		skybox->update_material(settings.sample_count);
+	}
 }
 
 entity scene::create_entity()
