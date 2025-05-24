@@ -68,18 +68,3 @@ std::vector<const char *> glfw_window::get_required_surface_extensions()
 	const char **extensions = glfwGetRequiredInstanceExtensions(&extension_count);
 	return { extensions, extensions + extension_count };
 }
-
-bool glfw_window::is_key_pressed(int key)
-{
-	return glfwGetKey(m_window, key) == GLFW_PRESS;
-}
-
-bool glfw_window::is_mouse_button_pressed(int button)
-{
-	return glfwGetMouseButton(m_window, button) == GLFW_PRESS;
-}
-
-void glfw_window::get_mouse_position(double &x, double &y)
-{
-	glfwGetCursorPos(m_window, &x, &y);
-}

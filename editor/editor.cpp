@@ -1,11 +1,14 @@
+#include <platform/input.h>
+
 #include "editor.h"
 
 void editor::build()
 {
-	logger::register_logger(&m_logger);
-
 	m_context.build();
 	m_ui.build(*this);
+
+	logger::register_logger(&m_logger);
+	input::register_window(m_context.m_window.m_window);
 
 	build_default_settings();
 	m_scene.build(m_context, m_settings);
@@ -13,20 +16,11 @@ void editor::build()
 
 void editor::update()
 {
-	/* Update camera. */
-	/* (TODO, thoave01): Move code to platform/input.h. */
-	camera_input camera_input = {};
-	camera_input.w_pressed = m_context.m_window.is_key_pressed(GLFW_KEY_W);
-	camera_input.a_pressed = m_context.m_window.is_key_pressed(GLFW_KEY_A);
-	camera_input.s_pressed = m_context.m_window.is_key_pressed(GLFW_KEY_S);
-	camera_input.d_pressed = m_context.m_window.is_key_pressed(GLFW_KEY_D);
-	m_context.m_window.get_mouse_position(camera_input.mouse_x, camera_input.mouse_y);
-	camera_input.right_mouse_pressed = m_context.m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_RIGHT);
-	camera_input.middle_mouse_pressed = m_context.m_window.is_mouse_button_pressed(GLFW_MOUSE_BUTTON_MIDDLE);
-	m_scene.m_camera.process_input(camera_input);
-
 	/* Update UI. */
 	m_ui.generate_frame();
+
+	/* Update camera. */
+	m_scene.m_camera.update((float)m_ui.m_viewport_width / (float)m_ui.m_viewport_height);
 }
 
 void editor::draw(vulkan::command_buffer &command_buffer)

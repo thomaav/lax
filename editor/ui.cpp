@@ -267,9 +267,6 @@ void ui::generate_viewport()
 		m_viewport_y = ImGui::GetWindowPos().y;
 		m_viewport_width = ImGui::GetWindowWidth();
 		m_viewport_height = ImGui::GetWindowHeight();
-
-		/* (TODO, thoave01): Move this out to the editor scene updater. */
-		m_editor->m_scene.m_camera.m_aspect = (float)m_viewport_width / (float)m_viewport_height;
 	}
 	ImGui::End();
 }

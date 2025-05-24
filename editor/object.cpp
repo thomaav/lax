@@ -1,5 +1,6 @@
 #include <algorithm>
 
+#include <platform/input.h>
 #include <renderer/vulkan/context.h>
 
 #include "log.h"
@@ -136,58 +137,69 @@ void camera::build(glm::vec3 position, glm::vec3 target)
 	m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
 
 	m_fov = glm::radians(75.0f);
-	m_aspect = 0;
+	m_aspect_ratio = 16.0f / 9.0f;
 	m_near = 0.1f;
 	m_far = 256.0f;
-	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
+	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect_ratio, m_near, m_far);
 }
 
-void camera::process_input(const camera_input &input)
+void camera::update(float aspect_ratio)
 {
+	m_aspect_ratio = aspect_ratio;
+
+	bool w_pressed = input::is_key_pressed(GLFW_KEY_W);
+	bool a_pressed = input::is_key_pressed(GLFW_KEY_A);
+	bool s_pressed = input::is_key_pressed(GLFW_KEY_S);
+	bool d_pressed = input::is_key_pressed(GLFW_KEY_D);
+	double mouse_x, mouse_y;
+	input::get_mouse_position(mouse_x, mouse_y);
+	bool right_mouse_pressed = input::is_mouse_button_pressed(GLFW_MOUSE_BUTTON_RIGHT);
+	bool middle_mouse_pressed = input::is_mouse_button_pressed(GLFW_MOUSE_BUTTON_MIDDLE);
+
 	static float last_frame = glfwGetTime();
 	float current_frame = glfwGetTime();
 	float delta_frame = current_frame - last_frame;
 	float camera_speed = m_speed * delta_frame;
 	last_frame = current_frame;
 
-	static double last_mouse_x = input.mouse_x;
-	static double last_mouse_y = input.mouse_y;
-	if (input.right_mouse_pressed)
+	static double last_mouse_x = mouse_x;
+	static double last_mouse_y = mouse_y;
+	if (right_mouse_pressed)
 	{
-		m_yaw += (input.mouse_x - last_mouse_x) * m_sensitivity * delta_frame;
-		m_pitch += std::clamp((last_mouse_y - input.mouse_y) * m_sensitivity * delta_frame, -89.0, 89.0);
+		m_yaw += (mouse_x - last_mouse_x) * m_sensitivity * delta_frame;
+		m_pitch += std::clamp((last_mouse_y - mouse_y) * m_sensitivity * delta_frame, -89.0, 89.0);
 		m_forward.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
 		m_forward.y = sin(glm::radians(m_pitch));
 		m_forward.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
 	}
-	if (input.middle_mouse_pressed)
+	if (middle_mouse_pressed)
 	{
-		m_position += m_up * (float)((last_mouse_y - input.mouse_y) * m_speed / 5.0f * delta_frame);
+		m_position += m_up * (float)((last_mouse_y - mouse_y) * m_speed / 5.0f * delta_frame);
 		m_position += glm::normalize(glm::cross(m_forward, m_up)) *
-		              (float)((input.mouse_x - last_mouse_x) * m_speed / 5.0f * delta_frame);
+		              (float)((mouse_x - last_mouse_x) * m_speed / 5.0f * delta_frame);
 	}
-	last_mouse_x = input.mouse_x;
-	last_mouse_y = input.mouse_y;
+	last_mouse_x = mouse_x;
+	last_mouse_y = mouse_y;
 
-	if (input.w_pressed)
+	if (w_pressed)
 	{
 		m_position += m_forward * camera_speed;
 	}
-	if (input.a_pressed)
+	if (a_pressed)
 	{
 		m_position -= glm::normalize(glm::cross(m_forward, m_up)) * camera_speed;
 	}
-	if (input.s_pressed)
+	if (s_pressed)
 	{
 		m_position -= m_forward * camera_speed;
 	}
-	if (input.d_pressed)
+	if (d_pressed)
 	{
 		m_position += glm::normalize(glm::cross(m_forward, m_up)) * camera_speed;
 	}
 
 	m_view = glm::lookAt(m_position, m_position + m_forward, m_up);
-	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect, m_near, m_far);
+	m_projection = glm::perspectiveRH_ZO(m_fov, m_aspect_ratio, m_near, m_far);
 }
 
 void camera::draw(vulkan::command_buffer &command_buffer)

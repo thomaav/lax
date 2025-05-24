@@ -28,13 +28,6 @@ public:
 	void get_framebuffer_size(int &width, int &height);
 	std::vector<const char *> get_required_surface_extensions();
 
-	/* Input handling. */
-	bool is_key_pressed(int key);
-	bool is_mouse_button_pressed(int button);
-	void get_mouse_position(double &x, double &y);
-
-	/* (TODO, thoave01): private; this is just for Metal testing. */
-	/* (TODO, thoave01): We should just expose get_cocoa_window under LAX_METAL. */
 	GLFWwindow *m_window = nullptr;
 
 private:

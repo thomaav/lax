@@ -69,18 +69,6 @@ public:
 private:
 };
 
-struct camera_input
-{
-	bool w_pressed = false;
-	bool a_pressed = false;
-	bool s_pressed = false;
-	bool d_pressed = false;
-	double mouse_x = 0.0;
-	double mouse_y = 0.0;
-	bool right_mouse_pressed = false;
-	bool middle_mouse_pressed = false;
-};
-
 class camera : public object
 {
 public:
@@ -91,11 +79,8 @@ public:
 	camera operator=(const camera &) = delete;
 
 	void build(glm::vec3 position, glm::vec3 target);
-	void process_input(const camera_input &input);
+	void update(float aspect_ratio);
 	void draw(vulkan::command_buffer &command_buffer) override;
-
-	/* Depends on viewport size. */
-	float m_aspect;
 
 	/* Needed by rendering. */
 	glm::mat4 m_view;
@@ -113,6 +98,7 @@ private:
 	glm::vec3 m_up;
 
 	float m_fov;
+	float m_aspect_ratio;
 	float m_near;
 	float m_far;
 };
