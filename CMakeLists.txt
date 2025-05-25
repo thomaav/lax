@@ -13,9 +13,6 @@ set(CMAKE_LIBRARY_DIR ./lib)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
-set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/assimp" assimp)
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross" spirv_cross)
 set(VMA_BUILD_SAMPLE OFF)
 set(VMA_IMPLEMENTATION_BUILD ON)
@@ -59,7 +56,6 @@ target_include_directories(editor
   PUBLIC ${CMAKE_SOURCE_DIR}
   PUBLIC ${VULKAN_SDK_INCLUDE_DIR}
   PUBLIC "${CMAKE_SOURCE_DIR}/third_party/"
-  PUBLIC "${CMAKE_SOURCE_DIR}/third_party/assimp/include"
   PUBLIC "${CMAKE_SOURCE_DIR}/third_party/stb"
   PUBLIC "${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross"
 )
