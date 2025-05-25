@@ -58,6 +58,14 @@ void editor::update()
 
 void editor::draw_ui(vulkan::command_buffer &command_buffer)
 {
+	const u32 render_width = m_framebuffer.m_color_texture->m_image.m_info.m_width;
+	const u32 render_height = m_framebuffer.m_color_texture->m_image.m_info.m_height;
+
+	VkViewport viewport = { 0.0f, (float)render_height, (float)render_width, -(float)render_height, 0.0f, 1.0f };
+	VkRect2D scissor = { { 0.0f, 0.0f }, { render_width, render_height } };
+	vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
+	vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
+
 	command_buffer.transition_image_layout(
 	    m_framebuffer.m_color_texture->m_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 	    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,

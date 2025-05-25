@@ -207,17 +207,11 @@ void scene::draw_(vulkan::command_buffer &command_buffer, const settings &settin
 
 void scene::draw(vulkan::command_buffer &command_buffer, const settings &settings)
 {
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = (float)m_framebuffer.m_color_texture->m_image.m_info.m_height;
-	viewport.width = (float)m_framebuffer.m_color_texture->m_image.m_info.m_width;
-	viewport.height = -(float)m_framebuffer.m_color_texture->m_image.m_info.m_height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor = {};
-	scissor.offset = { 0.0f, 0.0f };
-	scissor.extent = { m_framebuffer.m_color_texture->m_image.m_info.m_width,
-		               m_framebuffer.m_color_texture->m_image.m_info.m_height };
+	const u32 render_width = m_framebuffer.m_color_texture->m_image.m_info.m_width;
+	const u32 render_height = m_framebuffer.m_color_texture->m_image.m_info.m_height;
+
+	VkViewport viewport = { 0.0f, (float)render_height, (float)render_width, -(float)render_height, 0.0f, 1.0f };
+	VkRect2D scissor = { { 0.0f, 0.0f }, { render_width, render_height } };
 	vkCmdSetViewport(command_buffer.m_handle, 0, 1, &viewport);
 	vkCmdSetScissor(command_buffer.m_handle, 0, 1, &scissor);
 
