@@ -2,6 +2,14 @@
 #include <optional>
 #include <string_view>
 
+// clang-format off
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#include <third_party/volk/volk.h>
+#include <vulkan/vulkan_profiles.hpp>
+#pragma clang diagnostic pop
+// clang-format on
+
 #include <utils/log.h>
 #include <utils/type.h>
 #include <utils/util.h>

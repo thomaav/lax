@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <utils/util.h>
 
 #include "buffer.h"

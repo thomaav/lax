@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <utils/util.h>
 
 #include "pipeline.h"

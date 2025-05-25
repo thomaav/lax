@@ -1,6 +1,3 @@
-#include <renderer/vulkan/render_pass.h>
-#include <renderer/vulkan/semaphore.h>
-
 #include "editor.h"
 
 int main(int argc, char *argv[])

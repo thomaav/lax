@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <utils/util.h>
 
 #include "buffer.h"

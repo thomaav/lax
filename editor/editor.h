@@ -1,11 +1,15 @@
 #pragma once
 
-#include <renderer/vulkan/command_buffer.h>
-
 #include "log.h"
 #include "scene.h"
 #include "settings.h"
 #include "ui.h"
+
+namespace vulkan
+{
+class command_buffer;
+class texture;
+}
 
 class editor
 {
