@@ -51,13 +51,21 @@ public:
 	scene operator=(const scene &) = delete;
 
 	void build(vulkan::context &context, const settings &settings);
-	void update(const settings &settings);
-	void draw(vulkan::command_buffer &command_buffer);
+	void update(vulkan::context &context, const settings &settings);
+	void draw_(vulkan::command_buffer &command_buffer, const settings &settings);
+	void draw(vulkan::command_buffer &command_buffer, const settings &settings);
 
 	camera m_camera = {};
 	scene_uniforms m_uniforms = {};
 	vulkan::buffer m_uniform_buffer = {};
 	vulkan::pipeline *m_default_pipeline = nullptr;
+
+	struct
+	{
+		ref<vulkan::texture> m_color_texture = make_ref<vulkan::texture>();
+		ref<vulkan::texture> m_depth_texture = make_ref<vulkan::texture>();
+		ref<vulkan::texture> m_resolve_texture = make_ref<vulkan::texture>();
+	} m_framebuffer;
 
 	entity create_entity();
 
@@ -77,13 +85,6 @@ public:
 		vulkan::pipeline m_pipeline = {};
 		vulkan::buffer m_vertex_buffer = {};
 	} m_plane;
-
-	struct
-	{
-		ref<vulkan::texture> m_color_texture = make_ref<vulkan::texture>();
-		ref<vulkan::texture> m_depth_texture = make_ref<vulkan::texture>();
-		ref<vulkan::texture> m_resolve_texture = make_ref<vulkan::texture>();
-	} m_framebuffer;
 
 private:
 	entity m_entity = 0;

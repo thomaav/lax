@@ -18,7 +18,6 @@ public:
 
 	void build();
 	void update();
-	void draw_(vulkan::command_buffer &command_buffer); /* (TODO, thoave01): Goes into scene. */
 	void draw();
 
 	vulkan::context m_context = {};
@@ -26,6 +25,11 @@ public:
 	scene m_scene = {};
 	ui m_ui = {};
 	console_logger m_logger = {};
+
+	struct
+	{
+		ref<vulkan::texture> m_color_texture = make_ref<vulkan::texture>();
+	} m_framebuffer;
 
 private:
 	void build_default_settings();
