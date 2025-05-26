@@ -2,7 +2,7 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
 #define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
+#include <third_party/vma/include/vk_mem_alloc.h>
 #pragma clang diagnostic pop
 
 #include "image.h"

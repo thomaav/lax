@@ -1,10 +1,12 @@
 #pragma once
 
+// clang-format off
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 #include <third_party/volk/volk.h>
-#include <vma/vk_mem_alloc.h>
+#include <third_party/vma/include/vk_mem_alloc.h>
 #pragma clang diagnostic pop
+// clang-format on
 
 #include "device.h"
 

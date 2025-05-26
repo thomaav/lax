@@ -14,9 +14,6 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_LIBRARY_DIR})
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/volk" volk)
 add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross" spirv_cross)
-set(VMA_BUILD_SAMPLE OFF)
-set(VMA_IMPLEMENTATION_BUILD ON)
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/VulkanMemoryAllocator" vma)
 set(imgui_SOURCE_DIR ${CMAKE_SOURCE_DIR}/third_party/imgui/)
 add_library(imgui
   ${imgui_SOURCE_DIR}/imgui.cpp
@@ -50,15 +47,11 @@ target_link_libraries(editor
   volk
   assimp
   spirv-cross-core
-  GPUOpen::VulkanMemoryAllocator
   imgui
 )
 target_include_directories(editor
   PUBLIC ${CMAKE_SOURCE_DIR}
   PUBLIC ${VULKAN_SDK_INCLUDE_DIR}
-  PUBLIC "${CMAKE_SOURCE_DIR}/third_party/"
-  PUBLIC "${CMAKE_SOURCE_DIR}/third_party/stb"
-  PUBLIC "${CMAKE_SOURCE_DIR}/third_party/SPIRV-Cross"
 )
 add_custom_target(copy_shaders
   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/assets/shaders ${BASH_EXECUTABLE} ./compile.sh
