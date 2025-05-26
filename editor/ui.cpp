@@ -45,7 +45,7 @@ void ui::build(editor &editor)
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.DescriptorPoolSize = 1024; /* Number of combined image samplers. */
 	init_info.UseDynamicRendering = VK_TRUE;
-	init_info.PipelineRenderingCreateInfo = {}; /* (TODO) */
+	init_info.PipelineRenderingCreateInfo = {};
 	init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	init_info.PipelineRenderingCreateInfo.pNext = nullptr;
 	init_info.PipelineRenderingCreateInfo.viewMask = 0;

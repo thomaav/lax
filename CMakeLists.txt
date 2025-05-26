@@ -27,6 +27,8 @@ add_library(imgui
   ${imgui_SOURCE_DIR}/imgui_impl_glfw.cpp
   ${imgui_SOURCE_DIR}/imgui_impl_vulkan.cpp
 )
+target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK=1)
+target_include_directories(imgui PRIVATE "${CMAKE_SOURCE_DIR}/third_party/volk")
 
 file(GLOB EDITOR_SOURCES "${PROJECT_SOURCE_DIR}/editor/*.cpp")
 file(GLOB ASSETS_SOURCES "${PROJECT_SOURCE_DIR}/assets/*.cpp")
@@ -45,7 +47,6 @@ add_executable(editor
 )
 target_link_libraries(editor
   glfw
-  vulkan
   volk
   assimp
   spirv-cross-core
