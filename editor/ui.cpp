@@ -16,6 +16,9 @@
 #include "editor.h"
 #include "ui.h"
 
+static constexpr ImGuiWindowFlags default_window_flags =
+    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+
 ui::~ui()
 {
 	ImGui_ImplVulkan_Shutdown();
@@ -93,12 +96,14 @@ void ui::draw(vulkan::command_buffer &command_buffer)
 void ui::generate_docking()
 {
 	static bool first_frame = true;
+	ImGuiID dockspace_id = ImGui::DockSpaceOverViewport();
+
 	if (first_frame)
 	{
-		ImGuiID window_id = ImGui::DockSpaceOverViewport();
+		first_frame = false;
 
-		ImGui::DockBuilderRemoveNode(window_id);
-		ImGui::DockBuilderAddNode(window_id, ImGuiDockNodeFlags_None);
+		ImGui::DockBuilderRemoveNode(dockspace_id);
+		ImGuiID window_id = ImGui::DockBuilderAddNode(dockspace_id);
 		ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
 
 		ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
@@ -114,14 +119,12 @@ void ui::generate_docking()
 		ImGui::DockBuilderDockWindow("Viewport", window_id);
 
 		ImGui::DockBuilderFinish(window_id);
-
-		first_frame = false;
 	}
 }
 
 void ui::generate_console()
 {
-	ImGui::Begin("Console", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("Console", nullptr, default_window_flags);
 	{
 		ImGui::PushTextWrapPos();
 		ImGui::TextUnformatted(m_editor->m_logger.m_buffer.begin(), m_editor->m_logger.m_buffer.end());
@@ -136,7 +139,7 @@ void ui::generate_console()
 
 void ui::generate_scene()
 {
-	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Scene", nullptr, default_window_flags);
 	{
 		if (ImGui::TreeNodeEx("Root", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -162,7 +165,7 @@ void ui::generate_settings()
 {
 	static std::vector<const char *> sample_counts = { "1xMSAA", "4xMSAA" };
 	static int sample_count_selection = 1;
-	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Settings", nullptr, default_window_flags);
 	{
 		ImGui::Checkbox("Skybox", &m_editor->m_settings.enable_skybox);
 		ImGui::Checkbox("Mipmapping", &m_editor->m_settings.enable_mipmapping);
@@ -187,7 +190,7 @@ void ui::generate_debug()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-	ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Debug", nullptr, default_window_flags);
 	{
 		static bool first = true;
 		static auto last = std::chrono::steady_clock::now();
@@ -230,8 +233,7 @@ void ui::generate_debug()
 
 void ui::generate_viewport()
 {
-	ImGui::Begin("Viewport", nullptr,
-	             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
+	ImGui::Begin("Viewport", nullptr, default_window_flags | ImGuiWindowFlags_NoBackground);
 	{
 		ImGui::GetWindowDockNode()->SetLocalFlags(ImGuiDockNodeFlags_NoTabBar);
 		m_editor->m_settings.viewport_x = ImGui::GetWindowPos().x;
