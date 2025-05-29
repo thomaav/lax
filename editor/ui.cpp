@@ -81,6 +81,8 @@ void ui::generate_frame()
 	generate_debug();
 	generate_viewport();
 	ImGui::Render();
+	ImGui::UpdatePlatformWindows();
+	ImGui::RenderPlatformWindowsDefault();
 }
 
 void ui::draw(vulkan::command_buffer &command_buffer)
