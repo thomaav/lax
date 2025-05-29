@@ -72,7 +72,7 @@ void wsi::build_swapchain(device &device)
 	found = false;
 	for (const auto &available_present_mode : available_present_modes)
 	{
-		if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+		if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 		{
 			present_mode = available_present_mode;
 			found = true;
