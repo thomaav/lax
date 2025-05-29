@@ -206,6 +206,8 @@ static VkShaderStageFlags get_next_stage(VkShaderStageFlagBits stage)
 	default:
 		assert(false);
 	}
+
+	return VK_SHADER_STAGE_VERTEX_BIT;
 }
 
 void shader_object::build(device &device, VkShaderStageFlagBits stage, const char *filename)
