@@ -31,10 +31,11 @@ void editor::build_default_settings()
 
 void editor::build()
 {
+	logger::register_logger(&m_logger);
+
 	m_context.build();
 	m_ui.build(*this);
 
-	logger::register_logger(&m_logger);
 	input::register_window(m_context.m_window.m_window);
 
 	build_default_settings();
