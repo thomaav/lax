@@ -34,7 +34,6 @@ void ui::build(editor &editor)
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 
@@ -84,8 +83,6 @@ void ui::generate_frame()
 	generate_debug();
 	generate_viewport();
 	ImGui::Render();
-	ImGui::UpdatePlatformWindows();
-	ImGui::RenderPlatformWindowsDefault();
 }
 
 void ui::draw(vulkan::command_buffer &command_buffer)
@@ -93,22 +90,30 @@ void ui::draw(vulkan::command_buffer &command_buffer)
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.m_handle);
 }
 
+static ImGuiID get_dockspace_id()
+{
+	return ImGui::GetID("DockSpace");
+}
+
 void ui::generate_docking()
 {
 	static bool first_frame = true;
-	ImGuiID dockspace_id = ImGui::DockSpaceOverViewport();
-
+	ImGuiID dockspace_id = get_dockspace_id();
 	if (first_frame)
 	{
 		first_frame = false;
 
 		ImGui::DockBuilderRemoveNode(dockspace_id);
-		ImGuiID window_id = ImGui::DockBuilderAddNode(dockspace_id);
-		ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
+		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_CentralNode);
+		ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-		ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Down, 0.15f, nullptr, &window_id);
-		ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Left, 0.15f, nullptr, &window_id);
-		ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(window_id, ImGuiDir_Right, 0.15f, nullptr, &window_id);
+		ImGuiID central_node_id = dockspace_id;
+		ImGuiID dock_bottom_id =
+		    ImGui::DockBuilderSplitNode(central_node_id, ImGuiDir_Down, 0.15f, nullptr, &central_node_id);
+		ImGuiID dock_left_id =
+		    ImGui::DockBuilderSplitNode(central_node_id, ImGuiDir_Left, 0.15f, nullptr, &central_node_id);
+		ImGuiID dock_right_id =
+		    ImGui::DockBuilderSplitNode(central_node_id, ImGuiDir_Right, 0.15f, nullptr, &central_node_id);
 		ImGuiID dock_right_bottom_id =
 		    ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.60f, nullptr, &dock_right_id);
 
@@ -116,10 +121,10 @@ void ui::generate_docking()
 		ImGui::DockBuilderDockWindow("Scene", dock_left_id);
 		ImGui::DockBuilderDockWindow("Settings", dock_right_id);
 		ImGui::DockBuilderDockWindow("Debug", dock_right_bottom_id);
-		ImGui::DockBuilderDockWindow("Viewport", window_id);
 
-		ImGui::DockBuilderFinish(window_id);
+		ImGui::DockBuilderFinish(dockspace_id);
 	}
+	ImGui::DockSpaceOverViewport(dockspace_id, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 void ui::generate_console()
@@ -233,13 +238,10 @@ void ui::generate_debug()
 
 void ui::generate_viewport()
 {
-	ImGui::Begin("Viewport", nullptr, default_window_flags | ImGuiWindowFlags_NoBackground);
-	{
-		ImGui::GetWindowDockNode()->SetLocalFlags(ImGuiDockNodeFlags_NoTabBar);
-		m_editor->m_settings.viewport_x = ImGui::GetWindowPos().x;
-		m_editor->m_settings.viewport_y = ImGui::GetWindowPos().y;
-		m_editor->m_settings.viewport_width = ImGui::GetWindowWidth();
-		m_editor->m_settings.viewport_height = ImGui::GetWindowHeight();
-	}
-	ImGui::End();
+	ImGuiDockNode *central_node =
+	    ImGui::DockContextFindNodeByID(ImGui::GetCurrentContext(), get_dockspace_id())->CentralNode;
+	m_editor->m_settings.viewport_x = central_node->Pos.x;
+	m_editor->m_settings.viewport_y = central_node->Pos.y;
+	m_editor->m_settings.viewport_width = central_node->Size.x;
+	m_editor->m_settings.viewport_height = central_node->Size.y;
 }
