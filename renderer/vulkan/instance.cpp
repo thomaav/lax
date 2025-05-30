@@ -74,6 +74,7 @@ void instance::check_layers_available()
 		logger::info("VK_LAYER_KHRONOS_validation not available, continuing without");
 		return;
 	}
+	logger::info("VK_LAYER_KHRONOS_validation available, enabling");
 	m_layers.push_back("VK_LAYER_KHRONOS_validation");
 	m_validation_layer_enabled = true;
 }
