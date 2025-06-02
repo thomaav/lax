@@ -205,6 +205,8 @@ void scene::draw_(vulkan::command_buffer &command_buffer, const settings &settin
 	}
 }
 
+/* (TODO, thoave01): new font and new color scheme. */
+
 void scene::draw(vulkan::command_buffer &command_buffer, const settings &settings)
 {
 	const u32 render_width = m_framebuffer.m_color_texture->m_image.m_info.m_width;
