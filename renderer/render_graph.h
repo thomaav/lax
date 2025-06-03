@@ -1,5 +1,12 @@
 #pragma once
 
+// clang-format off
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#include <third_party/volk/volk.h>
+#pragma clang diagnostic pop
+// clang-format on
+
 #include <functional>
 #include <string_view>
 #include <unordered_map>
@@ -23,6 +30,11 @@ public:
 	virtual ~render_resource() = default;
 };
 
+struct render_buffer_info
+{
+	auto operator<=>(const render_buffer_info &) const = default;
+};
+
 class render_buffer : public render_resource
 {
 public:
@@ -31,6 +43,18 @@ public:
 
 	render_buffer(render_buffer &) = delete;
 	render_buffer operator=(const render_buffer &) = delete;
+
+	render_buffer_info m_info = {};
+};
+
+struct render_texture_info
+{
+	auto operator<=>(const render_texture_info &) const = default;
+
+	VkFormat format;
+	u32 width;
+	u32 height;
+	VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT;
 };
 
 class render_texture : public render_resource
@@ -41,6 +65,10 @@ public:
 
 	render_texture(render_texture &) = delete;
 	render_texture operator=(const render_texture &) = delete;
+
+	render_texture_info m_info = {};
+	VkImageUsageFlags m_usage = {};
+	uref<vulkan::texture> m_texture = make_uref<vulkan::texture>();
 };
 
 class render_pass
@@ -55,12 +83,24 @@ public:
 	void execute(vulkan::command_buffer &cmd_buf);
 
 	render_buffer &add_buffer(const std::string_view &name);
-	render_texture &add_texture(const std::string_view &name);
+
+	render_texture &add_color_texture(const std::string_view &name);
+	render_texture &add_color_texture(const std::string_view &name, const render_texture_info &info);
+	render_texture &add_depth_stencil_texture(const std::string_view &name, const render_texture_info &info);
+	render_texture &add_resolve_texture(const std::string_view &name, const render_texture_info &info);
+	render_texture &add_transfer_src_texture(const std::string_view &name);
+	render_texture &add_transfer_dst_texture(const std::string_view &name, const render_texture_info &info);
+
 	void set_execution(std::function<void(vulkan::command_buffer &)> f);
 
 private:
+	/* Execution. */
 	render_graph &m_render_graph;
 	std::function<void(vulkan::command_buffer &)> m_execution_function;
+
+	/* Resources. */
+	std::vector<std::string_view> m_read_textures = {};
+	std::vector<std::string_view> m_written_textures = {};
 };
 
 class render_graph
@@ -81,6 +121,7 @@ public:
 
 	/* Resource API. */
 	render_texture &get_render_texture(const std::string_view &name);
+	render_texture &get_render_texture(const std::string_view &name, const render_texture_info &info);
 	render_buffer &get_render_buffer(const std::string_view &name);
 
 private:
