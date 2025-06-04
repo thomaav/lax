@@ -86,9 +86,9 @@ void context::end_frame(texture &frame)
 
 	/* Finalize command buffer by copying input frame to swapchain. */
 	{
-		m_command_buffer.transition_image_layout(
-		    frame.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-		    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+		// m_command_buffer.transition_image_layout(
+		//     frame.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+		//     VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
 		m_command_buffer.transition_image_layout(*m_wsi.m_swapchain.m_images[image_idx],
 		                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_2_NONE, 0,
 		                                         VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
@@ -105,7 +105,7 @@ void context::end_frame(texture &frame)
 		copy_info.dstSubresource.layerCount = 1;
 		copy_info.dstOffset = { 0, 0, 0 };
 		copy_info.extent = { frame.m_image.m_info.m_width, frame.m_image.m_info.m_height, 1 };
-		vkCmdCopyImage(m_command_buffer.m_handle, frame.m_image.m_handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		vkCmdCopyImage(m_command_buffer.m_handle, frame.m_image.m_handle, VK_IMAGE_LAYOUT_GENERAL,
 		               m_wsi.m_swapchain.m_images[image_idx]->m_handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
 		               &copy_info);
 

@@ -37,7 +37,8 @@ render_texture &render_pass::add_color_texture(const std::string_view &name, con
 	m_written_textures.push_back(name);
 
 	render_texture &rt = m_render_graph.get_render_texture(name, info);
-	rt.m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	/* (TODO, thoave01): Remove transfer source. */
+	rt.m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	return rt;
 }
 
@@ -55,7 +56,8 @@ render_texture &render_pass::add_resolve_texture(const std::string_view &name, c
 	m_written_textures.push_back(name);
 
 	render_texture &rt = m_render_graph.get_render_texture(name, info);
-	rt.m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	/* (TODO, thoave01): Remove transfer source. */
+	rt.m_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	return rt;
 }
 
@@ -73,7 +75,7 @@ render_texture &render_pass::add_transfer_dst_texture(const std::string_view &na
 	m_written_textures.push_back(name);
 
 	render_texture &rt = m_render_graph.get_render_texture(name, info);
-	rt.m_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	rt.m_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	return rt;
 }
 

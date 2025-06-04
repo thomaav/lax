@@ -30,12 +30,6 @@ public:
 	ui m_ui = {};
 	console_logger m_logger = {};
 
-	struct
-	{
-		ref<vulkan::texture> m_color_texture = make_ref<vulkan::texture>();
-	} m_framebuffer;
-
 private:
 	void build_default_settings();
-	void draw_ui(vulkan::command_buffer &command_buffer);
 };
