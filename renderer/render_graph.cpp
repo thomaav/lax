@@ -93,13 +93,14 @@ void render_graph::reset()
 
 void render_graph::compile()
 {
-	for (const auto &[name, render_texture] : m_render_textures)
+	for (const auto &[_, render_texture] : m_render_textures)
 	{
 		render_texture->m_texture->build(m_context, { .m_format = render_texture->m_info.format,
 		                                              .m_width = render_texture->m_info.width,
 		                                              .m_height = render_texture->m_info.height,
 		                                              .m_usage = render_texture->m_usage,
 		                                              .m_sample_count = render_texture->m_info.sample_count });
+		render_texture->m_texture->m_image.transition_layout(m_context, VK_IMAGE_LAYOUT_GENERAL);
 	}
 }
 
@@ -112,6 +113,27 @@ void render_graph::execute(vulkan::command_buffer &cmd_buf)
 		names.push_back(name);
 	}
 	std::sort(names.begin(), names.end());
+
+	VkMemoryBarrier2 global_barrier = {
+		.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+		.pNext = nullptr,
+		.srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+		.dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+	};
+	VkDependencyInfo dependency_info = {
+		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+		.pNext = nullptr,
+		.dependencyFlags = 0,
+		.memoryBarrierCount = 1,
+		.pMemoryBarriers = &global_barrier,
+		.bufferMemoryBarrierCount = 0,
+		.pBufferMemoryBarriers = nullptr,
+		.imageMemoryBarrierCount = 0,
+		.pImageMemoryBarriers = nullptr,
+	};
+	vkCmdPipelineBarrier2(cmd_buf.m_handle, &dependency_info);
 
 	for (const std::string_view name : names)
 	{

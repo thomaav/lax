@@ -118,14 +118,18 @@ void editor::draw()
 			                                            .format = m_settings.color_format,
 			                                            .width = m_settings.viewport_width,
 			                                            .height = m_settings.viewport_height,
+			                                            .sample_count = VK_SAMPLE_COUNT_4_BIT,
 			                                        });
-			rp1.add_depth_stencil_texture("viewport_depth", { .format = m_settings.depth_format,
-			                                                  .width = m_settings.viewport_width,
-			                                                  .height = m_settings.viewport_height });
+			rp1.add_depth_stencil_texture("viewport_depth", {
+			                                                    .format = m_settings.depth_format,
+			                                                    .width = m_settings.viewport_width,
+			                                                    .height = m_settings.viewport_height,
+			                                                    .sample_count = VK_SAMPLE_COUNT_4_BIT,
+			                                                });
 			rp1.add_resolve_texture("viewport_resolve", { .format = m_settings.color_format,
 			                                              .width = m_settings.viewport_width,
 			                                              .height = m_settings.viewport_height });
-			rp1.set_execution([&](vulkan::command_buffer &cmd_buf) { UNUSED(cmd_buf); });
+			rp1.set_execution([&](vulkan::command_buffer &cmd_buf) { m_scene.draw(cmd_buf, m_settings); });
 		}
 
 		render_pass &rp2 = rg.add_render_pass("rp2");
@@ -136,13 +140,45 @@ void editor::draw()
 			                                                 .width = m_context.m_wsi.m_swapchain.m_extent.width,
 			                                                 .height = m_context.m_wsi.m_swapchain.m_extent.height,
 			                                             });
-			rp2.set_execution([&](vulkan::command_buffer &cmd_buf) { UNUSED(cmd_buf); });
+			rp2.set_execution(
+			    [&](vulkan::command_buffer &cmd_buf)
+			    {
+				    cmd_buf.transition_image_layout(
+				        m_scene.m_framebuffer.m_resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+				        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
+				    cmd_buf.transition_image_layout(
+				        m_framebuffer.m_color_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+				        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
+				    VkImageCopy copy_info = {};
+				    copy_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				    copy_info.srcSubresource.mipLevel = 0;
+				    copy_info.srcSubresource.baseArrayLayer = 0;
+				    copy_info.srcSubresource.layerCount = 1;
+				    copy_info.srcOffset = { 0, 0, 0 };
+				    copy_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				    copy_info.dstSubresource.mipLevel = 0;
+				    copy_info.dstSubresource.baseArrayLayer = 0;
+				    copy_info.dstSubresource.layerCount = 1;
+				    copy_info.dstOffset = { (int)m_settings.viewport_x, (int)m_settings.viewport_y, 0 };
+				    copy_info.extent = { m_settings.viewport_width, m_settings.viewport_height, 1 };
+				    vkCmdCopyImage(cmd_buf.m_handle, m_scene.m_framebuffer.m_resolve_texture->m_image.m_handle,
+				                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				                   m_framebuffer.m_color_texture->m_image.m_handle,
+				                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
+
+				    cmd_buf.transition_image_layout(m_framebuffer.m_color_texture->m_image,
+				                                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+				                                    VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_NONE, 0);
+			    });
 		}
 
 		render_pass &rp3 = rg.add_render_pass("rp3");
 		{
 			rp3.add_color_texture("editor_color");
-			rp3.set_execution([&](vulkan::command_buffer &cmd_buf) { UNUSED(cmd_buf); });
+			rp3.set_execution([&](vulkan::command_buffer &cmd_buf) { draw_ui(cmd_buf); });
 		}
 	}
 	rg.compile();
@@ -152,42 +188,4 @@ void editor::draw()
 		rg.execute(command_buffer);
 	}
 	m_context.end_frame(*m_framebuffer.m_color_texture);
-
-	// vulkan::command_buffer &command_buffer = m_context.begin_frame();
-	// {
-	// 	m_scene.draw(command_buffer, m_settings);
-
-	// 	/* Copy scene framebuffer to editor framebuffer. */
-	// 	command_buffer.transition_image_layout(
-	// 	    m_scene.m_framebuffer.m_resolve_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-	// 	    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-	// 	    VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT);
-	// 	command_buffer.transition_image_layout(
-	// 	    m_framebuffer.m_color_texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	// 	    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-	// 	    VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
-
-	// 	VkImageCopy copy_info = {};
-	// 	copy_info.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	// 	copy_info.srcSubresource.mipLevel = 0;
-	// 	copy_info.srcSubresource.baseArrayLayer = 0;
-	// 	copy_info.srcSubresource.layerCount = 1;
-	// 	copy_info.srcOffset = { 0, 0, 0 };
-	// 	copy_info.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	// 	copy_info.dstSubresource.mipLevel = 0;
-	// 	copy_info.dstSubresource.baseArrayLayer = 0;
-	// 	copy_info.dstSubresource.layerCount = 1;
-	// 	copy_info.dstOffset = { (int)m_settings.viewport_x, (int)m_settings.viewport_y, 0 };
-	// 	copy_info.extent = { m_settings.viewport_width, m_settings.viewport_height, 1 };
-	// 	vkCmdCopyImage(command_buffer.m_handle, m_scene.m_framebuffer.m_resolve_texture->m_image.m_handle,
-	// 	               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_framebuffer.m_color_texture->m_image.m_handle,
-	// 	               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_info);
-
-	// 	command_buffer.transition_image_layout(m_framebuffer.m_color_texture->m_image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-	// 	                                       VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-	// 	                                       VK_PIPELINE_STAGE_2_NONE, 0);
-
-	// 	draw_ui(command_buffer);
-	// }
-	// m_context.end_frame(*m_framebuffer.m_color_texture);
 }
